@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
-import GoogleIcon from "@/components/GoogleIcon";
 
 export default function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -19,24 +21,28 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    try {
-      await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/";
-    } catch (err) {
-      setError(err.message || "Invalid email or password. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", "/");
+    const result = await login(email, password);
+
+    if (result.success) {
+      // Route by role
+      const role = result.role;
+      if (role === "admin" || role === "team_member") {
+        navigate("/lms-admin");
+      } else {
+        navigate("/student-dashboard");
+      }
+    } else {
+      setError(result.error || "Invalid email or password. Please try again.");
+    }
+
+    setLoading(false);
   };
 
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Sign in to your SOL client portal"
+      subtitle="Sign in to your SOL account"
       footer={
         <>
           Don't have an account?{" "}
@@ -46,27 +52,6 @@ export default function Login() {
         </>
       }
     >
-      {/* Google */}
-      <Button
-        variant="outline"
-        type="button"
-        className="w-full h-11 text-sm font-medium border-slate-200 hover:bg-slate-50 gap-2.5"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-4 h-4" />
-        Continue with Google
-      </Button>
-
-      {/* Divider */}
-      <div className="relative my-5">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-white px-3 text-slate-400 uppercase tracking-wider">or sign in with email</span>
-        </div>
-      </div>
-
       {/* Error */}
       {error && (
         <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
@@ -115,8 +100,9 @@ export default function Login() {
             />
             <button
               type="button"
-              onClick={() => setShowPassword(v => !v)}
+              onClick={() => setShowPassword((v) => !v)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>

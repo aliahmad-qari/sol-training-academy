@@ -35,15 +35,25 @@ app.use(
 );
 
 // --------------------------------------------------------------------------
-//  CORS — restrict to configured frontend origins, allow credentials (cookies).
+//  CORS — allow configured origins + all Vercel preview deployments.
+//  Credentials (cookies) require an explicit origin, never wildcard.
 // --------------------------------------------------------------------------
+const VERCEL_PREVIEW_RE = /^https:\/\/[\w-]+-[\w-]+\.vercel\.app$/;
+
 const corsOptions = {
   origin(origin, callback) {
-    // Allow non-browser tools (curl/Postman) with no Origin header.
+    // Allow non-browser tools (curl / Postman / Render health-checks) with no Origin.
     if (!origin) return callback(null, true);
-    if (env.clientOrigins.length === 0 || env.clientOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+
+    // Allow any configured explicit origin (e.g. your production Vercel URL).
+    if (env.clientOrigins.includes(origin)) return callback(null, true);
+
+    // Allow all Vercel preview-deploy URLs (*.vercel.app) so PR previews work.
+    if (VERCEL_PREVIEW_RE.test(origin)) return callback(null, true);
+
+    // Allow localhost on any port for local development.
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+
     return callback(new Error(`CORS: origin "${origin}" is not allowed.`));
   },
   credentials: true,

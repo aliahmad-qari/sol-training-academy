@@ -1,10 +1,9 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import Home from '@/pages/Home';
 import NDISRegistration from '@/pages/services/NDISRegistration';
@@ -53,31 +52,44 @@ import PaymentSuccess from '@/pages/PaymentSuccess';
 import PaymentHistory from '@/pages/PaymentHistory';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isAuthenticated, user } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  // Show loading spinner while checking auth state on mount
+  if (isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center bg-white">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
+  /**
+   * ProtectedRoute — must be logged in, otherwise → /login.
+   * Optionally restrict to specific roles (e.g. allowedRoles={['admin','team_member']}).
+   */
+  const ProtectedRoute = ({ children, allowedRoles }) => {
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (allowedRoles && !allowedRoles.includes(user?.role)) {
+      return <Navigate to="/student-dashboard" replace />;
     }
-  }
+    return children;
+  };
 
-  // Render the main app
+  /**
+   * PublicOnlyRoute — if already logged in, redirect away from login/register.
+   */
+  const PublicOnlyRoute = ({ children }) => {
+    if (isAuthenticated) {
+      const dest = (user?.role === 'admin' || user?.role === 'team_member')
+        ? '/lms-admin'
+        : '/student-dashboard';
+      return <Navigate to={dest} replace />;
+    }
+    return children;
+  };
   return (
     <Routes>
+      {/* ── Public routes ───────────────────────────────────────────── */}
       <Route path="/" element={<Home />} />
       <Route path="/services/ndis-registration" element={<NDISRegistration />} />
       <Route path="/services/website-development" element={<WebsiteDevelopment />} />
@@ -86,10 +98,6 @@ const AuthenticatedApp = () => {
       <Route path="/services/support-coordination-training" element={<SupportCoordinationTraining />} />
       <Route path="/services/marketing" element={<MarketingServices />} />
       <Route path="/marketing-packages" element={<MarketingPackages />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/lms-admin" element={<LMSAdmin />} />
-      <Route path="/student-dashboard" element={<StudentDashboard />} />
-      <Route path="/marketing" element={<MarketingAutomation />} />
       <Route path="/get-started" element={<GetStarted />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/training-courses" element={<TrainingCourses />} />
@@ -102,7 +110,38 @@ const AuthenticatedApp = () => {
       <Route path="/case-studies" element={<CaseStudies />} />
       <Route path="/readiness-quiz" element={<ReadinessQuiz />} />
       <Route path="/ndis-readiness-calculator" element={<NDISReadinessCalculator />} />
-      <Route path="/client-portal" element={<ClientPortalLayout />}>
+      <Route path="/marketing" element={<MarketingAutomation />} />
+
+      {/* ── Auth routes (redirect away if already logged in) ──────── */}
+      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+      <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+      <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
+
+      {/* ── Student protected route ──────────────────────────────────── */}
+      <Route path="/student-dashboard" element={
+        <ProtectedRoute><StudentDashboard /></ProtectedRoute>
+      } />
+      <Route path="/checkout" element={
+        <ProtectedRoute><Checkout /></ProtectedRoute>
+      } />
+      <Route path="/payment-success" element={
+        <ProtectedRoute><PaymentSuccess /></ProtectedRoute>
+      } />
+      <Route path="/payment-history" element={
+        <ProtectedRoute><PaymentHistory /></ProtectedRoute>
+      } />
+
+      {/* ── Admin / team_member protected routes ─────────────────────── */}
+      <Route path="/lms-admin" element={
+        <ProtectedRoute allowedRoles={['admin', 'team_member']}><LMSAdmin /></ProtectedRoute>
+      } />
+      <Route path="/admin" element={
+        <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
+      } />
+
+      {/* ── Client portal (protected) ───────────────────────────────── */}
+      <Route path="/client-portal" element={<ProtectedRoute><ClientPortalLayout /></ProtectedRoute>}>
         <Route index element={<PortalOverview />} />
         <Route path="ndis-progress" element={<PortalNDISProgress />} />
         <Route path="enquiries" element={<PortalEnquiries />} />
@@ -116,13 +155,7 @@ const AuthenticatedApp = () => {
         <Route path="staff-intake" element={<PortalStaffIntake />} />
         <Route path="booking" element={<PortalBooking />} />
       </Route>
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/payment-success" element={<PaymentSuccess />} />
-      <Route path="/payment-history" element={<PaymentHistory />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

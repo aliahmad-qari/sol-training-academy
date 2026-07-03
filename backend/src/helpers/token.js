@@ -44,14 +44,21 @@ export const durationToMs = (duration) => {
 
 /**
  * Standard cookie options for the refresh token.
+ *
+ * Cross-domain setup (Vercel frontend → Render backend):
+ *   - Must be Secure + SameSite=None when deployed (HTTPS on both ends).
+ *   - Falls back to Lax (no Secure) for local http development.
  */
-export const refreshCookieOptions = () => ({
-  httpOnly: true,
-  secure: env.cookie.secure,
-  sameSite: env.cookie.secure ? 'none' : 'lax',
-  domain: env.cookie.domain || undefined,
-  maxAge: durationToMs(env.jwt.refreshExpiresIn),
-  path: '/api/v1/auth',
-});
+export const refreshCookieOptions = () => {
+  const isProduction = env.nodeEnv === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,                     // HTTPS required in prod
+    sameSite: isProduction ? 'none' : 'lax',  // 'none' required for cross-origin cookies
+    domain: env.cookie.domain || undefined,
+    maxAge: durationToMs(env.jwt.refreshExpiresIn),
+    path: '/api/v1/auth',
+  };
+};
 
 export const REFRESH_COOKIE_NAME = 'sol_refresh';
