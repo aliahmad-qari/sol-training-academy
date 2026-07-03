@@ -1,0 +1,59 @@
+# Render Blueprint for the SOL Training Academy backend.
+# Deploy: push this repo to GitHub → Render → New → Blueprint → select repo.
+# Fill secret values in the Render dashboard (marked sync:false).
+services:
+  - type: web
+    name: sol-training-academy-api
+    runtime: node
+    plan: starter
+    region: singapore
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: COOKIE_SECURE
+        value: true
+      - key: CLIENT_URL
+        sync: false
+      - key: API_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CURRENCY
+        value: aud
+      - key: STRIPE_SUCCESS_URL
+        sync: false
+      - key: STRIPE_CANCEL_URL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        value: sol_training_academy
+      - key: COMPANY_NAME
+        value: SOL Business Consultant Pty Ltd
+      - key: COMPANY_ABN
+        value: 20 662 022 522
+      - key: GST_RATE
+        value: "0.10"

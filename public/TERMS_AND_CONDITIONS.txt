@@ -1,0 +1,418 @@
+TERMS & CONDITIONS
+SOL Business Consultant Pty Ltd
+ABN: 20 662 022 522
+Address: Glenroy VIC 3046, Australia
+Website: www.solbusinessconsultant.com.au
+Phone: +61 460 003 494
+Email: info@solbusinessconsultant.com.au
+
+Last Updated: June 2026
+
+---
+
+1. AGREEMENT TO TERMS
+
+By accessing and using this website and our services, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our services.
+
+SOL Business Consultant Pty Ltd ("Company," "We," "Us," "Our") operates in full compliance with Australian Consumer Law, the Privacy Act 1988 (Cth), the NDIS Quality & Safeguards Commission, the Australian Taxation Office (ATO), and ASIC regulations.
+
+We are not affiliated with the NDIS Commission, ATO, ASIC, or any government body.
+
+---
+
+2. SERVICES PROVIDED
+
+We offer the following services:
+
+a) NDIS Registration Support
+- Registration guidance and documentation
+- Audit preparation and mock audits
+- Compliance strategy and policy development
+- Ongoing audit support (varies by package)
+
+b) Support Coordination Training
+- Online NDIS training curriculum (12 modules)
+- Individual, team, or enterprise licensing
+- Train-the-trainer programs
+- Custom curriculum development
+
+c) Accountancy & Bookkeeping
+- Monthly bookkeeping and reconciliations
+- BAS lodgement (monthly/quarterly)
+- Payroll processing and STP reporting
+- Superannuation compliance
+- Tax planning and return preparation
+- NDIS financial reporting
+
+d) Website Development
+- Design and build services
+- Mobile responsive & SEO-optimized
+- Hosting and maintenance (optional)
+- Integration with booking/intake systems
+
+e) Software & Automation
+- Document automation (NDIS, policies, contracts)
+- Client intake system setup
+- Compliance dashboard development
+- Easy Compliance platform configuration
+- Custom workflow automation
+
+f) Business Services
+- Company & ABN registration
+- Business loan support & document preparation
+- Admin & back-office support
+- Offshore outsourcing & staffing solutions
+- Accountancy partnerships (CPA access)
+
+All services are delivered in Australian dollars (AUD) + GST (Goods & Services Tax), unless otherwise specified in your contract.
+
+---
+
+3. SERVICE DELIVERY TIMEFRAMES
+
+Estimated delivery windows (working days):
+
+Service | Delivery Window
+NDIS Registration Package | 5-10 working days
+Support Coordination Training (Individual) | 2-3 working days
+Support Coordination Training (Team/Enterprise) | 3-5 working days
+Website Development (Starter) | 10-15 working days
+Website Development (Pro) | 15-25 working days
+Website Development (Enterprise) | Custom (quoted)
+Software Automation (Starter) | 7-14 working days
+Software Automation (Pro) | 14-21 working days
+Accountancy Setup | 3-5 working days
+Bookkeeping (monthly) | By 5th of following month
+BAS Lodgement | Before ATO deadline
+
+Delivery dates are estimates only. We will communicate any delays promptly. Custom or complex projects may require extended timelines (communicated upfront).
+
+---
+
+4. PRICING & PAYMENT TERMS
+
+a) Pricing
+- All prices are in Australian Dollars (AUD)
+- Prices exclude GST (10%), which will be added at checkout
+- Prices are valid for 30 days from quotation date
+- Custom quotes remain valid for 14 days
+
+b) Payment Methods
+- Credit/Debit Card (Visa, Mastercard) via Stripe
+- Bank Transfer (quoted on request)
+- Subscription Plans (monthly or annual billing)
+
+c) Payment Processing
+- Payments are processed securely through Stripe
+- We do not store full credit card details; Stripe handles all payment data
+- Stripe's PCI-DSS compliance ensures cardholder data security
+- Invoices are issued automatically upon payment
+
+d) Invoicing & Billing
+- Monthly invoices for subscription services
+- Per-project invoices for one-time services
+- Invoices are emailed to your registered address
+- Payment is due upon receipt (Net 0 unless agreed otherwise)
+- Late payment interest may apply (as per contract)
+
+e) Currency & Exchange Rates
+- All pricing is in AUD
+- International payments will be converted at Stripe's current exchange rate
+- We are not responsible for currency fluctuations
+
+---
+
+5. PAYMENT AUTHORIZATION & LIABILITY
+
+By submitting payment information, you authorize us to:
+- Charge your payment method for services selected
+- Store your email address and transaction details (invoice records only)
+- Send payment receipts and invoice notifications
+- Attempt payment recovery if a transaction fails (up to 3 attempts)
+
+Stripe maintains full responsibility for:
+- Card data encryption and storage
+- Fraud prevention and chargeback handling
+- Secure payment transmission
+- PCI-DSS compliance
+
+We are not liable for:
+- Declined transactions or card rejections
+- Stripe processing errors (contact Stripe directly)
+- Lost or delayed payments
+- Bank fees or foreign exchange charges
+
+---
+
+6. INTELLECTUAL PROPERTY & DELIVERABLES OWNERSHIP
+
+a) Deliverables
+Upon full payment, you own all deliverables created specifically for you, including:
+- Custom NDIS registration documents and policies
+- Branded training materials and workbooks
+- Developed websites, software, and automation systems
+- Reports, analyses, and strategic plans
+- Logos, designs, and creative work
+
+b) Pre-Made Templates & Resources
+Training curriculum, policy templates, and standard resources remain our intellectual property but may be used by you for your business purposes.
+
+c) Client Testimonials & Case Studies
+We may use anonymized case studies or testimonials from our work with you for marketing purposes (unless you opt-out).
+
+d) Source Code & Access
+For website and software projects, you receive:
+- Full ownership and access to source code
+- Admin/owner access to all systems and accounts
+- Ability to transfer hosting or modify code as needed
+- Documentation of systems and integrations
+
+e) Restrictions
+You may not:
+- Resell our deliverables as your own service offering
+- Rebrand and redistribute training materials for commercial purposes
+- Claim ownership of our intellectual property
+
+---
+
+7. REFUND & CANCELLATION POLICY
+
+a) Refund Eligibility
+Refunds are available if:
+- Service was not delivered as agreed (major failure or non-delivery)
+- Deliverables do not meet the agreed scope after reasonable revision attempts
+- Payment was made in error or duplicate
+
+b) Non-Refundable Services
+The following are NON-REFUNDABLE due to digital nature and custom preparation:
+- Training materials and curriculum (once access granted)
+- Custom NDIS documents and policy packs (once generated)
+- Software and automation systems (once deployed)
+- Website hosting and domain registration (once activated)
+- Consultation and advisory services (once delivered)
+
+c) "Change of Mind" Refunds
+Refunds for change of mind are NOT available under Australian Consumer Law exceptions for digital goods. However, we may offer alternatives such as:
+- Service credits toward future work
+- Modification of deliverables to meet your needs
+- Deferral of service to a later date
+
+d) Cancellation Procedure
+To request a refund or cancellation:
+1. Contact us within 14 days of purchase: info@solbusinessconsultant.com.au
+2. Provide your order/enquiry ID and reason for cancellation
+3. Include evidence if claiming service failure
+4. We will respond within 5 business days
+
+e) Refund Processing
+- Approved refunds are processed within 7-10 business days
+- Refunds are credited to the original payment method
+- Transaction fees may apply (charged by Stripe or your bank)
+
+f) Recurring Subscriptions
+- Monthly subscriptions can be cancelled anytime with 7 days' notice
+- No refund for partial months used
+- Annual subscriptions: cancellation allowed within 30 days for full refund; after 30 days, non-refundable
+
+---
+
+8. DELIVERY & SERVICE MODIFICATIONS
+
+a) Delivery Method
+Deliverables are provided via:
+- Secure download link (website, documents, software)
+- Email attachment (files under 25MB)
+- Cloud storage access (Dropbox, Google Drive, or custom portal)
+- Direct system access (for websites, software, portals)
+- Physical mail (if requested; additional postage cost applies)
+
+b) Service Modifications & Revisions
+Included revisions per package:
+- NDIS Registration: 2 revisions
+- Website Starter: 2 revisions | Pro: 5 revisions | Enterprise: Unlimited
+- Training Materials: 1 round of revisions
+- Custom Software: Quoted per project
+
+Additional revisions beyond included allowance: $150 per hour.
+
+c) Scope Creep & Additional Work
+If modifications expand beyond the original scope, we will:
+1. Notify you of the expanded scope
+2. Provide a revised quote for additional work
+3. Pause work until you authorize the additional cost
+
+---
+
+9. CONFIDENTIALITY & DATA HANDLING
+
+a) Your Information
+- All client information is kept confidential
+- Financial, business, and personal data is encrypted and secured
+- Information is accessed only by staff delivering your service
+- Information is NOT shared with third parties (except payment processors and legally required agencies)
+
+b) Our Intellectual Property
+- Our processes, methodologies, templates, and business methods are proprietary
+- You may not disclose our internal operations or strategies to competitors
+
+c) Non-Disclosure Agreement (NDA)
+If you require an NDA for sensitive projects, we will execute a separate NDA before commencing work.
+
+d) Information Security
+We maintain:
+- Encrypted file storage (AES-256)
+- Secure transmission protocols (TLS 1.2+)
+- Regular security audits
+- Access logs and monitoring
+- Backup and disaster recovery systems
+
+---
+
+10. LIABILITY & LIMITATION
+
+a) Service Level Guarantees
+We guarantee reasonable effort to deliver services on time and to agreed quality standards. However, unforeseen circumstances (technical issues, client delays, regulatory changes) may affect timelines.
+
+b) Limitations of Liability
+We are not liable for:
+- Indirect, incidental, or consequential damages
+- Loss of profits, revenue, or business opportunity
+- Business interruption or downtime
+- Inaccurate data provided by you
+- Third-party service failures (Stripe, hosting providers, etc.)
+- Regulatory changes affecting service delivery
+
+c) Maximum Liability
+Our total liability is limited to the amount you paid for the specific service in question.
+
+d) Professional Advice Disclaimer
+Services provided are based on current information and practices. We are not liable for:
+- Changes in tax law, NDIS regulations, or compliance requirements
+- Advice from third parties (accountants, lawyers, regulators)
+- Your decisions based on our recommendations
+- Audit failures or compliance issues arising from incomplete information provided by you
+
+---
+
+11. COMPLIANCE & REGULATORY
+
+a) Australian Consumer Law
+All services comply with Australian Consumer Law. You have consumer guarantees including:
+- Services provided with due care and skill
+- Goods (websites, training materials, documents) are of acceptable quality
+- Right to remedy if services fail to meet these standards
+
+b) NDIS Compliance
+If you purchase NDIS-related services, you acknowledge:
+- Documents and guidance align with current NDIS practice standards
+- Responsibility for final audit compliance rests with your organization
+- We provide guidance, not legal or compliance advice
+- Regulations may change between service delivery and audit submission
+
+c) Tax & Accounting Disclaimer
+Accounting and tax services are provided by qualified professionals but:
+- You should review all documents with your accountant or tax advisor
+- We provide information based on current law; tax laws change frequently
+- Final tax returns should be reviewed by an external accountant
+- We are not liable for tax penalties resulting from incomplete information you provide
+
+d) Website & Digital Services
+Websites, software, and digital services are provided "as is." We do not guarantee:
+- 100% uptime (we target 99% uptime)
+- Compatibility with all browsers or devices
+- Data recovery if not backed up by you
+- Protection against hacking (though we implement security best practices)
+
+---
+
+12. EXPORT RESTRICTIONS
+
+Our digital services are delivered online. If you are located outside Australia or accessing from outside Australia, note:
+- You are responsible for complying with your local laws regarding software, training, and digital imports
+- We cannot deliver physical goods internationally
+- International payment processing may incur currency conversion fees
+- Time zone differences may affect support response times
+
+---
+
+13. TERM & TERMINATION
+
+a) Service Term
+- One-time services are active from payment date to delivery completion
+- Subscription services are active from start date until cancellation
+- Annual contracts require 30-day notice to cancel (no refund after 30 days)
+
+b) Termination by Us
+We may terminate or suspend services if:
+- Payment is not received by due date (after 14 days notice)
+- You breach these Terms & Conditions materially
+- Service cannot be safely delivered due to technical or legal issues
+- Court order or regulatory action requires termination
+
+c) Termination by You
+- You may cancel anytime with written notice to info@solbusinessconsultant.com.au
+- Cancellation takes effect within 7 days of notice
+- Refund eligibility depends on service stage (see Refund Policy)
+
+d) Data Upon Termination
+Upon termination:
+- You retain access to your deliverables and documentation
+- We may delete your account data after 90 days (backup available for 12 months)
+- Subscription data (training materials, portals) access will be revoked
+
+---
+
+14. DISPUTE RESOLUTION & JURISDICTION
+
+a) Governing Law
+These Terms & Conditions are governed by the laws of Victoria, Australia.
+
+b) Disputes & Complaints
+If you have a complaint:
+1. Contact us within 30 days: info@solbusinessconsultant.com.au
+2. Include your order ID and detailed complaint description
+3. We will respond within 10 business days with a resolution or appeal process
+
+c) Escalation
+If unresolved, you may escalate to:
+- Australian Consumer Law (ACL) dispute resolution
+- Australian Securities & Investments Commission (ASIC) if financial services are involved
+- State Consumer Affairs body (Consumer Affairs Victoria for VIC residents)
+
+d) Legal Action
+If legal action becomes necessary, disputes shall be heard in the Victorian courts, Australia.
+
+---
+
+15. GENERAL PROVISIONS
+
+a) Entire Agreement
+These Terms & Conditions, along with your service contract and privacy policy, constitute the entire agreement between us regarding our services.
+
+b) Modifications to Terms
+We may update these Terms & Conditions at any time. Changes take effect upon posting to the website. Continued use of our services constitutes acceptance of updated terms.
+
+c) Severability
+If any provision of these terms is found invalid, the remaining provisions remain in effect.
+
+d) Waiver
+Failure to enforce any right or provision does not constitute waiver of that right or provision.
+
+e) Contact for Questions
+For questions about these Terms & Conditions:
+
+SOL Business Consultant Pty Ltd
+📧 Email: info@solbusinessconsultant.com.au
+📞 Phone: +61 460 003 494
+🌐 Website: www.solbusinessconsultant.com.au
+📍 Address: Glenroy VIC 3046, Australia
+ABN: 20 662 022 522
+
+---
+
+ACKNOWLEDGMENT
+
+By proceeding with purchase or service engagement, you confirm you have read, understood, and agree to these Terms & Conditions.
+
+Last Updated: June 2026
+Version 1.0

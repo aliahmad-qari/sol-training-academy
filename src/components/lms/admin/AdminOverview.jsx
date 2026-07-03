@@ -1,0 +1,233 @@
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { BookOpen, Users, Award, HelpCircle, TrendingUp, Video, Layers, CheckCircle, Activity, Clock, FileText, BarChart3, AlertCircle, ShieldCheck, ChevronRight, Building2, Mail } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { base44 } from "@/api/base44Client";
+import { format } from "date-fns";
+import NDISIntakeSummary from "./NDISIntakeSummary";
+
+const PIE_COLORS = ["#D97706", "#3B82F6", "#10B981", "#8B5CF6"];
+
+export default function AdminOverview({ courses, enrollments, quizAttempts, setActiveTab }) {
+  const [pendingAssignments, setPendingAssignments] = useState(0);
+  const [pendingDocs, setPendingDocs] = useState([]);
+
+  useEffect(() => {
+    base44.entities.AssignmentSubmission.filter({ status: "submitted" }).then(subs => {
+      setPendingAssignments(subs.length);
+    }).catch(() => {});
+    base44.entities.StudentDocument.filter({ status: "pending" }, "-created_date", 10).then(data => {
+      setPendingDocs(data || []);
+    }).catch(() => {});
+  }, []);
+
+  const uniqueStudents  = [...new Set(enrollments.map(e => e.user_id))].length;
+  const activeStudents  = [...new Set(enrollments.filter(e => e.status === "active").map(e => e.user_id))].length;
+  const completions     = enrollments.filter(e => e.status === "completed").length;
+  const certs           = enrollments.filter(e => e.certificate_issued).length;
+  const passRate        = quizAttempts.length > 0 ? Math.round((quizAttempts.filter(q => q.passed).length / quizAttempts.length) * 100) : 0;
+  const completionRate  = enrollments.length > 0 ? Math.round((completions / enrollments.length) * 100) : 0;
+  const newEnrollments  = enrollments.filter(e => {
+    const d = new Date(e.created_date);
+    const now = new Date();
+    return (now - d) < 30 * 24 * 60 * 60 * 1000; // last 30 days
+  }).length;
+
+  const kpis = [
+    { label: "Total Students",     value: uniqueStudents,     icon: Users,      color: "text-blue-600 bg-blue-50 border-blue-100",      tab: "students" },
+    { label: "Active Students",    value: activeStudents,     icon: Activity,   color: "text-green-600 bg-green-50 border-green-100",    tab: "students" },
+    { label: "New Enrollments",    value: newEnrollments,     icon: Layers,     color: "text-purple-600 bg-purple-50 border-purple-100", tab: "students" },
+    { label: "Completion Rate",    value: `${completionRate}%`,icon: BarChart3, color: "text-harvest bg-harvest/10 border-harvest/20",   tab: "analytics" },
+    { label: "Certificates Issued",value: certs,              icon: Award,      color: "text-emerald-600 bg-emerald-50 border-emerald-100",tab: "certificates" },
+    { label: "Pending Assignments",value: pendingAssignments, icon: FileText,   color: "text-amber-600 bg-amber-50 border-amber-100",    tab: "gradebook" },
+    { label: "Quiz Attempts",      value: quizAttempts.length,icon: HelpCircle, color: "text-rose-600 bg-rose-50 border-rose-100",       tab: "analytics" },
+    { label: "Quiz Pass Rate",     value: `${passRate}%`,     icon: TrendingUp, color: "text-teal-600 bg-teal-50 border-teal-100",       tab: "analytics" },
+  ];
+
+  // Level distribution for pie
+  const levelDist = [
+    { name: "Level 1", value: enrollments.filter(e => e.course_level === "level1").length },
+    { name: "Level 2", value: enrollments.filter(e => e.course_level === "level2").length },
+    { name: "Level 3", value: enrollments.filter(e => e.course_level === "level3").length },
+  ].filter(d => d.value > 0);
+
+  // Per course bar data
+  const barData = courses.slice(0, 6).map(c => ({
+    name: c.level?.replace("level", "L") || "—",
+    Enrolled: enrollments.filter(e => e.course_id === c.id).length,
+    Completed: enrollments.filter(e => e.course_id === c.id && e.status === "completed").length,
+  }));
+
+  // Recent enrollments
+  const recentEnrollments = [...enrollments]
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+    .slice(0, 6);
+
+  return (
+    <div className="space-y-6">
+      {/* Welcome banner */}
+      <div className="bg-ink rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+        <div className="flex-1">
+          <p className="text-harvest text-xs font-bold uppercase tracking-widest mb-1">SOL Business Consultant</p>
+          <h2 className="font-display font-bold text-2xl text-white mb-1">NDIS Training Academy — Admin</h2>
+          <p className="text-white/40 text-sm">Manage all students, courses and training content from one dashboard.</p>
+        </div>
+        <div className="flex gap-3 flex-wrap">
+          <button onClick={() => setActiveTab("students")}
+            className="bg-harvest hover:bg-harvest/90 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+            + Add Student
+          </button>
+          <button onClick={() => setActiveTab("courses")}
+            className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors border border-white/20">
+            + New Course
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-3">
+        {kpis.slice(0, 8).map((k, i) => (
+          <motion.button key={k.label}
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+            onClick={() => setActiveTab(k.tab)}
+            className={`bg-white rounded-xl border p-4 flex items-center gap-3 hover:shadow-md transition-all text-left ${k.color.split(" ").slice(2).join(" ")} hover:border-current`}>
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${k.color.split(" ").slice(0, 2).join(" ")}`}>
+              <k.icon className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-display font-bold text-xl text-ink leading-none">{k.value}</p>
+              <p className="text-[10px] text-slate_mist mt-0.5 leading-tight">{k.label}</p>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Bar chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-border/50 p-5">
+          <h3 className="font-display font-semibold text-ink mb-4">Enrollments vs Completions</h3>
+          {barData.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-slate_mist text-sm">No course data yet</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={barData} margin={{ left: -20 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="Enrolled"  fill="#D97706" radius={[4,4,0,0]} />
+                <Bar dataKey="Completed" fill="#10B981" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          <div className="flex gap-4 mt-2">
+            <span className="flex items-center gap-1.5 text-xs text-slate_mist"><span className="w-3 h-3 rounded-sm bg-harvest inline-block" /> Enrolled</span>
+            <span className="flex items-center gap-1.5 text-xs text-slate_mist"><span className="w-3 h-3 rounded-sm bg-green-500 inline-block" /> Completed</span>
+          </div>
+        </div>
+
+        {/* Pie chart */}
+        <div className="bg-white rounded-2xl border border-border/50 p-5">
+          <h3 className="font-display font-semibold text-ink mb-4">Enrollment by Level</h3>
+          {levelDist.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-slate_mist text-sm">No data yet</div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={levelDist} dataKey="value" cx="50%" cy="50%" outerRadius={65} innerRadius={30}>
+                    {levelDist.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-2 mt-2">
+                {levelDist.map((d, i) => (
+                  <div key={d.name} className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                    <span className="text-xs text-slate_mist flex-1">{d.name}</span>
+                    <span className="text-xs font-bold text-ink">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* NDIS Intake Summary + Unverified Docs */}
+      <div className="grid md:grid-cols-2 gap-5">
+        {/* Full NDIS intake summary card */}
+        <NDISIntakeSummary setActiveTab={setActiveTab} />
+
+        {/* Unverified Student Documents */}
+        {pendingDocs.length > 0 && (
+          <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-amber-100 bg-amber-50">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+                <h3 className="font-display font-semibold text-amber-900 text-sm">Unverified Documents</h3>
+                <span className="text-xs font-bold bg-amber-600 text-white px-2 py-0.5 rounded-full">{pendingDocs.length}</span>
+              </div>
+              <button onClick={() => setActiveTab("documents")} className="text-xs text-amber-600 hover:underline font-medium flex items-center gap-1">
+                Review All <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="divide-y divide-border/20">
+              {pendingDocs.map(doc => (
+                <div key={doc.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-bold flex-shrink-0">
+                    {(doc.user_name || "?")[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink truncate">{doc.user_name || "Unknown"}</p>
+                    <p className="text-xs text-slate_mist truncate">{doc.document_type?.replace(/_/g, " ")} — {doc.document_title || doc.file_name}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">Pending</span>
+                    <p className="text-[10px] text-slate_mist mt-1">{doc.created_date ? format(new Date(doc.created_date), "dd MMM") : ""}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Recent Enrollments */}
+      <div className="bg-white rounded-2xl border border-border/50 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/30">
+          <h3 className="font-display font-semibold text-ink">Recent Enrollments</h3>
+          <button onClick={() => setActiveTab("students")} className="text-xs text-harvest hover:underline">View All</button>
+        </div>
+        {recentEnrollments.length === 0 ? (
+          <div className="p-10 text-center text-slate_mist text-sm">No enrollments yet.</div>
+        ) : (
+          <div className="divide-y divide-border/20">
+            {recentEnrollments.map(e => (
+              <div key={e.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-harvest/10 flex items-center justify-center text-harvest text-xs font-bold flex-shrink-0">
+                  {(e.user_name || e.user_email || "?")[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ink truncate">{e.user_name || e.user_email || "Unknown"}</p>
+                  <p className="text-xs text-slate_mist truncate">{e.course_title}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden hidden sm:block">
+                    <div className="h-1.5 bg-harvest rounded-full" style={{ width: `${e.progress_percent || 0}%` }} />
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${e.status === "completed" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                    {e.status === "completed" ? "Done" : `${e.progress_percent || 0}%`}
+                  </span>
+                  <span className="text-[10px] text-slate_mist flex items-center gap-1 hidden md:flex">
+                    <Clock className="w-3 h-3" />{e.created_date ? new Date(e.created_date).toLocaleDateString("en-AU") : "—"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

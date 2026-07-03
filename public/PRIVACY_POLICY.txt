@@ -1,0 +1,213 @@
+PRIVACY POLICY
+SOL Business Consultant Pty Ltd
+ABN: 20 662 022 522
+Address: Glenroy VIC 3046, Australia
+Website: www.solbusinessconsultant.com.au
+Phone: +61 460 003 494
+Email: info@solbusinessconsultant.com.au
+
+Last Updated: June 2026
+
+---
+
+1. INTRODUCTION
+
+SOL Business Consultant Pty Ltd ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website (www.solbusinessconsultant.com.au) and use our services.
+
+We comply with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs). We are not affiliated with the NDIS Commission or any government agency.
+
+---
+
+2. INFORMATION WE COLLECT
+
+We collect personal and business information in the following categories:
+
+a) Personal Information
+- Full name
+- Email address
+- Phone number
+- Date of birth (if applicable)
+- ABN or ACN
+- Business address
+- Employer/company details
+
+b) Business & Company Information
+- Company name
+- Business registration details (ABN, ACN)
+- Industry type
+- Company size (number of employees)
+- Financial information (if provided for loan/accounting services)
+- Business address and contact details
+
+c) Payment & Financial Information
+- Credit/debit card details (processed securely via Stripe)
+- Payment transaction history
+- Billing address
+- Invoice details
+- Subscription plan information
+
+d) Service Delivery & Usage Information
+- Enquiry details submitted through intake forms
+- Service preferences and selections
+- Files and documents you upload (logos, briefs, policies, etc.)
+- Communication records (emails, calls, messages)
+- Support coordination training responses (if applicable)
+- NDIS registration documents and submissions
+- Compliance and audit information
+
+e) Website & Interaction Data
+- IP address and browser type
+- Device information and operating system
+- Pages visited and time spent on site
+- Referral source (where you came from)
+- Cookies and tracking identifiers
+- Search queries and interaction patterns
+- Customer support inquiries and feedback
+
+f) Marketing & Preference Data
+- Email preferences and subscription status
+- Communication opt-ins/opt-outs
+- Marketing consent (email, SMS, phone)
+- Newsletter subscriptions
+- Lead source and referral information
+
+---
+
+3. HOW WE USE YOUR INFORMATION
+
+We use the information we collect for the following purposes:
+
+- Service Delivery: To provide NDIS registration support, bookkeeping, tax planning, website development, software automation, training, compliance, and accounting services
+- Payment Processing: To process payments, invoices, and manage subscriptions via Stripe
+- Customer Support: To respond to enquiries, provide technical support, and follow up on service delivery
+- Compliance & Legal: To meet tax obligations, NDIS compliance, Australian Consumer Law, and regulatory requirements
+- Business Analytics: To understand service usage, improve offerings, and analyze business trends
+- Marketing & Communication: To send service updates, newsletters, promotional offers, and appointment reminders (with your consent)
+- Fraud Prevention: To detect and prevent unauthorized access, fraudulent transactions, and security threats
+- Document Generation: To create branded, personalized deliverables (policies, training materials, NDIS documents)
+- Audit & Internal Reviews: To maintain service quality, training compliance, and business operations
+
+---
+
+4. INFORMATION SHARING & DISCLOSURE
+
+We do NOT sell, trade, or rent your personal information to third parties.
+
+We may share information with:
+
+a) Service Providers
+- Stripe (payment processor) — credit card details only
+- Email providers (SendGrid, Resend) — for communications
+- Cloud hosting providers — for data storage
+- Accounting software (Xero, MYOB, QuickBooks) — if you authorize integration
+- NDIS Commission — only if required by law for registration/audit support
+- Australian Taxation Office (ATO) — for tax compliance and BAS lodgement
+- ASIC — for company registration services
+- Professional service providers (accountants, auditors, legal advisors)
+- Your designated contacts or representatives (with authorization)
+
+b) Legal & Regulatory Compliance
+- Government agencies (ATO, ASIC, NDIS Commission) — as required by law
+- Law enforcement — in response to valid legal requests
+- Court orders and subpoenas — when legally required
+
+c) Business Transfers
+- In the event of merger, acquisition, or business closure, your information may be transferred to the acquiring entity (we will notify you)
+
+---
+
+5. DATA SECURITY & ENCRYPTION
+
+We implement the following security measures:
+
+- End-to-End Encryption: All data transmitted between your device and our servers is encrypted using TLS 1.2+ protocol
+- Secure Payment Processing: Payment data is processed securely through Stripe's PCI-DSS compliant platform; we do not store full credit card details
+- Role-Based Access Control: Only authorized staff can access your information, with access limited to service delivery
+- Secure File Storage: Uploaded files (logos, documents, briefs) are stored on encrypted servers with restricted access
+- Regular Security Audits: We conduct periodic security reviews and penetration testing
+- Backup & Disaster Recovery: Your data is backed up securely and can be recovered in case of system failure
+- Password Protection: Administrative accounts are protected by strong passwords and multi-factor authentication
+- Compliance Logging: All access to sensitive data is logged and monitored for suspicious activity
+
+---
+
+6. COOKIES & TRACKING
+
+Our website uses cookies to:
+
+- Remember your login session
+- Track website performance and user behavior
+- Deliver personalized content and recommendations
+- Measure marketing effectiveness
+
+You can control cookies via your browser settings. Disabling cookies may limit website functionality.
+
+Third-party services (Google Analytics) may also place cookies to help us understand user behavior.
+
+---
+
+7. DATA RETENTION
+
+We retain your information for:
+
+- Active Clients: Duration of service + 7 years (for accounting/tax records per ATO requirements)
+- Inactive Clients: Up to 3 years after last contact, then securely deleted
+- Payment Records: 7 years (for tax and audit purposes)
+- Marketing Communications: Until you unsubscribe
+- Website Analytics: Up to 26 months (per Google Analytics default)
+
+You can request data deletion at any time (subject to legal retention obligations).
+
+---
+
+8. YOUR PRIVACY RIGHTS (AUSTRALIAN PRIVACY PRINCIPLES)
+
+Under the Privacy Act, you have the right to:
+
+a) Access Your Information
+Request a copy of all personal information we hold about you (free of charge)
+
+b) Correct Your Information
+Request correction of inaccurate or incomplete information
+
+c) Delete Your Information
+Request deletion of your information (where legally permissible)
+
+d) Opt-Out of Marketing
+Unsubscribe from marketing emails and promotional communications at any time
+
+e) Lodge a Complaint
+If you believe we have breached the Privacy Act, you can lodge a complaint with the Office of the Australian Information Commissioner (OAIC)
+
+To exercise any of these rights, contact us at:
+- Email: info@solbusinessconsultant.com.au
+- Phone: +61 460 003 494
+
+---
+
+9. THIRD-PARTY LINKS
+
+Our website contains links to third-party websites (Stripe, Google, LinkedIn, NDIS Commission). We are not responsible for the privacy practices of these external sites. We recommend reviewing their privacy policies independently.
+
+---
+
+10. CHANGES TO THIS PRIVACY POLICY
+
+We may update this Privacy Policy periodically to reflect changes in our practices or legal requirements. We will notify you of significant changes via email or website notice. Your continued use of our services constitutes acceptance of the updated policy.
+
+---
+
+11. CONTACT US
+
+If you have questions about this Privacy Policy or your personal information, contact us:
+
+SOL Business Consultant Pty Ltd
+📧 Email: info@solbusinessconsultant.com.au
+📞 Phone: +61 460 003 494
+🌐 Website: www.solbusinessconsultant.com.au
+📍 Address: Glenroy VIC 3046, Australia
+ABN: 20 662 022 522
+
+Office of the Australian Information Commissioner (OAIC)
+📧 Email: enquiries@oaic.gov.au
+🌐 Website: www.oaic.gov.au

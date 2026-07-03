@@ -1,0 +1,425 @@
+REFUND & CANCELLATION POLICY
+SOL Business Consultant Pty Ltd
+ABN: 20 662 022 522
+Address: Glenroy VIC 3046, Australia
+Website: www.solbusinessconsultant.com.au
+Phone: +61 460 003 494
+Email: info@solbusinessconsultant.com.au
+
+Last Updated: June 2026
+
+---
+
+1. REFUND & CANCELLATION OVERVIEW
+
+At SOL Business Consultant, we aim to deliver exceptional service. This Refund & Cancellation Policy outlines your rights and our procedures in accordance with Australian Consumer Law and best business practices.
+
+This policy applies to all services offered through our website and direct engagements.
+
+---
+
+2. GENERAL REFUND ELIGIBILITY
+
+Refunds are available in the following circumstances:
+
+✅ REFUND ELIGIBLE:
+- Service was NOT delivered as promised (major failure or non-delivery)
+- Deliverables do NOT meet the agreed specifications after reasonable revision attempts
+- Payment was charged in error or duplicated
+- Service was cancelled by us without cause
+
+❌ NON-REFUNDABLE (Digital Goods Exception):
+Under Australian Consumer Law, digital goods (once accessed) are generally non-refundable due to their nature. This includes:
+- NDIS training materials and curriculum (once download access granted)
+- Custom NDIS registration documents and policy packs (once generated)
+- Software systems and automation tools (once deployed or API keys issued)
+- Website hosting activation and custom website builds (once site goes live)
+- Bookkeeping software setup and data entry (once work commences)
+- Consultation and advisory services (once delivered)
+- Email templates, contract templates, and policy documents (once provided)
+
+❌ "CHANGE OF MIND" REFUNDS:
+Australian Consumer Law provides an exception for digital goods. We do NOT offer refunds simply because you changed your mind, but we may offer alternatives (see Section 3).
+
+---
+
+3. ALTERNATIVES TO REFUNDS (CHANGE OF MIND)
+
+If you've changed your mind about a service, we offer these alternatives instead of refund:
+
+a) Service Credit
+- Credit applied toward a future service of equal or greater value
+- Valid for 12 months from issue date
+- Can be used by you or transferred to a team member
+
+b) Modified Deliverables
+- If the deliverable didn't meet your expectations, we'll modify it at no additional cost
+- Up to 2 revision rounds included with most packages
+- Additional revisions billed at $150/hour
+
+c) Deferred Delivery
+- Postpone service to a later date (within 12 months)
+- No expiration on deferred services
+- Can transfer to a team member if organization changes
+
+d) Partial Service Refund (Discretionary)
+- For bundled services, we may refund the portion not yet commenced
+- Requires request within 14 days of purchase
+- Subject to management discretion and contract terms
+
+---
+
+4. SERVICE-SPECIFIC REFUND POLICIES
+
+A) NDIS REGISTRATION PACKAGES
+
+Service | Price | Refund Window | Refund Conditions
+Starter Package | $1,800 + GST | 14 days | Before documents sent; major scope failure
+Ultimate Package | $3,500 + GST | 14 days | Before documents sent; major scope failure
+Audit Add-On | $1,200 + GST | 7 days | Before audit commenced; service failure
+
+Refund Procedure:
+1. Contact info@solbusinessconsultant.com.au within 14 days with reason
+2. Provide order/enquiry ID
+3. If eligible, refund processed within 7-10 business days
+
+Once documents are delivered, refunds are not available (digital goods exception).
+
+---
+
+B) SUPPORT COORDINATION TRAINING
+
+Service | Price | Refund Window | Refund Conditions
+Individual Learner | $1,200 + GST | 7 days | Before course access granted
+Team / Organization | $3,800 + GST | 7 days | Before course access granted; organization-wide
+Enterprise / RTO | Custom | 14 days | Before system setup; custom quote only
+
+Refund Procedure:
+1. Request refund within 7 days of purchase
+2. Must have NOT accessed course materials
+3. Refund processed within 7-10 business days
+
+Once you've accessed the course portal or downloaded materials, refunds are non-refundable (digital goods exception).
+
+---
+
+C) WEBSITE DEVELOPMENT
+
+Service | Price | Refund Window | Conditions
+Starter Site | $1,500 + GST | 10 days | Before site launch; 50% after design approval
+Pro Site | $3,500 + GST | 10 days | Before site launch; 75% after design approval
+Enterprise | Custom | 14 days | Custom terms per contract
+
+Refund Timeline by Project Stage:
+- Before first design: 100% refund available
+- After design approval, before launch: 50% refund
+- After site launch (live domain): Non-refundable
+
+Once the website goes live (DNS configured, domain active), the service is considered delivered and non-refundable.
+
+---
+
+D) SOFTWARE & AUTOMATION
+
+Service | Price | Refund Window | Conditions
+Automation Starter | $2,500 + GST | 7 days | Before system deployment; major failure
+Automation Pro | $5,500 + GST | 7 days | Before deployment; unmet specifications
+Custom Build | Custom | 14 days | Custom contract terms
+
+Refund Timeline:
+- Before API keys/access issued: 100% refund
+- After system deployed but within 7 days: 50% refund (if major failure)
+- After 7 days of live use: Non-refundable
+
+Once your team has received access to the system, refunds are generally non-refundable.
+
+---
+
+E) ACCOUNTANCY & BOOKKEEPING
+
+Service | Billing | Refund Window | Conditions
+Monthly Bookkeeping | $350/month | 30 days | For first month only; before reconciliation
+Full Service Package | $990/month | 30 days | For first month only
+NDIS Financial Pack | $1,800/month | 30 days | For first month only
+
+Refund Procedure for Subscriptions:
+1. Cancel within 30 days of first payment for full refund
+2. Must not have accessed monthly reports or data files
+3. Refund processed within 7-10 business days
+
+After 30 days:
+- Monthly subscriptions: Non-refundable for that month (but can cancel anytime with 7 days' notice)
+- Annual subscriptions: 100% refund within 30 days; after 30 days, non-refundable
+
+---
+
+F) CUSTOM QUOTES & BESPOKE SERVICES
+
+For services with custom pricing:
+- Refund window: 14 days from purchase
+- Refund eligibility: Before work commences (quoted)
+- After work commenced: No refund (hourly rate may apply for partial work)
+- Service credits offered in lieu of refund
+
+---
+
+5. CANCELLATION PROCEDURES
+
+A) HOW TO CANCEL
+
+Email us at: info@solbusinessconsultant.com.au
+
+Include in your cancellation request:
+- Your full name and email address
+- Order/Enquiry ID or invoice number
+- Reason for cancellation
+- Requested resolution (refund, credit, or alternative)
+
+---
+
+B) CANCELLATION TIMELINES
+
+Type | Notice Required | Processing Time | Effective Date
+One-Time Service | Immediate | 5 business days | Within 7 days of request
+Monthly Subscription | 7 days | 7 business days | After 7-day notice
+Annual Subscription | 14 days | 10 business days | After 14-day notice
+Ongoing Support | 30 days | 10 business days | After 30-day notice
+
+---
+
+C) CANCELLATION BY SERVICE TYPE
+
+1) Monthly Subscriptions (Bookkeeping, Support Services)
+- Cancel anytime with 7 days' written notice
+- No refund for the current month (but can cease services)
+- Full refund available within 30 days of initial purchase
+- All data/reports remain accessible for 30 days post-cancellation
+
+2) Annual Subscriptions & Contracts
+- Cancellation within 30 days: 100% refund
+- Cancellation after 30 days: Non-refundable (service credit offered)
+- 60-day notice may be required for enterprise contracts
+- Data retention and handover process will be detailed
+
+3) Recurring Payments
+- Refund latest charge if made in error (within 7 days)
+- Cancel auto-renewal anytime via settings or email
+- Process all outstanding deliverables before cancellation takes effect
+
+---
+
+D) WORK IN PROGRESS (PARTIAL CANCELLATION)
+
+If cancellation occurs mid-project:
+- Work completed to date: Non-refundable
+- Work not yet commenced: Refundable (less completed work)
+- Deliverables in progress: Subject to completion or partial refund
+
+Example:
+- Website project 50% complete: 50% charge applies, 50% credited or refunded
+- Bookkeeping month half-done: 50% charge applies, 50% credited to next month
+
+---
+
+6. REFUND PROCESSING
+
+A) REFUND TIMELINE
+
+Once your refund is approved:
+- Stripe payments: 7-10 business days (processed to original card)
+- Bank transfers: 5-7 business days (processed to source account)
+- International cards: 10-15 business days (Stripe currency conversion may apply)
+
+Refund Status:
+- You will receive a refund confirmation email
+- Track your refund through your bank (your bank may take additional 2-3 business days)
+- Check credit card statement within 7-10 business days
+
+B) FAILED REFUNDS
+
+If your refund fails (invalid account, closed card, etc.):
+- We will attempt to contact you within 5 business days
+- You may request an alternative payment method (bank transfer)
+- We cannot reissue refund after 90 days; service credit will be offered instead
+
+---
+
+7. SERVICE FAILURES & GUARANTEED REMEDIES
+
+If we fail to deliver as promised, you are entitled to remedy:
+
+A) DELIVERY DELAYS
+- Delay of 5+ working days: Service credit equal to 5% of service cost
+- Delay of 10+ working days: Service credit equal to 10% of service cost
+- Delay of 20+ working days: Full refund or 25% service credit (your choice)
+
+B) QUALITY FAILURES
+- Deliverables don't meet agreed specifications: Up to 2 free revisions
+- After 2 revisions, no improvement: 25% refund or service credit
+- Major failure preventing use: Full refund
+
+C) PAYMENT FAILURES
+- Duplicate charge: Full refund of duplicate amount within 48 hours
+- Unauthorized charge: Immediate refund + dispute support
+
+---
+
+8. AUSTRALIAN CONSUMER LAW COMPLIANCE
+
+Your Consumer Guarantees:
+
+Under Australian Consumer Law, you have guarantees that:
+1. Services will be provided with due care and skill
+2. Goods (websites, documents) are of acceptable quality
+3. Goods match the description provided to you
+4. Services are completed within a reasonable time
+
+Your Rights if Services Fail:
+- Right to remedy (repair, replace, refund)
+- Right to compensation for loss or damage
+- Right to choose remedy (refund preferred if service fails entirely)
+- Right to complain to consumer affairs body
+
+Digital Goods Exception:
+- Once digital goods are delivered/accessed, they cannot be returned for refund
+- However, if goods are faulty or unfit for purpose, you retain remedies
+
+---
+
+9. DISPUTE RESOLUTION
+
+A) COMPLAINTS PROCEDURE
+
+Step 1: Contact Us (within 30 days of issue)
+Email: info@solbusinessconsultant.com.au
+Include: Order ID, complaint description, desired resolution
+
+Step 2: Initial Response (within 10 business days)
+- We will investigate your complaint
+- Offer resolution or explain our position
+- Request additional information if needed
+
+Step 3: Escalation (if unresolved)
+If unresolved after 10 days, you may escalate to:
+
+- Australian Consumer Law (Consumer Affairs Victoria)
+Phone: 1300 558 181
+Website: www.consumer.vic.gov.au
+
+- Australian Securities & Investments Commission (ASIC) — for payment disputes
+Website: www.asic.gov.au
+Hotline: 1300 300 630
+
+---
+
+B) MEDIATION & LEGAL ACTION
+
+If a dispute cannot be resolved:
+- We welcome mediation via a neutral third party
+- Consumer rights bodies can facilitate free dispute resolution
+- Small claims procedures available in your state (under $10,000 depending on state)
+- Full legal action can be pursued in civil court (jurisdiction: Victoria, Australia)
+
+---
+
+10. SPECIAL CIRCUMSTANCES
+
+A) TERMINATION FOR BREACH
+If you breach these terms (non-payment, misuse, legal violation), we may:
+- Suspend services immediately
+- Forfeit refund eligibility
+- Pursue payment recovery
+
+B) FORCE MAJEURE
+In unforeseen circumstances (natural disaster, pandemic, government action), we may:
+- Delay or modify service delivery
+- Offer service credits instead of refund
+- Negotiate alternative arrangements
+
+C) INSOLVENCY & BUSINESS CHANGES
+If SOL Business Consultant becomes insolvent or closes:
+- You retain all non-digital deliverables (websites, documents)
+- Digital service access may be terminated
+- Refunds processed according to insolvency priority
+- You will be notified immediately
+
+---
+
+11. REFUND EXAMPLES
+
+Example 1: NDIS Registration Refund
+- You purchase Ultimate Package ($3,500 + GST)
+- Day 1: Payment made, work to commence
+- Day 5: You request cancellation
+- Result: Full refund available (before documents generated)
+- Processing: 7-10 business days
+
+Example 2: Website Project Refund
+- You order Pro Site ($3,500 + GST)
+- Day 10: Designs approved, site construction begins
+- Day 15: You request cancellation
+- Result: 50% refund available ($1,750 + GST, less GST on discount)
+- Processing: 7-10 business days
+
+Example 3: Bookkeeping Subscription Refund
+- You purchase Monthly Bookkeeping ($350/month)
+- Day 3: First month charged, no reconciliation yet
+- You request refund
+- Result: 100% refund for first month
+- Processing: 7-10 business days
+- Subsequent months: Cancel anytime with 7 days' notice; no refund for in-progress month
+
+Example 4: Change of Mind (No Refund Available)
+- You purchase Training ($1,200)
+- Day 2: You receive access to course portal
+- Day 5: You request refund (changed your mind)
+- Result: No refund available (digital goods accessed)
+- Alternative: Service credit ($1,200) toward different training or custom curriculum
+
+---
+
+12. FREQUENTLY ASKED QUESTIONS
+
+Q: Can I get a refund if I just changed my mind?
+A: No, not for digital goods once accessed (Australian Consumer Law exception). However, we offer service credits or modifications.
+
+Q: What's the refund timeline?
+A: 7-10 business days for most refunds, depending on payment method.
+
+Q: Can I cancel a monthly subscription?
+A: Yes, anytime with 7 days' notice. No refund for the current month.
+
+Q: What if the deliverable doesn't match the agreed scope?
+A: You're entitled to 2 free revisions. If still unmet, refund or credit applies.
+
+Q: Is there a restocking fee?
+A: No, we do not charge restocking fees.
+
+Q: Can I transfer credit to another person?
+A: Service credits can be transferred to a team member or colleague (with authorization).
+
+---
+
+13. CONTACT INFORMATION
+
+For Refund Requests or Cancellations:
+
+SOL Business Consultant Pty Ltd
+📧 Email: info@solbusinessconsultant.com.au
+📞 Phone: +61 460 003 494
+🌐 Website: www.solbusinessconsultant.com.au
+📍 Address: Glenroy VIC 3046, Australia
+ABN: 20 662 022 522
+
+Office Hours: Monday – Friday, 9:00 AM – 5:00 PM AEST
+Response Time: Within 2 business days
+
+---
+
+LAST UPDATED
+June 2026
+Version 1.0
+
+This policy is compliant with Australian Consumer Law and ACCC guidelines.
+
+For the latest version, visit: www.solbusinessconsultant.com.au/refund-policy
