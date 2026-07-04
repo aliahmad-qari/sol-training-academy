@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/api/uploadClient";
 import { Video, Search, Trash2, Play, Upload, ExternalLink, X, Save, Link, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,11 +48,11 @@ function UploadModal({ courses, onClose, onSave }) {
     setUploading(true);
     toast.info("Uploading video, please wait…");
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadFile({ file, kind: "video" });
       setVideoUrl(file_url);
       toast.success("Video uploaded successfully!");
     } catch (err) {
-      toast.error("Upload failed: " + err.message);
+      toast.error("Upload failed: " + (err.response?.data?.message || err.message));
     }
     setUploading(false);
   };

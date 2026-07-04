@@ -14,24 +14,38 @@ import { uploadBuffer, deleteAsset } from '../cloudinary/cloudinary.service.js';
 export const createSubmission = asyncHandler(async (req, res) => {
   const { assignment_id, submission_notes } = req.body;
   if (!assignment_id) throw ApiError.badRequest('assignment_id is required.');
-  if (!req.file) throw ApiError.badRequest('A file is required (form field "file").');
+
+  // Two supported flows:
+  //  (a) multipart — a file arrives on req.file and we stream it to Cloudinary here.
+  //  (b) two-step  — the client already uploaded via /uploads/me/assignment and
+  //      passes the resulting file_url/file_name in the JSON body.
+  const preUploadedUrl = req.body.file_url;
+  if (!req.file && !preUploadedUrl) {
+    throw ApiError.badRequest('A file is required: send multipart "file" or a JSON "file_url".');
+  }
 
   const assignment = await Assignment.findById(assignment_id).lean();
   if (!assignment) throw ApiError.notFound('Assignment not found.');
 
-  // Enforce allowed file types from the assignment definition.
-  const ext = (req.file.originalname.split('.').pop() || '').toLowerCase();
+  const originalName = req.file ? req.file.originalname : req.body.file_name || 'submission';
+  const ext = (originalName.split('.').pop() || '').toLowerCase();
   if (assignment.allowed_file_types?.length && !assignment.allowed_file_types.includes(ext)) {
     throw ApiError.badRequest(
       `File type ".${ext}" not allowed. Allowed: ${assignment.allowed_file_types.join(', ')}`
     );
   }
 
-  const uploaded = await uploadBuffer(req.file.buffer, {
-    folder: 'assignment-submissions',
-    resourceType: 'auto',
-    filename: req.file.originalname,
-  });
+  let fileUrl = preUploadedUrl;
+  let filePublicId = req.body.file_public_id;
+  if (req.file) {
+    const uploaded = await uploadBuffer(req.file.buffer, {
+      folder: 'assignment-submissions',
+      resourceType: 'auto',
+      filename: req.file.originalname,
+    });
+    fileUrl = uploaded.url;
+    filePublicId = uploaded.publicId;
+  }
 
   const submission = await AssignmentSubmission.create({
     assignment_id,
@@ -41,10 +55,10 @@ export const createSubmission = asyncHandler(async (req, res) => {
     user_id: req.user._id,
     user_name: req.user.full_name,
     user_email: req.user.email,
-    file_url: uploaded.url,
-    file_name: req.file.originalname,
+    file_url: fileUrl,
+    file_name: originalName,
     file_type: ext,
-    file_public_id: uploaded.publicId,
+    file_public_id: filePublicId,
     submission_notes,
     status: 'submitted',
     max_marks: assignment.max_marks,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Users, Award, HelpCircle, TrendingUp, Video, Layers, CheckCircle, Activity, Clock, FileText, BarChart3, AlertCircle, ShieldCheck, ChevronRight, Building2, Mail } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import { format } from "date-fns";
 import NDISIntakeSummary from "./NDISIntakeSummary";
 
@@ -13,12 +13,17 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
   const [pendingDocs, setPendingDocs] = useState([]);
 
   useEffect(() => {
-    base44.entities.AssignmentSubmission.filter({ status: "submitted" }).then(subs => {
-      setPendingAssignments(subs.length);
-    }).catch(() => {});
-    base44.entities.StudentDocument.filter({ status: "pending" }, "-created_date", 10).then(data => {
-      setPendingDocs(data || []);
-    }).catch(() => {});
+    // GET /api/v1/submissions?status=submitted  (admin sees all)
+    apiClient.get('/submissions?status=submitted&limit=200')
+      .then(res => setPendingAssignments((res.data?.data ?? []).length))
+      .catch(() => {});
+    // GET /api/v1/admin/overview returns pending doc count — or fall back to 0
+    apiClient.get('/admin/overview')
+      .then(res => {
+        // If backend exposes pending docs count in overview use it, otherwise skip
+        setPendingDocs([]); // Document verification list not yet exposed via API
+      })
+      .catch(() => {});
   }, []);
 
   const uniqueStudents  = [...new Set(enrollments.map(e => e.user_id))].length;

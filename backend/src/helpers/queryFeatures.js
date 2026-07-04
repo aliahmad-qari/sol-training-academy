@@ -21,7 +21,7 @@ export const buildQuery = (query = {}, opts = {}) => {
     allowedFilters = [],
     searchFields = [],
     defaultSort = '-createdAt',
-    maxLimit = 100,
+    maxLimit = 500,
   } = opts;
 
   // --- Pagination ---

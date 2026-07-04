@@ -178,13 +178,14 @@ export default function StudentDashboard() {
     setLoading(true);
     try {
       const [envsRes, crsRes, attemptsRes] = await Promise.all([
-        apiClient.get('/enrollments'),                  // auto-filters to current user
-        apiClient.get('/courses'),                      // public, returns published courses
-        apiClient.get('/quizzes/attempts/mine'),        // correct endpoint
+        apiClient.get('/enrollments?limit=200'),           // auto-filters to current user
+        apiClient.get('/courses?limit=200'),               // published courses only
+        apiClient.get('/quizzes/attempts/mine?limit=500'), // student's own attempts
       ]);
-      setEnrollments(envsRes.data?.data ?? []);
-      setCourses(crsRes.data?.data ?? []);
-      setQuizAttempts(attemptsRes.data?.data ?? []);
+      // All list endpoints return the array directly as data.data
+      setEnrollments(Array.isArray(envsRes.data?.data) ? envsRes.data.data : []);
+      setCourses(Array.isArray(crsRes.data?.data) ? crsRes.data.data : []);
+      setQuizAttempts(Array.isArray(attemptsRes.data?.data) ? attemptsRes.data.data : []);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {

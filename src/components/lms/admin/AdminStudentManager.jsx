@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -28,21 +28,30 @@ function AddEnrollmentModal({ courses, onClose, onSave }) {
   const save = async () => {
     if (!form.user_email || !form.course_id) { toast.error("Email and course are required"); return; }
     setSaving(true);
-    const course = courses.find(c => c.id === form.course_id);
-    await base44.entities.CourseEnrollment.create({
-      user_id: form.user_email, // use email as user_id since we don't have their real ID
-      user_email: form.user_email,
-      user_name: form.user_name,
-      course_id: form.course_id,
-      course_title: course?.title || "",
-      course_level: course?.level || "level1",
-      status: form.status,
-      progress_percent: 0,
-      completed_topic_ids: [],
-    });
-    toast.success("Student enrolled successfully!");
-    setSaving(false);
-    onSave(); onClose();
+    try {
+      // Search users by email using the search param (not a filter)
+      const usersRes = await apiClient.get(`/users?search=${encodeURIComponent(form.user_email)}`);
+      const users = usersRes.data?.data ?? [];
+      const foundUser = users.find(u =>
+        u.email?.toLowerCase() === form.user_email.toLowerCase()
+      );
+      if (!foundUser) {
+        toast.error("No account found for that email. The student must register first.");
+        setSaving(false);
+        return;
+      }
+      await apiClient.post('/enrollments', {
+        user_id: foundUser._id || foundUser.id,
+        course_id: form.course_id,
+      });
+      toast.success("Student enrolled successfully!");
+      onSave();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Enrollment failed.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import { format } from "date-fns";
 import { Building2, Tag, DollarSign, Users, ChevronRight, RefreshCw, Inbox } from "lucide-react";
 
@@ -26,8 +26,10 @@ export default function NDISIntakeSummary({ setActiveTab }) {
 
   const load = () => {
     setLoading(true);
-    base44.entities.Enquiry.filter({ service_type: "ndis_registration" }, "-created_date", 50)
-      .then(data => setItems(data || []))
+    // Support tickets with service_type ndis_registration, or use support-tickets endpoint
+    apiClient.get('/support-tickets?service_type=ndis_registration&limit=50')
+      .then(res => setItems(res.data?.data ?? []))
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   };
 
