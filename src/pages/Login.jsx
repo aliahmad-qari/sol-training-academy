@@ -1,17 +1,22 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [email, setEmail] = useState("");
+  // If coming from Register, the email is pre-filled and a success message is shown.
+  const fromRegister = location.state?.registeredEmail ?? "";
+  const successMessage = location.state?.message ?? "";
+
+  const [email, setEmail] = useState(fromRegister);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -23,20 +28,18 @@ export default function Login() {
     setLoading(true);
 
     const result = await login(email, password);
+    setLoading(false);
 
     if (result.success) {
-      // Route by role
-      const role = result.role;
-      if (role === "admin" || role === "team_member") {
-        navigate("/lms-admin");
+      // Route by role: admin/team_member → LMS Admin, everyone else → Student Dashboard
+      if (result.role === "admin" || result.role === "team_member") {
+        navigate("/lms-admin", { replace: true });
       } else {
-        navigate("/student-dashboard");
+        navigate("/student-dashboard", { replace: true });
       }
     } else {
       setError(result.error || "Invalid email or password. Please try again.");
     }
-
-    setLoading(false);
   };
 
   return (
@@ -52,7 +55,15 @@ export default function Login() {
         </>
       }
     >
-      {/* Error */}
+      {/* Success banner — shown after registration */}
+      {successMessage && (
+        <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          {successMessage}
+        </div>
+      )}
+
+      {/* Error banner */}
       {error && (
         <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -69,7 +80,7 @@ export default function Login() {
               id="email"
               type="email"
               autoComplete="email"
-              autoFocus
+              autoFocus={!fromRegister}
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -92,6 +103,7 @@ export default function Login() {
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
+              autoFocus={!!fromRegister}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

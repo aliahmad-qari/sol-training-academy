@@ -4,7 +4,10 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import {
+  Mail, Lock, User, Loader2, AlertCircle,
+  Eye, EyeOff, CheckCircle2,
+} from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function Register() {
@@ -34,15 +37,16 @@ export default function Register() {
 
     setLoading(true);
     const result = await register(fullName, email, password);
+    setLoading(false);
 
     if (result.success) {
-      // New accounts are always students — go straight to the dashboard
-      navigate("/student-dashboard");
+      // Account created — send to login. Pass the email so the field is pre-filled.
+      navigate("/login", {
+        state: { registeredEmail: email, message: "Account created! Please sign in." },
+      });
     } else {
       setError(result.error || "Registration failed. Please try again.");
     }
-
-    setLoading(false);
   };
 
   return (
@@ -58,7 +62,6 @@ export default function Register() {
         </>
       }
     >
-      {/* Error */}
       {error && (
         <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />

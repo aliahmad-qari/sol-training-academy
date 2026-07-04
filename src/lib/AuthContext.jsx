@@ -63,16 +63,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Register: POST /auth/register, store access token, fetch user.
+   * Register: POST /auth/register.
+   * Does NOT auto-login — the user is redirected to /login to sign in manually.
    * Returns { success: boolean, error?: string }
    */
   const register = async (full_name, email, password, phone) => {
     try {
-      const { data } = await apiClient.post('/auth/register', { full_name, email, password, phone });
-      const { user: newUser, accessToken } = data.data;
-      localStorage.setItem('sol_access_token', accessToken);
-      setUser(newUser);
-      setIsAuthenticated(true);
+      await apiClient.post('/auth/register', { full_name, email, password, phone });
+      // Intentionally do NOT store the token or set user state here.
+      // The user will be sent to /login to authenticate explicitly.
       return { success: true };
     } catch (error) {
       const msg =
