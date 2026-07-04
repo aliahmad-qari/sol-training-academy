@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import apiClient from "@/api/apiClient";
 import {
   BookOpen, Award, Settings, Play, CheckCircle, LogOut,
   Home, HelpCircle, Bell, LifeBuoy, ChevronRight, Menu, X, Clock,
@@ -88,7 +89,7 @@ const NAV_SECTIONS = [
 ];
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
-function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed }) {
+function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLogout }) {
   return (
     <aside className={`fixed left-0 top-0 h-full bg-slate-900 z-40 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
 
@@ -146,7 +147,7 @@ function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed }) {
 
       {/* Sign out */}
       <div className="p-3 border-t border-white/10">
-        <button onClick={() => base44.auth.logout()}
+        <button onClick={onLogout}
           title={collapsed ? "Sign Out" : undefined}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/40 hover:text-red-300 hover:bg-red-500/10 transition-all">
           <LogOut className="w-4 h-4 flex-shrink-0" />
@@ -159,7 +160,7 @@ function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed }) {
 
 /* ── Main ────────────────────────────────────────────────────────────────── */
 export default function StudentDashboard() {
-  const [user, setUser]                   = useState(null);
+  const { user, logout }              = useAuth();
   const [enrollments, setEnrollments]     = useState([]);
   const [courses, setCourses]             = useState([]);
   const [quizAttempts, setQuizAttempts]   = useState([]);
@@ -175,78 +176,75 @@ export default function StudentDashboard() {
 
   const loadData = async () => {
     setLoading(true);
-    const isAuthed = await base44.auth.isAuthenticated();
-    if (!isAuthed) {
-      base44.auth.redirectToLogin(window.location.pathname);
-      return;
+    try {
+      const [envsRes, crsRes, attemptsRes] = await Promise.all([
+        apiClient.get('/enrollments'),                  // auto-filters to current user
+        apiClient.get('/courses'),                      // public, returns published courses
+        apiClient.get('/quizzes/attempts/mine'),        // correct endpoint
+      ]);
+      setEnrollments(envsRes.data?.data ?? []);
+      setCourses(crsRes.data?.data ?? []);
+      setQuizAttempts(attemptsRes.data?.data ?? []);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
     }
-    const me = await base44.auth.me();
-    setUser(me);
-    const [envs, crs, attempts] = await Promise.all([
-      base44.entities.CourseEnrollment.filter({ user_id: me.id }),
-      base44.entities.Course.filter({ is_published: true }, "sort_order"),
-      base44.entities.QuizAttempt.filter({ user_id: me.id }),
-    ]);
-    setEnrollments(envs);
-    setCourses(crs);
-    setQuizAttempts(attempts);
-    setLoading(false);
   };
 
-  const handleEnroll = async (course, me) => {
-    const existing = await base44.entities.CourseEnrollment.filter({ user_id: me.id, course_id: course.id });
-    if (existing.length > 0) { openCourse(existing[0]); return; }
-    // Calculate expiry date from course access_duration_days
-    let expiryDate = null;
-    if (course.access_duration_days > 0) {
-      const exp = new Date();
-      exp.setDate(exp.getDate() + course.access_duration_days);
-      expiryDate = exp.toISOString().split("T")[0];
+  const handleEnroll = async (course) => {
+    const courseId = course._id || course.id;
+    const existing = enrollments.find(e => e.course_id === courseId);
+    if (existing) { openCourse(existing); return; }
+    try {
+      const res = await apiClient.post('/student/enroll', { course_id: courseId });
+      const enrollment = res.data?.data;
+      await loadData();
+      if (enrollment) openCourse(enrollment);
+    } catch (err) {
+      console.error('Enroll failed:', err);
     }
-    const enrollment = await base44.entities.CourseEnrollment.create({
-      user_id: me.id,
-      user_email: me.email,
-      user_name: me.full_name,
-      course_id: course.id,
-      course_level: course.level,
-      course_title: course.title,
-      status: "active",
-      progress_percent: 0,
-      completed_topic_ids: [],
-      ...(expiryDate ? { expiry_date: expiryDate } : {}),
-    });
-    await loadData();
-    openCourse({ ...enrollment, course_id: course.id, course_level: course.level, course_title: course.title });
   };
 
   const openCourse = async (enrollment) => {
     setActiveCourse(enrollment);
-    const [mods, tops] = await Promise.all([
-      base44.entities.CourseModule.filter({ course_id: enrollment.course_id }, "sort_order"),
-      base44.entities.CourseTopic.filter({ course_id: enrollment.course_id }, "sort_order"),
-    ]);
-    setModules(mods);
-    setTopics(tops);
-    setActiveTopicId(enrollment.last_topic_id || tops[0]?.id);
+    try {
+      const courseId = enrollment.course_id;
+      const [modsRes, topsRes] = await Promise.all([
+        apiClient.get(`/modules?course_id=${courseId}`),
+        apiClient.get(`/topics?course_id=${courseId}`),
+      ]);
+      const mods = modsRes.data?.data ?? [];
+      const tops = topsRes.data?.data ?? [];
+      setModules(mods);
+      setTopics(tops);
+      const lastId = enrollment.last_topic_id;
+      setActiveTopicId(lastId || tops[0]?._id || tops[0]?.id);
+    } catch (err) {
+      console.error('Failed to load course content:', err);
+      setModules([]);
+      setTopics([]);
+    }
   };
 
   const markTopicComplete = async (topicId, autoAdvance = true) => {
-    const completed = [...(activeCourse.completed_topic_ids || [])];
-    if (!completed.includes(topicId)) completed.push(topicId);
-    const pct      = Math.round((completed.length / topics.length) * 100);
-    const isDone   = pct === 100;
-    const updated  = {
-      completed_topic_ids: completed,
-      progress_percent: pct,
-      last_topic_id: topicId,
-      ...(isDone ? { status: "completed", completed_date: new Date().toISOString().split("T")[0], certificate_issued: true } : {}),
-    };
-    await base44.entities.CourseEnrollment.update(activeCourse.id, updated);
-    setActiveCourse(prev => ({ ...prev, ...updated }));
-    setEnrollments(prev => prev.map(e => e.id === activeCourse.id ? { ...e, ...updated } : e));
+    const enrollmentId = activeCourse._id || activeCourse.id;
+    try {
+      const res = await apiClient.patch(`/enrollments/${enrollmentId}/progress`, {
+        topic_id: topicId,
+        completed: true,
+      });
+      const updated = res.data?.data?.enrollment ?? {};
+      setActiveCourse(prev => ({ ...prev, ...updated }));
+      setEnrollments(prev => prev.map(e =>
+        (e._id || e.id) === enrollmentId ? { ...e, ...updated } : e
+      ));
+    } catch (err) {
+      console.error('Failed to mark topic complete:', err);
+    }
     if (autoAdvance) {
-      const idx = topics.findIndex(t => t.id === topicId);
-      if (idx < topics.length - 1) setActiveTopicId(topics[idx + 1].id);
+      const idx = topics.findIndex(t => (t._id || t.id) === topicId);
+      if (idx < topics.length - 1) setActiveTopicId(topics[idx + 1]._id || topics[idx + 1].id);
     }
   };
 
@@ -327,7 +325,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user}
-        collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+        collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} onLogout={logout} />
 
       <main className={`${ml} transition-all duration-300 min-h-screen`}>
         {/* Top header bar */}
@@ -585,7 +583,7 @@ function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, on
                       {course.price > 0 && <span className="font-semibold text-harvest">${course.price}</span>}
                     </div>
                     <div className="mt-auto">
-                      <Button onClick={() => onEnroll(course, user)}
+                      <Button onClick={() => onEnroll(course)}
                         className="w-full bg-harvest text-white gap-2 text-sm">
                         Enrol Now
                       </Button>

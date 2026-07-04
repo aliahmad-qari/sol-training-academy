@@ -51,10 +51,36 @@ import Checkout from '@/pages/Checkout';
 import PaymentSuccess from '@/pages/PaymentSuccess';
 import PaymentHistory from '@/pages/PaymentHistory';
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isAuthenticated, user } = useAuth();
+/**
+ * ProtectedRoute — must be logged in, otherwise → /login.
+ * Optionally restrict to specific roles.
+ */
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    return <Navigate to="/student-dashboard" replace />;
+  }
+  return children;
+};
 
-  // Show loading spinner while checking auth state on mount
+/**
+ * PublicOnlyRoute — if already logged in, redirect to the right dashboard.
+ */
+const PublicOnlyRoute = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+  if (isAuthenticated) {
+    const dest = (user?.role === 'admin' || user?.role === 'team_member')
+      ? '/lms-admin'
+      : '/student-dashboard';
+    return <Navigate to={dest} replace />;
+  }
+  return children;
+};
+
+const AuthenticatedApp = () => {
+  const { isLoadingAuth } = useAuth();
+
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white">
@@ -62,31 +88,6 @@ const AuthenticatedApp = () => {
       </div>
     );
   }
-
-  /**
-   * ProtectedRoute — must be logged in, otherwise → /login.
-   * Optionally restrict to specific roles (e.g. allowedRoles={['admin','team_member']}).
-   */
-  const ProtectedRoute = ({ children, allowedRoles }) => {
-    if (!isAuthenticated) return <Navigate to="/login" replace />;
-    if (allowedRoles && !allowedRoles.includes(user?.role)) {
-      return <Navigate to="/student-dashboard" replace />;
-    }
-    return children;
-  };
-
-  /**
-   * PublicOnlyRoute — if already logged in, redirect away from login/register.
-   */
-  const PublicOnlyRoute = ({ children }) => {
-    if (isAuthenticated) {
-      const dest = (user?.role === 'admin' || user?.role === 'team_member')
-        ? '/lms-admin'
-        : '/student-dashboard';
-      return <Navigate to={dest} replace />;
-    }
-    return children;
-  };
   return (
     <Routes>
       {/* ── Public routes ───────────────────────────────────────────── */}
