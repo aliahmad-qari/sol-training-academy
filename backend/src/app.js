@@ -35,32 +35,51 @@ app.use(
 );
 
 // --------------------------------------------------------------------------
-//  CORS — allow configured origins + all Vercel preview deployments.
+//  CORS — allow configured origins + all Vercel deployments.
 //  Credentials (cookies) require an explicit origin, never wildcard.
 // --------------------------------------------------------------------------
-const VERCEL_PREVIEW_RE = /^https:\/\/[\w-]+-[\w-]+\.vercel\.app$/;
+// Any *.vercel.app host (production alias AND preview builds). Broadened from
+// the old `-`-requiring preview pattern so the bare production alias
+// (https://sol-training-academy.vercel.app) is matched with certainty and
+// never depends on CLIENT_URL being set correctly on Render.
+const VERCEL_RE = /^https:\/\/[\w-]+\.vercel\.app$/;
+
+// Known production origins, hardcoded as a safety net in case the CLIENT_URL
+// env var is missing/misspelled on the host. env.clientOrigins is still honored.
+const STATIC_ALLOWED_ORIGINS = ['https://sol-training-academy.vercel.app'];
+
+const isAllowedOrigin = (origin) =>
+  env.clientOrigins.includes(origin) ||
+  STATIC_ALLOWED_ORIGINS.includes(origin) ||
+  VERCEL_RE.test(origin) ||
+  /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
 
 const corsOptions = {
   origin(origin, callback) {
     // Allow non-browser tools (curl / Postman / Render health-checks) with no Origin.
     if (!origin) return callback(null, true);
-
-    // Allow any configured explicit origin (e.g. your production Vercel URL).
-    if (env.clientOrigins.includes(origin)) return callback(null, true);
-
-    // Allow all Vercel preview-deploy URLs (*.vercel.app) so PR previews work.
-    if (VERCEL_PREVIEW_RE.test(origin)) return callback(null, true);
-
-    // Allow localhost on any port for local development.
-    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
-
-    return callback(new Error(`CORS: origin "${origin}" is not allowed.`));
+    // IMPORTANT: reject by returning `false`, NOT by throwing. A thrown error
+    // routes to the error handler, which sends a 500 with NO CORS headers —
+    // making a disallowed origin look identical to a server crash. Returning
+    // false lets `cors` respond cleanly without the ACAO header.
+    return callback(null, isAllowedOrigin(origin));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  // Authorization is required (Bearer token); the rest are safelisted or
+  // commonly sent by Axios/upload clients. multipart/form-data itself needs no
+  // special header here — the browser sets Content-Type with the boundary.
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  // Cache the preflight result for 24h so browsers don't re-OPTIONS every
+  // upload (also avoids preflight being affected by cold starts repeatedly).
+  maxAge: 86400,
+  optionsSuccessStatus: 204,
 };
 app.use(cors(corsOptions));
+// Answer ALL preflight OPTIONS with the same policy, before any auth / rate
+// limiting / body parsing can interfere with the handshake.
+app.options('*', cors(corsOptions));
 
 // --------------------------------------------------------------------------
 //  Body parsing (with sane size limits) & cookies
