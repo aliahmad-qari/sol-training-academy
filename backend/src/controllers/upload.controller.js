@@ -119,9 +119,11 @@ export const signUpload = asyncHandler((req, res) => {
   // These are the exact params that will be included in the upload request.
   // Cloudinary verifies the signature against these same values — any
   // mismatch (wrong folder, different resource_type) will reject the upload.
+  // IMPORTANT: resource_type goes in the upload URL, NOT in the signed params.
+  // Only params that appear in the FormData body are signed. Including
+  // resource_type here causes a signature mismatch → Cloudinary 401.
   const paramsToSign = {
     folder: fullFolder,
-    resource_type: config.resourceType,
     timestamp,
   };
 
@@ -136,6 +138,6 @@ export const signUpload = asyncHandler((req, res) => {
     apiKey: env.cloudinary.apiKey,
     cloudName: env.cloudinary.cloudName,
     folder: fullFolder,
-    resourceType: config.resourceType,
+    resourceType: config.resourceType, // used by frontend to build the URL only
   }, 'Cloudinary signature issued');
 });
