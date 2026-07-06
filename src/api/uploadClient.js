@@ -41,8 +41,14 @@ export async function uploadFile({ file, kind = "resource", onProgress } = {}) {
   form.append("file", file); // backend expects the field name "file"
 
   const { data } = await apiClient.post(path, form, {
-    // Let the browser set the multipart boundary; override the JSON default.
-    headers: { "Content-Type": "multipart/form-data" },
+    // Do NOT set Content-Type manually. When Axios receives a FormData object
+    // the browser (XHR/fetch) must generate the multipart boundary itself and
+    // inject it into the Content-Type header automatically, e.g.:
+    //   Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryXyz
+    // Overriding it here strips the boundary, making the server unable to parse
+    // the body — multer reads 0 bytes and rejects the request.
+    // We only delete the default JSON header so Axios doesn't send it instead.
+    headers: { 'Content-Type': undefined },
     timeout: 0, // videos can be large — disable the 15s default timeout
     onUploadProgress: (e) => {
       if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));

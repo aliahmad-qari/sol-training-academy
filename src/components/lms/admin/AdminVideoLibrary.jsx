@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import { uploadFile } from "@/api/uploadClient";
 import { Video, Search, Trash2, Play, Upload, ExternalLink, X, Save, Link, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,18 +23,28 @@ function getVideoThumb(url) {
 }
 
 function UploadModal({ courses, onClose, onSave }) {
-  const [form, setForm] = useState({ title: "", course_id: "", module_id: "", video_duration_mins: 5 });
-  const [modules, setModules] = useState([]);
+  const [form, setForm] = useState({
+    title: "",
+    course_id: "",
+    module_id: "",
+    video_duration_mins: 5,
+  });
+  const [modules, setModules]   = useState([]);
   const [videoUrl, setVideoUrl] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [videoTab, setVideoTab] = useState("file"); // "file" | "url"
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]     = useState(false);
 
   const loadModules = async (courseId) => {
     if (!courseId) return;
-    const mods = await base44.entities.CourseModule.filter({ course_id: courseId }, "sort_order");
-    setModules(mods);
+    try {
+      const res = await apiClient.get(`/modules?course_id=${courseId}`);
+      setModules(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch {
+      setModules([]);
+    }
   };
 
   const handleCourseChange = (v) => {
@@ -46,26 +56,33 @@ function UploadModal({ courses, onClose, onSave }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadProgress(0);
     toast.info("Uploading video, please wait…");
     try {
-      const { file_url } = await uploadFile({ file, kind: "video" });
+      const { file_url } = await uploadFile({
+        file,
+        kind: "video",
+        onProgress: (pct) => setUploadProgress(pct),
+      });
       setVideoUrl(file_url);
       toast.success("Video uploaded successfully!");
     } catch (err) {
       toast.error("Upload failed: " + (err.response?.data?.message || err.message));
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
     }
-    setUploading(false);
   };
 
   const save = async () => {
-    if (!form.title) { toast.error("Title is required"); return; }
-    if (!form.course_id) { toast.error("Please select a course"); return; }
-    if (!form.module_id) { toast.error("Please select a module"); return; }
-    if (!videoUrl) { toast.error("Please upload a video or paste a URL"); return; }
+    if (!form.title)    { toast.error("Title is required"); return; }
+    if (!form.course_id){ toast.error("Please select a course"); return; }
+    if (!form.module_id){ toast.error("Please select a module"); return; }
+    if (!videoUrl)      { toast.error("Please upload a video or paste a URL"); return; }
     setSaving(true);
     try {
-      const selectedCourse = courses.find(c => c.id === form.course_id);
-      await base44.entities.CourseTopic.create({
+      const selectedCourse = courses.find(c => (c._id || c.id) === form.course_id);
+      await apiClient.post("/topics", {
         ...form,
         type: "video",
         video_url: videoUrl,
@@ -76,6 +93,8 @@ function UploadModal({ courses, onClose, onSave }) {
       toast.success("Video topic created!");
       onClose();
       onSave();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save video topic.");
     } finally {
       setSaving(false);
     }
@@ -90,35 +109,55 @@ function UploadModal({ courses, onClose, onSave }) {
           <h3 className="font-display font-bold text-xl text-ink">Upload Video</h3>
           <button onClick={onClose} className="text-slate_mist hover:text-ink"><X className="w-5 h-5" /></button>
         </div>
+
         <div className="space-y-4">
           <div>
             <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Video Title *</Label>
-            <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Introduction to NDIS" />
+            <Input
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="e.g. Introduction to NDIS"
+            />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Course *</Label>
               <Select value={form.course_id} onValueChange={handleCourseChange}>
                 <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
                 <SelectContent>
-                  {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                  {courses.map(c => (
+                    <SelectItem key={c._id || c.id} value={c._id || c.id}>{c.title}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Module *</Label>
-              <Select value={form.module_id} onValueChange={v => setForm(f => ({ ...f, module_id: v }))} disabled={!modules.length}>
+              <Select
+                value={form.module_id}
+                onValueChange={v => setForm(f => ({ ...f, module_id: v }))}
+                disabled={!modules.length}
+              >
                 <SelectTrigger><SelectValue placeholder="Select module" /></SelectTrigger>
                 <SelectContent>
-                  {modules.map(m => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)}
+                  {modules.map(m => (
+                    <SelectItem key={m._id || m.id} value={m._id || m.id}>{m.title}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
+
           <div>
             <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Duration (mins)</Label>
-            <Input type="number" value={form.video_duration_mins} onChange={e => setForm(f => ({ ...f, video_duration_mins: Number(e.target.value) }))} />
+            <Input
+              type="number"
+              value={form.video_duration_mins}
+              onChange={e => setForm(f => ({ ...f, video_duration_mins: Number(e.target.value) }))}
+            />
           </div>
+
           <div>
             <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Video *</Label>
             {/* Tab switcher */}
@@ -132,12 +171,32 @@ function UploadModal({ courses, onClose, onSave }) {
                 <Youtube className="w-3.5 h-3.5" /> YouTube / URL
               </button>
             </div>
+
             {videoTab === "file" ? (
-              <label className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-xl py-6 cursor-pointer transition-colors ${uploading ? "opacity-60 pointer-events-none border-slate-200" : "border-harvest/40 hover:border-harvest hover:bg-harvest/5"}`}>
-                <Upload className="w-5 h-5 text-harvest" />
-                <span className="text-sm font-medium text-harvest">{uploading ? "Uploading…" : "Click to upload video file"}</span>
-                <input type="file" accept="video/*" className="hidden" onChange={handleFileUpload} disabled={uploading} />
-              </label>
+              <div>
+                <label className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-xl py-6 cursor-pointer transition-colors ${uploading ? "opacity-60 pointer-events-none border-slate-200" : "border-harvest/40 hover:border-harvest hover:bg-harvest/5"}`}>
+                  <Upload className="w-5 h-5 text-harvest" />
+                  <span className="text-sm font-medium text-harvest">
+                    {uploading ? `Uploading… ${uploadProgress}%` : "Click to upload video file"}
+                  </span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                  />
+                </label>
+                {/* Progress bar */}
+                {uploading && (
+                  <div className="mt-2 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-1.5 bg-harvest rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex gap-2">
@@ -147,28 +206,41 @@ function UploadModal({ courses, onClose, onSave }) {
                     placeholder="https://youtube.com/watch?v=... or https://youtu.be/..."
                     className="text-sm h-10"
                   />
-                  <Button type="button" onClick={() => { if (urlInput.trim()) { setVideoUrl(urlInput.trim()); } }}
-                    className="bg-harvest text-white h-10 px-4 text-xs flex-shrink-0">
+                  <Button
+                    type="button"
+                    onClick={() => { if (urlInput.trim()) setVideoUrl(urlInput.trim()); }}
+                    className="bg-harvest text-white h-10 px-4 text-xs flex-shrink-0"
+                  >
                     <Save className="w-3.5 h-3.5 mr-1" /> Save URL
                   </Button>
                 </div>
                 <p className="text-xs text-slate_mist">Supports YouTube, Vimeo, or any direct video URL.</p>
               </div>
             )}
+
             {videoUrl && (
               <div className="mt-2 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <Link className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
                 <p className="text-xs text-green-700 font-medium truncate flex-1">✓ {videoUrl}</p>
-                <button type="button" onClick={() => { setVideoUrl(""); setUrlInput(""); }} className="text-green-600 hover:text-green-800 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => { setVideoUrl(""); setUrlInput(""); }}
+                  className="text-green-600 hover:text-green-800 flex-shrink-0"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
           </div>
         </div>
+
         <div className="flex gap-3 mt-6">
           <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button onClick={save} disabled={saving || uploading} className="flex-1 bg-harvest text-white">
+          <Button
+            onClick={save}
+            disabled={saving || uploading}
+            className="flex-1 bg-harvest text-white"
+          >
             <Save className="w-4 h-4 mr-1.5" />{saving ? "Saving…" : "Save Video"}
           </Button>
         </div>
@@ -178,22 +250,29 @@ function UploadModal({ courses, onClose, onSave }) {
 }
 
 export default function AdminVideoLibrary({ courses }) {
-  const [topics, setTopics]         = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [search, setSearch]         = useState("");
+  const [topics, setTopics]             = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [search, setSearch]             = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
-  const [showUpload, setShowUpload] = useState(false);
+  const [showUpload, setShowUpload]     = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const all = await base44.entities.CourseTopic.filter({ type: "video" }, "sort_order");
-    setTopics(all);
-    setLoading(false);
+    try {
+      const res = await apiClient.get("/topics?type=video&limit=500");
+      setTopics(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch (err) {
+      console.error("Failed to load video topics:", err);
+      setTopics([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
 
-  const getCourse = (id) => courses.find(c => c.id === id);
+  const getCourse = (id) =>
+    courses.find(c => (c._id || c.id) === id);
 
   const filtered = topics.filter(t => {
     const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
@@ -202,9 +281,14 @@ export default function AdminVideoLibrary({ courses }) {
   });
 
   const deleteVideo = async (topic) => {
-    await base44.entities.CourseTopic.delete(topic.id);
-    toast.success("Video deleted.");
-    load();
+    if (!window.confirm(`Delete "${topic.title}"? This cannot be undone.`)) return;
+    try {
+      await apiClient.delete(`/topics/${topic._id || topic.id}`);
+      toast.success("Video deleted.");
+      setTopics(prev => prev.filter(t => (t._id || t.id) !== (topic._id || topic.id)));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Delete failed.");
+    }
   };
 
   const totalDuration = topics.reduce((s, t) => s + (t.video_duration_mins || 0), 0);
@@ -216,7 +300,7 @@ export default function AdminVideoLibrary({ courses }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
           <h2 className="font-display font-semibold text-lg text-ink">Video Library</h2>
-          <p className="text-sm text-slate_mist">All training videos across your courses. Platform total: <strong>237 videos</strong>.</p>
+          <p className="text-sm text-slate_mist">All training videos across your courses.</p>
         </div>
         <Button onClick={() => setShowUpload(true)} className="bg-harvest text-white gap-1.5 text-sm h-9">
           <Upload className="w-4 h-4" /> Upload Video
@@ -226,10 +310,10 @@ export default function AdminVideoLibrary({ courses }) {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
-          { label: "Platform Videos",  value: 237,                          color: "text-blue-600 bg-blue-50" },
-          { label: "In Database",       value: topics.length,                color: "text-indigo-600 bg-indigo-50" },
-          { label: "Total Duration",    value: `${hours}h ${mins}m`,         color: "text-green-600 bg-green-50" },
-          { label: "Avg Duration",      value: topics.length > 0 ? `${Math.round(totalDuration / topics.length)}m` : "—", color: "text-amber-600 bg-amber-50" },
+          { label: "Total Videos",   value: topics.length,                                                                   color: "text-blue-600 bg-blue-50" },
+          { label: "In Database",    value: topics.length,                                                                   color: "text-indigo-600 bg-indigo-50" },
+          { label: "Total Duration", value: `${hours}h ${mins}m`,                                                            color: "text-green-600 bg-green-50" },
+          { label: "Avg Duration",   value: topics.length > 0 ? `${Math.round(totalDuration / topics.length)}m` : "—",      color: "text-amber-600 bg-amber-50" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${s.color}`}>
@@ -247,24 +331,35 @@ export default function AdminVideoLibrary({ courses }) {
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate_mist" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search videos…" className="pl-9 h-9 text-sm" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search videos…"
+            className="pl-9 h-9 text-sm"
+          />
         </div>
         <Select value={courseFilter} onValueChange={setCourseFilter}>
-          <SelectTrigger className="w-52 h-9 text-sm"><SelectValue placeholder="All Courses" /></SelectTrigger>
+          <SelectTrigger className="w-52 h-9 text-sm">
+            <SelectValue placeholder="All Courses" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
-            {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+            {courses.map(c => (
+              <SelectItem key={c._id || c.id} value={c._id || c.id}>{c.title}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-2xl border border-border/50 p-12 text-center text-slate_mist text-sm">Loading videos…</div>
+        <div className="bg-white rounded-2xl border border-border/50 p-12 text-center text-slate_mist text-sm">
+          Loading videos…
+        </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-border p-16 text-center">
           <Video className="w-10 h-10 mx-auto mb-3 text-slate_mist/30" />
           <p className="font-display font-semibold text-ink mb-1">No videos found</p>
-          <p className="text-sm text-slate_mist">Add video topics to your courses via Course Management.</p>
+          <p className="text-sm text-slate_mist">Upload a video or add video topics via Course Management.</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-border/50 overflow-hidden">
@@ -282,7 +377,7 @@ export default function AdminVideoLibrary({ courses }) {
                   const course = getCourse(topic.course_id);
                   const thumb  = getVideoThumb(topic.video_url);
                   return (
-                    <tr key={topic.id} className="border-b border-border/20 hover:bg-slate-50 transition-colors">
+                    <tr key={topic._id || topic.id} className="border-b border-border/20 hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="w-16 h-10 rounded-lg overflow-hidden bg-slate-200 flex items-center justify-center flex-shrink-0">
                           {thumb
@@ -313,12 +408,14 @@ export default function AdminVideoLibrary({ courses }) {
                         ) : <span className="text-slate_mist/40 text-xs">No URL</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <Button size="sm" variant="outline" onClick={() => deleteVideo(topic)}
-                            className="h-7 w-7 p-0 text-destructive border-destructive/30 hover:bg-destructive/5">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteVideo(topic)}
+                          className="h-7 w-7 p-0 text-destructive border-destructive/30 hover:bg-destructive/5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -333,7 +430,11 @@ export default function AdminVideoLibrary({ courses }) {
       )}
 
       {showUpload && (
-        <UploadModal courses={courses} onClose={() => setShowUpload(false)} onSave={load} />
+        <UploadModal
+          courses={courses}
+          onClose={() => setShowUpload(false)}
+          onSave={load}
+        />
       )}
     </div>
   );
