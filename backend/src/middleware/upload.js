@@ -39,7 +39,7 @@ export const buildUploader = ({ maxSizeMb = 25, allowed = DEFAULT_EXTENSIONS } =
 // Common presets used by routes.
 export const uploadSingleFile = buildUploader({ maxSizeMb: 25 }).single('file');
 export const uploadImage = buildUploader({ maxSizeMb: 5, allowed: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }).single('file');
-export const uploadResource = buildUploader({ maxSizeMb: 100 }).single('file');
+export const uploadResource = buildUploader({ maxSizeMb: 200 }).single('file');
 
 /**
  * Dedicated course-video uploader.
