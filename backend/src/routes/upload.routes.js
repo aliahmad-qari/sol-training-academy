@@ -1,9 +1,39 @@
 import { Router } from 'express';
 import { uploadFile, uploadFileAsStudent } from '../controllers/upload.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
-import { uploadResource, uploadSingleFile, withMulter } from '../middleware/upload.js';
+import {
+  uploadResource,
+  uploadSingleFile,
+  uploadVideo,
+  normalizeSingleFile,
+  withMulter,
+} from '../middleware/upload.js';
 
 const router = Router();
+
+/**
+ * Dedicated course-video upload endpoint.
+ * POST /api/v1/uploads/video   (admin/team_member)
+ * multipart/form-data field "file" OR "video"
+ *
+ * Declared BEFORE '/:kind' so the literal "video" segment is not captured by
+ * the :kind param (which would route it through the 100 MB / mp4-only generic
+ * handler). 200 MB cap + full video-container allow-list live in uploadVideo.
+ * `kind` is forced to 'video' so the controller uses the course-videos folder
+ * and resource_type: 'video'.
+ */
+router.post(
+  '/video',
+  protect,
+  authorize('admin', 'team_member'),
+  withMulter(uploadVideo),
+  normalizeSingleFile,
+  (req, res, next) => {
+    req.params.kind = 'video';
+    next();
+  },
+  uploadFile
+);
 
 /**
  * Student-facing upload endpoint for compliance documents and request

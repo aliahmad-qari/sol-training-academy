@@ -17,7 +17,10 @@ export const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,          // send the httpOnly sol_refresh cookie
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15_000,
+  // 60s default so the FIRST request after a Render free-tier cold start
+  // (the backend can take ~30–50s to spin up) doesn't reject before the
+  // server is awake. File uploads override this to `timeout: 0` (no limit).
+  timeout: 60_000,
 });
 
 // ── Request interceptor — attach access token ───────────────────────────────

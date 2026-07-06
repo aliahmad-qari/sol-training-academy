@@ -12,6 +12,11 @@ const MB = 1024 * 1024;
 // Reasonable default allow-list covering assignments + resources.
 const DEFAULT_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'txt', 'csv', 'xlsx'];
 
+// Video containers the admin curriculum uploader accepts. The frontend input
+// uses accept="video/*", so anything beyond mp4 (e.g. .mov from iPhone/QuickTime,
+// .webm, .mkv) must be allowed here or multer's fileFilter rejects it with a 400.
+const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', 'avi', 'mkv', 'm4v', 'ogg', 'ogv'];
+
 const buildFileFilter = (allowed) => (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
   if (allowed.includes(ext)) return cb(null, true);
@@ -35,6 +40,31 @@ export const buildUploader = ({ maxSizeMb = 25, allowed = DEFAULT_EXTENSIONS } =
 export const uploadSingleFile = buildUploader({ maxSizeMb: 25 }).single('file');
 export const uploadImage = buildUploader({ maxSizeMb: 5, allowed: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }).single('file');
 export const uploadResource = buildUploader({ maxSizeMb: 100 }).single('file');
+
+/**
+ * Dedicated course-video uploader.
+ *  - 200 MB cap so large lesson videos don't trip LIMIT_FILE_SIZE (→ 400).
+ *  - Accepts the file under EITHER form field name: "file" (current frontend)
+ *    or "video" (defensive against a field-name mismatch → LIMIT_UNEXPECTED_FILE).
+ * Because .fields() yields req.files (keyed by field), pair it with
+ * normalizeSingleFile below so downstream controllers keep reading req.file.
+ */
+export const uploadVideo = buildUploader({ maxSizeMb: 200, allowed: VIDEO_EXTENSIONS }).fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'video', maxCount: 1 },
+]);
+
+/**
+ * Bridge .fields() output → req.file. Picks whichever of the accepted field
+ * names carried the upload so the rest of the pipeline is unchanged.
+ */
+export const normalizeSingleFile = (req, res, next) => {
+  if (!req.file && req.files) {
+    const picked = req.files.file?.[0] || req.files.video?.[0];
+    if (picked) req.file = picked;
+  }
+  next();
+};
 
 /**
  * Wraps a multer middleware so its errors become clean ApiErrors.
