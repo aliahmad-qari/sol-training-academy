@@ -1,47 +1,31 @@
 import { Router } from 'express';
-import { uploadFile, uploadFileAsStudent } from '../controllers/upload.controller.js';
+import { uploadFile, uploadFileAsStudent, signUpload } from '../controllers/upload.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import {
   uploadResource,
   uploadSingleFile,
-  uploadVideo,
-  normalizeSingleFile,
   withMulter,
 } from '../middleware/upload.js';
 
 const router = Router();
 
-/**
- * Dedicated course-video upload endpoint.
- * POST /api/v1/uploads/video   (admin/team_member)
- * multipart/form-data field "file" OR "video"
- *
- * Declared BEFORE '/:kind' so the literal "video" segment is not captured by
- * the :kind param (which would route it through the 100 MB / mp4-only generic
- * handler). 200 MB cap + full video-container allow-list live in uploadVideo.
- * `kind` is forced to 'video' so the controller uses the course-videos folder
- * and resource_type: 'video'.
- */
-router.post(
-  '/video',
+// ── Signed direct-to-Cloudinary upload (staff videos & large files) ─────────
+//
+// GET /api/v1/uploads/sign-cloudinary?kind=video   (admin / team_member)
+//
+// Returns a short-lived HMAC signature so the browser can POST the file
+// directly to Cloudinary's API without routing the bytes through Render.
+// Render never loads the binary into memory → no 512 MB OOM crash.
+// Must be declared BEFORE '/:kind' so "sign-cloudinary" isn't treated as a kind.
+router.get(
+  '/sign-cloudinary',
   protect,
   authorize('admin', 'team_member'),
-  withMulter(uploadVideo),
-  normalizeSingleFile,
-  (req, res, next) => {
-    req.params.kind = 'video';
-    next();
-  },
-  uploadFile
+  signUpload
 );
 
-/**
- * Student-facing upload endpoint for compliance documents and request
- * attachments (kinds restricted server-side to STUDENT_KIND_CONFIG).
- * Any authenticated user may call this. Declared BEFORE '/:kind' so that
- * the literal "me" segment is not swallowed by the :kind param.
- * 25 MB cap (uploadSingleFile) — no large video uploads on the student path.
- */
+// ── Student-facing upload (documents / attachments — ≤25 MB) ────────────────
+// Declared BEFORE '/:kind' so the literal "me" segment isn't captured by :kind.
 router.post(
   '/me/:kind',
   protect,
@@ -49,12 +33,9 @@ router.post(
   uploadFileAsStudent
 );
 
-/**
- * Generic staff upload endpoint for course resources, briefs, reading files,
- * thumbnails, and course videos. Student-facing assignment submission uploads
- * are handled by the submissions route (Module 10) so they attach to a record.
- * 100 MB cap (uploadResource) to accommodate course video files.
- */
+// ── Generic staff upload for non-video kinds (resource, thumbnail, reading) ──
+// Videos must use the signed direct-upload flow above — this route is
+// intentionally left for small binary assets only (≤200 MB via uploadResource).
 router.post(
   '/:kind',
   protect,

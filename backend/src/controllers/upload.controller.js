@@ -1,7 +1,9 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { sendCreated } from '../utils/ApiResponse.js';
+import { sendCreated, sendOk } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { uploadBuffer } from '../cloudinary/cloudinary.service.js';
+import { cloudinary, isCloudinaryConfigured } from '../cloudinary/cloudinary.config.js';
+import { env } from '../config/env.js';
 
 /**
  * Map a requested upload "kind" to a Cloudinary subfolder + resource type.
@@ -77,3 +79,63 @@ export const uploadFile = asyncHandler((req, res) => handleUpload(req, res, KIND
 export const uploadFileAsStudent = asyncHandler((req, res) =>
   handleUpload(req, res, STUDENT_KIND_CONFIG)
 );
+
+/**
+ * GET /api/v1/uploads/sign-cloudinary?kind=video   (admin / team_member)
+ *
+ * Issues a short-lived HMAC signature so the browser can POST a file
+ * DIRECTLY to Cloudinary's upload API — Render never loads the bytes into
+ * memory, permanently solving the 512 MB OOM crash on large video uploads.
+ *
+ * Security model:
+ *  - The signature is computed server-side using the Cloudinary API secret
+ *    (never exposed to the browser).
+ *  - The signature binds the exact folder, resource_type, and timestamp so
+ *    a replayed or tampered request is rejected by Cloudinary.
+ *  - Signatures expire after 1 hour (Cloudinary's default window).
+ *  - Only admin / team_member roles can request a signature (enforced by the
+ *    route-level authorize() middleware).
+ *
+ * Response (200):
+ *   { signature, timestamp, apiKey, cloudName, folder, resourceType }
+ *
+ * The frontend uses these to POST directly to:
+ *   https://api.cloudinary.com/v1_1/<cloudName>/<resourceType>/upload
+ */
+export const signUpload = asyncHandler((req, res) => {
+  if (!isCloudinaryConfigured()) {
+    throw ApiError.internal('Cloudinary is not configured on this server.');
+  }
+
+  // Resolve which folder and resource_type to use based on the requested kind.
+  const kind = req.query.kind || 'resource';
+  const config = KIND_CONFIG[kind];
+  if (!config) throw ApiError.badRequest(`Unknown upload kind "${kind}".`);
+
+  const timestamp = Math.round(Date.now() / 1000); // Unix seconds
+
+  const fullFolder = `${env.cloudinary.folder}/${config.folder}`.replace(/\/+/g, '/');
+
+  // These are the exact params that will be included in the upload request.
+  // Cloudinary verifies the signature against these same values — any
+  // mismatch (wrong folder, different resource_type) will reject the upload.
+  const paramsToSign = {
+    folder: fullFolder,
+    resource_type: config.resourceType,
+    timestamp,
+  };
+
+  const signature = cloudinary.utils.api_sign_request(
+    paramsToSign,
+    env.cloudinary.apiSecret
+  );
+
+  return sendOk(res, {
+    signature,
+    timestamp,
+    apiKey: env.cloudinary.apiKey,
+    cloudName: env.cloudinary.cloudName,
+    folder: fullFolder,
+    resourceType: config.resourceType,
+  }, 'Cloudinary signature issued');
+});
