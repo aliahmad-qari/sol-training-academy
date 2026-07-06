@@ -105,6 +105,21 @@ function restEntity(basePath, opts = {}) {
       for (const item of items) created.push(await api.create(item));
       return created;
     },
+
+    /**
+     * Bulk reorder — persist a new ordering in a SINGLE request.
+     * `items`: [{ id, sort_order, module_id? }, ...]
+     * Hits PATCH `${basePath}/reorder`; the backend does one bulkWrite and
+     * returns the freshly ordered records ({ modules } or { topics }).
+     */
+    async reorder(items = []) {
+      if (!Array.isArray(items) || items.length === 0) return [];
+      const res = await apiClient.patch(`${basePath}/reorder`, { items });
+      const data = unwrap(res) || {};
+      // Controllers return { modules } (modules) or { topics } (topics).
+      const list = data.modules || data.topics || [];
+      return normalizeList(list);
+    },
   };
 
   return { ...api, ...overrides };

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { X, Save, Plus, Trash2, Video, BookOpen, HelpCircle, FileText, Upload } from "lucide-react";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 const TYPE_CONFIG = {
@@ -35,8 +34,9 @@ function VideoFields({ form, setForm }) {
     if (!file) return;
     setUploading(true);
     toast.info("Uploading video…");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, video_url: file_url }));
+    const { file_url, publicId } = await base44.integrations.Core.UploadFile({ file, kind: "video" });
+    // Persist the Cloudinary public_id so the asset can be reclaimed on delete.
+    setForm(f => ({ ...f, video_url: file_url, video_public_id: publicId || f.video_public_id }));
     toast.success("Video uploaded!");
     setUploading(false);
   };
@@ -81,8 +81,13 @@ function ReadingFields({ form, setForm }) {
     if (!file) return;
     setUploading(true);
     toast.info("Uploading file…");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, reading_file_url: file_url, reading_file_name: file.name }));
+    const { file_url, publicId } = await base44.integrations.Core.UploadFile({ file, kind: "reading" });
+    setForm(f => ({
+      ...f,
+      reading_file_url: file_url,
+      reading_file_public_id: publicId || f.reading_file_public_id,
+      reading_file_name: file.name,
+    }));
     toast.success("File uploaded!");
     setUploading(false);
   };
@@ -226,8 +231,13 @@ function AssessmentFields({ form, setForm }) {
     if (!file) return;
     setUploading(true);
     toast.info("Uploading attachment…");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, assessment_file_url: file_url, assessment_file_name: file.name }));
+    const { file_url, publicId } = await base44.integrations.Core.UploadFile({ file, kind: "assignment_brief" });
+    setForm(f => ({
+      ...f,
+      assessment_file_url: file_url,
+      assessment_file_public_id: publicId || f.assessment_file_public_id,
+      assessment_file_name: file.name,
+    }));
     toast.success("Attachment uploaded!");
     setUploading(false);
   };

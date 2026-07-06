@@ -50,6 +50,9 @@ const courseTopicSchema = new Schema(
 
     // Video
     video_url: { type: String, trim: true },
+    // Cloudinary public_id for the uploaded video — retained so the asset can
+    // be reclaimed (cloudinary.uploader.destroy) when the topic/video changes.
+    video_public_id: { type: String, trim: true },
     video_duration_mins: { type: Number, min: 0 },
 
     // Shared rich content (video description or reading body)
@@ -57,6 +60,7 @@ const courseTopicSchema = new Schema(
 
     // Reading
     reading_file_url: { type: String, trim: true },
+    reading_file_public_id: { type: String, trim: true },
     reading_file_name: { type: String, trim: true },
     reading_duration_mins: { type: Number, min: 0 },
 
@@ -75,6 +79,7 @@ const courseTopicSchema = new Schema(
     assessment_due_days: { type: Number, min: 0 },
     assessment_max_marks: { type: Number, min: 0 },
     assessment_file_url: { type: String, trim: true },
+    assessment_file_public_id: { type: String, trim: true },
     assessment_file_name: { type: String, trim: true },
   },
   {

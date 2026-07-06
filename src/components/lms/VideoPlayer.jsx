@@ -107,6 +107,10 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         preload="metadata"
+        // Keep playback inline on iOS Safari instead of forcing native
+        // fullscreen — otherwise our custom controls + 80%-watched completion
+        // tracking are bypassed.
+        playsInline
       />
 
       {/* Big play overlay (shown when paused) */}
