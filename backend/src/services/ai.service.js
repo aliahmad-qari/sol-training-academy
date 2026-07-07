@@ -25,7 +25,7 @@ const getClient = () => {
     throw ApiError.internal('AI is not configured (GEMINI_API_KEY missing).');
   }
   if (!_client) {
-    _client = new GoogleGenerativeAI(env.gemini.apiKey);
+    _client = new GoogleGenerativeAI(env.gemini.apiKey, { apiVersion: 'v1' });
   }
   return _client;
 };
