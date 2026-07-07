@@ -17,6 +17,7 @@ import uploadRoutes from './upload.routes.js';
 import adminRoutes from './admin.routes.js';
 import studentRoutes from './student.routes.js';
 import analyticsRoutes from './analytics.routes.js';
+import aiRoutes from './ai.routes.js';
 
 /**
  * Central API v1 router. Every feature module is registered here.
@@ -41,5 +42,6 @@ router.use('/uploads', uploadRoutes);
 router.use('/admin', adminRoutes);
 router.use('/student', studentRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/ai', aiRoutes);
 
 export default router;

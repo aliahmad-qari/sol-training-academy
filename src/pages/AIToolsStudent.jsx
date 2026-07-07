@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { runStudentTool } from "@/api/aiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles, BookOpen, Brain, MessageSquare, Layers, Loader2,
-  ChevronRight, ArrowLeft, RefreshCw, Copy, CheckCircle, Lightbulb, Star,
+  Sparkles, Brain, MessageSquare, Layers, Loader2,
+  ChevronRight, ArrowLeft, RefreshCw, Copy, CheckCircle, Lightbulb,
   Upload, FileText, X, PenLine, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,10 +64,14 @@ function StudyBuddy() {
   const run = async () => {
     if (!topic.trim()) { toast.error("Please enter a topic."); return; }
     setLoading(true); setResult("");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a friendly tutor for a support coordination training student. Explain the following topic in ${level} terms with practical tips.\n\nTOPIC: ${topic}\n\nStructure your response as:\n1. Simple Explanation (2-3 paragraphs)\n2. Key Points (bullet list)\n3. Practical Tips (3-5 actionable tips)\n4. Remember This (one memorable takeaway)`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runStudentTool("studybuddy", { topic, level });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -115,29 +120,38 @@ function AssignmentFeedback() {
     setUploading(true);
     setUploadedFile(null);
     setDraft("");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: { type: "object", properties: { text: { type: "string" } } }
-    });
-    if (extracted.status === "success") {
-      const text = extracted.output?.text || JSON.stringify(extracted.output);
-      setDraft(text);
-      setUploadedFile({ name: file.name });
-      toast.success("File extracted successfully!");
-    } else {
-      toast.error("Could not read the file. Try pasting the text instead.");
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        mimeType: file.type,
+      });
+      if (extracted.status === "success") {
+        const text = extracted.output?.text || JSON.stringify(extracted.output);
+        setDraft(text);
+        setUploadedFile({ name: file.name });
+        toast.success("File extracted successfully!");
+      } else {
+        toast.error(extracted.error || "Could not read the file. Try pasting the text instead.");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not read the file. Try pasting the text instead.");
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   const run = async () => {
     if (!draft.trim()) { toast.error("Please upload a file or paste your draft first."); return; }
     setLoading(true); setResult("");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert academic assessor for a support coordination training course. Review this student's assignment draft and provide constructive feedback.\n\nASSIGNMENT INSTRUCTIONS (if provided): ${instructions || "General assignment"}\n\nSTUDENT DRAFT:\n${draft}\n\nProvide structured feedback:\n1. Overall Impression (1-2 sentences)\n2. Strengths (what they did well, bullet list)\n3. Areas to Improve (specific, actionable suggestions, bullet list)\n4. Structure & Clarity (brief comment)\n5. Recommended Next Steps (2-3 clear actions before submitting)`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runStudentTool("feedback", { instructions, draft });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -202,24 +216,25 @@ function CourseRecommender({ enrollments, quizAttempts, courses }) {
 
   const run = async () => {
     setLoading(true); setResult("");
-    const enrolledCourseIds = enrollments.map(e => e.course_id);
-    const summary = enrollments.map(e => ({
-      course: e.course_title,
-      progress: `${e.progress_percent || 0}%`,
-      status: e.status,
-    }));
-    const quizSummary = quizAttempts.slice(0, 20).map(a => ({
-      score: a.score_percent,
-      passed: a.passed,
-    }));
-    const avgScore = quizAttempts.length > 0
-      ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length)
-      : null;
-
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a learning advisor for SOL Training Academy (support coordination & NDIS training). Based on this student's data, recommend what they should study next.\n\nCURRENT ENROLLMENTS: ${JSON.stringify(summary)}\nQUIZ AVERAGE SCORE: ${avgScore ?? "no attempts yet"}%\nPASS RATE: ${quizAttempts.length > 0 ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100) : 0}%\n\nRespond with:\n1. Current Learning Summary (what stage they are at)\n2. Immediate Next Steps (what to focus on this week)\n3. Recommended Study Areas (topics they should deepen)\n4. If they are struggling (based on quiz scores) — specific remediation advice\n5. Long-term Pathway Recommendation`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const summary = enrollments.map(e => ({
+        course: e.course_title,
+        progress: `${e.progress_percent || 0}%`,
+        status: e.status,
+      }));
+      const avgScore = quizAttempts.length > 0
+        ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length)
+        : null;
+      const passRate = quizAttempts.length > 0
+        ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100)
+        : 0;
+      const res = await runStudentTool("recommender", { summary, avgScore, passRate });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -265,25 +280,14 @@ function FlashcardGenerator() {
   const run = async () => {
     if (!content.trim()) { toast.error("Paste some content first."); return; }
     setLoading(true); setCards([]); setCurrent(0); setFlipped(false);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Create exactly ${count} flashcards from this content. Each card should test a key concept.\n\nCONTENT:\n${content}`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          flashcards: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                front: { type: "string" },
-                back: { type: "string" },
-              }
-            }
-          }
-        }
-      }
-    });
-    setCards(res.flashcards || []); setLoading(false);
+    try {
+      const res = await runStudentTool("flashcards", { content, count });
+      setCards(res.flashcards || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (cards.length > 0) {
@@ -358,19 +362,17 @@ function AssignmentWriter() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
 
-  const TYPE_PROMPTS = {
-    brainstorm: `Generate a rich brainstorm with 8-10 ideas, angles, arguments and supporting points for this assignment topic. Include relevant NDIS/support coordination context where applicable.`,
-    outline: `Create a detailed assignment outline with introduction, 3-5 body sections (each with sub-points), and a conclusion. Include suggested word counts per section.`,
-    draft: `Write a solid first draft of an assignment on this topic. Structure it with an introduction, well-developed body paragraphs, and a conclusion. Use clear professional Australian English.`,
-  };
-
   const run = async () => {
     if (!topic.trim()) { toast.error("Please enter your assignment topic."); return; }
     setLoading(true); setResult("");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert academic writing assistant for a ${level === "level1" ? "Level 1 Foundation" : level === "level2" ? "Level 2 Professional" : "Level 3 Advanced"} support coordination training course in Australia.\n\nASSIGNMENT TOPIC: ${topic}\n\nTASK: ${TYPE_PROMPTS[type]}\n\nEnsure content is relevant to NDIS, disability support, and support coordination where appropriate.`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runStudentTool("writer", { topic, type, level });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -430,15 +432,14 @@ function ConceptExplainer() {
   const run = async () => {
     if (!concept.trim()) { toast.error("Please enter a concept to explain."); return; }
     setLoading(true); setResult("");
-    const styles = {
-      simple:   "Explain like I'm completely new to this topic. Use simple words, everyday analogies, and short sentences.",
-      story:    "Explain through a short story or real-life scenario that makes the concept easy to understand.",
-      detailed: "Give a thorough, detailed explanation with definitions, context, examples, and nuances.",
-    };
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a patient, expert tutor for NDIS and support coordination students in Australia.\n\nCONCEPT TO EXPLAIN: ${concept}\n\nSTYLE: ${styles[style]}\n\nStructure your response as:\n1. What It Is (clear, plain-language definition)\n2. Why It Matters (why students need to understand this)\n3. Real Example (a concrete scenario from NDIS/support coordination practice)\n4. Common Misconceptions (1-2 things people often get wrong)\n5. Remember This (one simple sentence summary)`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runStudentTool("explainer", { concept, style });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

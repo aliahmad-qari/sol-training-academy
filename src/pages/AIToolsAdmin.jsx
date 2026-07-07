@@ -1,10 +1,11 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { runAdminTool } from "@/api/aiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, FileText, BarChart3, Award, LifeBuoy, TrendingDown,
   HelpCircle, ChevronRight, ArrowLeft, Loader2, Copy, CheckCircle,
-  Users, BookOpen, AlertTriangle, Megaphone, ClipboardCheck, Layers, Upload, X
+  AlertTriangle, Megaphone, ClipboardCheck, Layers, Upload, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,10 +43,14 @@ function CourseContentWriter() {
   const run = async () => {
     if (!topicTitle.trim()) { toast.error("Enter a topic title."); return; }
     setLoading(true); setResult("");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert curriculum writer for SOL Training Academy, which provides NDIS and support coordination training in Australia.\n\nWrite a complete, detailed reading module for the following topic:\n\nTOPIC: ${topicTitle}\nCOURSE LEVEL: ${level === "level1" ? "Level 1 — Foundation" : level === "level2" ? "Level 2 — Professional" : "Level 3 — Advanced"}\nESTIMATED READING TIME: ${duration} minutes\n\nStructure the content as:\n1. Introduction (What this topic is about and why it matters)\n2. Key Concepts (detailed explanation with subheadings)\n3. Practical Application (real-world examples in NDIS/support coordination context)\n4. Case Study or Scenario (a brief relevant example)\n5. Summary & Key Takeaways (bullet points)\n6. Further Reflection Questions (2-3 thought-provoking questions)\n\nWrite in clear, professional Australian English. The content should be comprehensive enough for a ${duration}-minute read.`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runAdminTool("contentwriter", { topicTitle, level, duration });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -92,35 +97,37 @@ function StudentProgressSummariser({ enrollments, quizAttempts, courses }) {
 
   const run = async () => {
     setLoading(true); setResult("");
-    const uniqueStudents = [...new Set(enrollments.map(e => e.user_id))].length;
-    const completed = enrollments.filter(e => e.status === "completed").length;
-    const avgProgress = enrollments.length > 0
-      ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length)
-      : 0;
-    const passRate = quizAttempts.length > 0
-      ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100)
-      : 0;
-    const avgQuizScore = quizAttempts.length > 0
-      ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length)
-      : 0;
-
-    // Course-level breakdown
-    const courseBreakdown = courses.map(c => {
-      const cEnvs = enrollments.filter(e => e.course_id === c.id);
-      const cAttempts = quizAttempts.filter(a => a.course_id === c.id);
-      return {
-        title: c.title,
-        enrolled: cEnvs.length,
-        completed: cEnvs.filter(e => e.status === "completed").length,
-        avgProgress: cEnvs.length ? Math.round(cEnvs.reduce((s, e) => s + (e.progress_percent || 0), 0) / cEnvs.length) : 0,
-        quizPassRate: cAttempts.length ? Math.round((cAttempts.filter(a => a.passed).length / cAttempts.length) * 100) : null,
-      };
-    });
-
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an educational analytics expert. Write a clear, plain-English performance report for an LMS admin based on this data.\n\nOVERALL STATS:\n- Total students: ${uniqueStudents}\n- Total enrollments: ${enrollments.length}\n- Completed: ${completed}\n- Average progress: ${avgProgress}%\n- Quiz attempts: ${quizAttempts.length}\n- Overall pass rate: ${passRate}%\n- Average quiz score: ${avgQuizScore}%\n\nPER COURSE DATA:\n${JSON.stringify(courseBreakdown, null, 2)}\n\nWrite the report in sections:\n1. Executive Summary (2-3 sentences)\n2. Strengths (what's going well)\n3. Areas of Concern (what needs attention)\n4. Course-by-Course Insights\n5. Recommended Actions (3-5 concrete steps admin should take)\n\nUse plain English. Be specific about numbers. Avoid jargon.`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const uniqueStudents = [...new Set(enrollments.map(e => e.user_id))].length;
+      const completed = enrollments.filter(e => e.status === "completed").length;
+      const avgProgress = enrollments.length > 0
+        ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length)
+        : 0;
+      const passRate = quizAttempts.length > 0
+        ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100)
+        : 0;
+      const avgQuizScore = quizAttempts.length > 0
+        ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length)
+        : 0;
+      const courseBreakdown = courses.map(c => {
+        const cEnvs = enrollments.filter(e => e.course_id === c.id);
+        const cAttempts = quizAttempts.filter(a => a.course_id === c.id);
+        return {
+          title: c.title,
+          enrolled: cEnvs.length,
+          completed: cEnvs.filter(e => e.status === "completed").length,
+          avgProgress: cEnvs.length ? Math.round(cEnvs.reduce((s, e) => s + (e.progress_percent || 0), 0) / cEnvs.length) : 0,
+          quizPassRate: cAttempts.length ? Math.round((cAttempts.filter(a => a.passed).length / cAttempts.length) * 100) : null,
+        };
+      });
+      const overall = { uniqueStudents, enrollments: enrollments.length, completed, avgProgress, quizAttempts: quizAttempts.length, passRate, avgQuizScore };
+      const res = await runAdminTool("progressreport", { overall, courseBreakdown });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -160,10 +167,14 @@ function CertificateMessageGenerator() {
   const run = async () => {
     if (!studentName.trim() || !courseName.trim()) { toast.error("Enter student name and course name."); return; }
     setLoading(true); setResult("");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Write 3 different personalised certificate congratulations messages for a student who has completed a training course. Each message should be warm, professional, and inspiring.\n\nSTUDENT NAME: ${studentName}\nCOURSE: ${courseName}\nADDITIONAL DETAILS: ${details || "None"}\n\nFor each message provide:\n- Short version (1-2 sentences, for the certificate itself)\n- Medium version (3-4 sentences, for an email)\n- Formal version (1 paragraph, for official documentation)\n\nMake each feel personal and genuine, not generic.`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runAdminTool("certmessage", { studentName, courseName, details });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -201,10 +212,14 @@ function SupportTicketReply() {
   const run = async () => {
     if (!ticket.trim()) { toast.error("Paste the ticket message first."); return; }
     setLoading(true); setResult("");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a helpful support team member at SOL Training Academy (NDIS & support coordination training, Australia). Draft a professional, empathetic reply to this student support ticket.\n\nTICKET CATEGORY: ${category}\nSTUDENT MESSAGE:\n${ticket}\n\nWrite:\n1. Draft Reply — a complete, ready-to-send email reply (warm, professional, helpful)\n2. Key Points Addressed — bullet list of issues you responded to\n3. Any Follow-up Actions Suggested — if admin needs to do anything further\n\nTone: friendly, professional, helpful. Sign off as "SOL Training Academy Support Team".`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runAdminTool("ticketreply", { ticket, category });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -245,16 +260,21 @@ function QuizAnalyser({ quizAttempts, courses }) {
 
   const run = async () => {
     setLoading(true); setResult("");
-    const filtered = selectedCourse === "all" ? quizAttempts : quizAttempts.filter(a => a.course_id === selectedCourse);
-    const passRate = filtered.length > 0 ? Math.round((filtered.filter(a => a.passed).length / filtered.length) * 100) : 0;
-    const avgScore = filtered.length > 0 ? Math.round(filtered.reduce((s, a) => s + (a.score_percent || 0), 0) / filtered.length) : 0;
-    const failedAttempts = filtered.filter(a => !a.passed);
-    const failedAvg = failedAttempts.length > 0 ? Math.round(failedAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / failedAttempts.length) : 0;
-
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an educational data analyst. Analyse these quiz attempt patterns and identify which areas students are struggling with.\n\nDATA:\n- Total attempts: ${filtered.length}\n- Pass rate: ${passRate}%\n- Average score: ${avgScore}%\n- Failed attempts: ${failedAttempts.length}\n- Average score of failed attempts: ${failedAvg}%\n- Course filter: ${selectedCourse === "all" ? "All courses" : courses.find(c => c.id === selectedCourse)?.title || "Unknown"}\n\nProvide:\n1. Overall Performance Analysis\n2. Key Problem Areas (based on pass rates and score distributions)\n3. Student Struggles — what types of students are failing (high scorers who barely pass, consistently low scorers, etc.)\n4. Recommendations for Instructors (how to improve quiz results)\n5. Content Improvement Suggestions (what course content may need clarification)\n6. Action Plan (3 concrete steps to improve pass rates)`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const filtered = selectedCourse === "all" ? quizAttempts : quizAttempts.filter(a => a.course_id === selectedCourse);
+      const passRate = filtered.length > 0 ? Math.round((filtered.filter(a => a.passed).length / filtered.length) * 100) : 0;
+      const avgScore = filtered.length > 0 ? Math.round(filtered.reduce((s, a) => s + (a.score_percent || 0), 0) / filtered.length) : 0;
+      const failedAttempts = filtered.filter(a => !a.passed);
+      const failedAvg = failedAttempts.length > 0 ? Math.round(failedAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / failedAttempts.length) : 0;
+      const courseLabel = selectedCourse === "all" ? "All courses" : (courses.find(c => c.id === selectedCourse)?.title || "Unknown");
+      const stats = { total: filtered.length, passRate, avgScore, failedAttempts: failedAttempts.length, failedAvg, courseLabel };
+      const res = await runAdminTool("quizanalyser", { stats });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -325,16 +345,20 @@ function DropoutPredictor({ enrollments, quizAttempts, courses }) {
 
     setAtRisk(riskList);
 
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a student retention specialist for an online training academy. Based on this at-risk student data, provide retention recommendations.\n\nAT-RISK STUDENTS IDENTIFIED: ${riskList.length}\nCRITERIA USED: low progress, inactivity (days since last login), high quiz fail rate, expiry deadline approaching\n\nTOP AT-RISK CASES:\n${JSON.stringify(riskList.slice(0, 5).map(e => ({
+    try {
+      const res = await runAdminTool("dropout", { riskList: riskList.slice(0, 5).map(e => ({
         course: e.course_title,
         progress: `${e.progress_percent}%`,
         daysSinceActivity: e.daysSinceActivity,
         quizFailRate: `${e.failRate}%`,
         attempts: e.attempts,
-      })), null, 2)}\n\nProvide:\n1. Key Risk Patterns (what patterns do you see)\n2. Immediate Actions (what to do in next 24-48 hours)\n3. Outreach Message Template (a re-engagement email template)\n4. Structural Improvements (long-term changes to reduce dropout)\n5. Priority Order (who to contact first and why)`,
-    });
-    setResult(res); setLoading(false);
+      })) });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -396,45 +420,14 @@ function CourseOutlineGenerator() {
   const run = async () => {
     if (!topic.trim()) { toast.error("Enter a topic."); return; }
     setLoading(true); setResult(null);
-    const levelLabel = level === "level1" ? "Level 1 — Foundation" : level === "level2" ? "Level 2 — Professional" : "Level 3 — Advanced";
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert curriculum designer for SOL Training Academy (NDIS & support coordination training, Australia).\n\nGenerate a comprehensive, production-ready module outline for the following:\n\nTOPIC: ${topic}\nCOURSE LEVEL: ${levelLabel}\nNUMBER OF LESSONS: ${numLessons}\n\nFor each lesson provide:\n- A clear, engaging lesson title\n- Type (video / reading / quiz / assessment)\n- Estimated duration\n- 3–5 specific key points that students will learn (these are the core takeaways, not vague objectives)\n- A brief content description (what the lesson covers)\n- 2–3 suggested reading/resource links: real Australian NDIS-related resources, NDIS website pages, NDIS Quality and Safeguards Commission resources, or reputable academic/professional references. Include the resource title, author/source, and URL.\n\nAlso include module-level:\n- A compelling module title\n- A clear module overview description (2-3 sentences)\n- Total estimated duration\n- 3–5 overall module learning outcomes`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          module_title: { type: "string" },
-          module_description: { type: "string" },
-          estimated_total_duration: { type: "string" },
-          learning_outcomes: { type: "array", items: { type: "string" } },
-          lessons: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                lesson_number: { type: "number" },
-                title: { type: "string" },
-                type: { type: "string" },
-                duration: { type: "string" },
-                description: { type: "string" },
-                key_points: { type: "array", items: { type: "string" } },
-                reading_resources: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      title: { type: "string" },
-                      source: { type: "string" },
-                      url: { type: "string" },
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runAdminTool("outlinegenerator", { topic, level, numLessons });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -562,36 +555,38 @@ function StudentPerformanceAnalyser({ enrollments, quizAttempts, courses }) {
 
   const run = async () => {
     setLoading(true); setResult(""); setAtRisk([]);
-
-    const riskList = enrollments
-      .filter(e => e.status === "active")
-      .map(e => {
-        const attempts = quizAttempts.filter(a => a.user_id === e.user_id && a.course_id === e.course_id);
-        const failRate = attempts.length > 0 ? attempts.filter(a => !a.passed).length / attempts.length : 0;
-        const lastActivity = e.updated_date ? new Date(e.updated_date) : new Date(e.created_date);
-        const daysSince = Math.round((new Date() - lastActivity) / 86400000);
-        let risk = 0;
-        if ((e.progress_percent || 0) < 10) risk += 3;
-        else if ((e.progress_percent || 0) < 30) risk += 2;
-        if (daysSince > 30) risk += 3;
-        else if (daysSince > 14) risk += 2;
-        if (failRate > 0.5) risk += 2;
-        return { ...e, risk, daysSince, failRate: Math.round(failRate * 100), attempts: attempts.length };
-      })
-      .filter(e => e.risk >= 3)
-      .sort((a, b) => b.risk - a.risk)
-      .slice(0, 20);
-
-    setAtRisk(riskList);
-
-    const uniqueStudents = [...new Set(enrollments.map(e => e.user_id))].length;
-    const passRate = quizAttempts.length > 0 ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100) : 0;
-    const avgProgress = enrollments.length > 0 ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length) : 0;
-
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a student success analyst. Based on the LMS data below, write a clear report flagging at-risk students and providing actionable recommendations.\n\nOVERALL:\n- Students: ${uniqueStudents}, Enrollments: ${enrollments.length}, Avg Progress: ${avgProgress}%, Quiz Pass Rate: ${passRate}%\n\nAT-RISK FLAGGED: ${riskList.length} students\nTOP AT-RISK:\n${JSON.stringify(riskList.slice(0, 8).map(e => ({ name: e.user_name, course: e.course_title, progress: e.progress_percent + "%", daysInactive: e.daysSince, quizFailRate: e.failRate + "%" })), null, 2)}\n\nProvide:\n1. Summary of findings\n2. Key risk patterns observed\n3. Top 3 students who need immediate outreach (and why)\n4. Re-engagement email template\n5. Structural recommendations to reduce at-risk rates`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const riskList = enrollments
+        .filter(e => e.status === "active")
+        .map(e => {
+          const attempts = quizAttempts.filter(a => a.user_id === e.user_id && a.course_id === e.course_id);
+          const failRate = attempts.length > 0 ? attempts.filter(a => !a.passed).length / attempts.length : 0;
+          const lastActivity = e.updated_date ? new Date(e.updated_date) : new Date(e.created_date);
+          const daysSince = Math.round((new Date() - lastActivity) / 86400000);
+          let risk = 0;
+          if ((e.progress_percent || 0) < 10) risk += 3;
+          else if ((e.progress_percent || 0) < 30) risk += 2;
+          if (daysSince > 30) risk += 3;
+          else if (daysSince > 14) risk += 2;
+          if (failRate > 0.5) risk += 2;
+          return { ...e, risk, daysSince, failRate: Math.round(failRate * 100), attempts: attempts.length };
+        })
+        .filter(e => e.risk >= 3)
+        .sort((a, b) => b.risk - a.risk)
+        .slice(0, 20);
+      setAtRisk(riskList);
+      const uniqueStudents = [...new Set(enrollments.map(e => e.user_id))].length;
+      const passRate = quizAttempts.length > 0 ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100) : 0;
+      const avgProgress = enrollments.length > 0 ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length) : 0;
+      const overall = { uniqueStudents, enrollments: enrollments.length, avgProgress, passRate };
+      const atRiskPayload = riskList.slice(0, 8).map(e => ({ name: e.user_name, course: e.course_title, progress: e.progress_percent + "%", daysInactive: e.daysSince, quizFailRate: e.failRate + "%" }));
+      const res = await runAdminTool("performanceanalysis", { overall, atRisk: atRiskPayload });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -657,42 +652,37 @@ function AssignmentAutoGrader() {
     const ext = file.name.split(".").pop().toLowerCase();
     if (!["pdf","docx","txt","doc"].includes(ext)) { toast.error("Upload PDF, DOCX, or TXT only."); return; }
     setUploading(true); setUploadedFile(null); setSubmission("");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: { type: "object", properties: { text: { type: "string" } } }
-    });
-    if (extracted.status === "success") {
-      setSubmission(extracted.output?.text || "");
-      setUploadedFile({ name: file.name });
-      toast.success("File extracted!");
-    } else {
-      toast.error("Could not read file. Paste text instead.");
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        mimeType: file.type,
+      });
+      if (extracted.status === "success") {
+        setSubmission(extracted.output?.text || "");
+        setUploadedFile({ name: file.name });
+        toast.success("File extracted!");
+      } else {
+        toast.error(extracted.error || "Could not read file. Paste text instead.");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not read file. Paste text instead.");
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   const run = async () => {
     if (!submission.trim()) { toast.error("Please upload or paste the student submission."); return; }
     setLoading(true); setResult(null);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert assessor for a support coordination training course. Grade this student submission fairly and provide detailed feedback.\n\nASSIGNMENT INSTRUCTIONS: ${instructions || "General assignment — assess content quality, structure, and understanding."}\nMAXIMUM MARKS: ${maxMarks}\n\nSTUDENT SUBMISSION:\n${submission}`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          suggested_mark: { type: "number" },
-          percentage: { type: "number" },
-          grade: { type: "string" },
-          passed: { type: "boolean" },
-          overall_impression: { type: "string" },
-          strengths: { type: "array", items: { type: "string" } },
-          improvements: { type: "array", items: { type: "string" } },
-          detailed_feedback: { type: "string" },
-          recommendation: { type: "string" },
-        }
-      }
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runAdminTool("autograder", { submission, instructions, maxMarks });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -788,10 +778,14 @@ function AnnouncementWriter() {
   const run = async () => {
     if (!brief.trim()) { toast.error("Describe what you want to announce."); return; }
     setLoading(true); setResult("");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a professional communications writer for SOL Training Academy (NDIS & support coordination training, Australia). Write a polished announcement based on the brief below.\n\nBRIEF: ${brief}\nTONE: ${tone}\n\nWrite 3 versions:\n1. Short Version (2-3 sentences, for a banner or push notification)\n2. Standard Version (1 paragraph, for email or dashboard announcement)\n3. Detailed Version (2-3 paragraphs with context, actions required, and a friendly sign-off)\n\nMake each version feel professional, warm, and on-brand for an NDIS training academy.`,
-    });
-    setResult(res); setLoading(false);
+    try {
+      const res = await runAdminTool("announcementwriter", { brief, tone });
+      setResult(res);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "AI request failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

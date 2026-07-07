@@ -26,6 +26,7 @@
  */
 import apiClient from '@/api/apiClient';
 import { uploadFile as uploadToCloudinary } from '@/api/uploadClient';
+import { extractDocument } from '@/api/aiClient';
 
 /* ───────────────────────── helpers ───────────────────────── */
 
@@ -321,16 +322,40 @@ const Core = {
     }
   },
 
-  // The following were Base44-hosted AI/email integrations with no backend
-  // equivalent yet. Fail clearly rather than pretend to succeed.
+  // Email has no backend equivalent yet — fail clearly rather than pretend.
   async SendEmail() {
     throw new Error('Email sending is not available (no backend email integration yet).');
   },
+
+  /**
+   * DEPRECATED. AI now runs through dedicated, server-side feature routes
+   * (see `@/api/aiClient` → runStudentTool / runAdminTool). The old
+   * "send an arbitrary prompt + schema" surface is intentionally gone so no
+   * caller can ship raw prompts from the browser. Kept only to surface a clear
+   * error if any legacy code path still references it.
+   */
   async InvokeLLM() {
-    throw new Error('AI (InvokeLLM) is not available (no backend AI integration yet).');
+    throw new Error(
+      'InvokeLLM is deprecated. Use the AI tool routes via @/api/aiClient (runStudentTool / runAdminTool).'
+    );
   },
-  async ExtractDataFromUploadedFile() {
-    throw new Error('File data extraction is not available (no backend integration yet).');
+
+  /**
+   * ExtractDataFromUploadedFile({ file_url, mimeType }) → { status, output: { text } }.
+   * Preserves the original base44 contract (status 'success'|'error', output.text)
+   * so the assignment upload tools consume it unchanged. Backed by Gemini
+   * multimodal extraction on the server (POST /ai/extract).
+   */
+  async ExtractDataFromUploadedFile({ file_url, mimeType } = {}) {
+    try {
+      const { text } = await extractDocument({ file_url, mimeType });
+      return { status: 'success', output: { text } };
+    } catch (err) {
+      return {
+        status: 'error',
+        error: err?.response?.data?.message || err?.message || 'Extraction failed.',
+      };
+    }
   },
 };
 

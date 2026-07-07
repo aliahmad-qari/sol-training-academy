@@ -83,6 +83,13 @@ export const env = {
     folder: optional('CLOUDINARY_FOLDER', 'sol_training_academy'),
   },
 
+  // Google Gemini (AI tools). Kept `optional` so the server still boots
+  // without a key in dev; AI routes then return a clear "not configured" error.
+  gemini: {
+    apiKey: optional('GEMINI_API_KEY', ''),
+    model: optional('GEMINI_MODEL', 'gemini-1.5-flash'),
+  },
+
   company: {
     name: optional('COMPANY_NAME', 'SOL Business Consultant Pty Ltd'),
     abn: optional('COMPANY_ABN', ''),
