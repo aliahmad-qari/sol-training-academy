@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import { runAdminTool } from "@/api/aiClient";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
-import { Sparkles, X, Loader2, Save, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
+import { Sparkles, X, Loader2, Save, RefreshCw, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,90 +36,50 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
     if (!quizTitle.trim()) { toast.error("Please enter a quiz title."); return; }
 
     setGenerating(true);
-    const typeLabel = {
-      mcq: "multiple choice (4 options, 1 correct)",
-      true_false: "True/False",
-      mixed: "a mix of multiple choice and True/False",
-    }[questionType];
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert quiz creator for a training academy. Generate exactly ${numQuestions} ${typeLabel} quiz questions at ${difficulty} difficulty level based on the following content.
-
-CONTENT:
-${content}
-
-RULES:
-- Each question must be clear, unambiguous, and directly based on the content
-- For MCQ: provide exactly 4 options labeled A, B, C, D — only one is correct
-- For True/False: the answer must be clearly "True" or "False"
-- Include a brief explanation for why the correct answer is right
-- Make questions test understanding, not just memorization
-- Vary the questions across different parts of the content
-
-Return ONLY a JSON array, no extra text.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          questions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                type: { type: "string" },
-                question: { type: "string" },
-                options: { type: "array", items: { type: "string" } },
-                correct_index: { type: "number" },
-                explanation: { type: "string" },
-              }
-            }
-          }
+    try {
+      const result = await runAdminTool('quizgenerator', {
+        content,
+        numQuestions,
+        difficulty,
+        questionType,
+      });
+      const questions = (result.questions || []).map(q => {
+        if (q.type === "true_false") {
+          return { type: "true_false", question: q.question, correct_index: q.correct_index ?? 0, marks: 1, explanation: q.explanation || "" };
         }
-      }
-    });
-
-    // Normalise to CourseTopic quiz_questions format
-    const questions = (result.questions || []).map(q => {
-      if (q.type === "true_false") {
-        return {
-          type: "true_false",
-          question: q.question,
-          correct_index: q.correct_index ?? 0,
-          marks: 1,
-          explanation: q.explanation || "",
-        };
-      }
-      return {
-        type: "mcq",
-        question: q.question,
-        options: q.options || ["", "", "", ""],
-        correct_index: q.correct_index ?? 0,
-        marks: 1,
-        explanation: q.explanation || "",
-      };
-    });
-
-    setGeneratedQuestions(questions);
-    setStep("preview");
-    setGenerating(false);
+        return { type: "mcq", question: q.question, options: q.options || ["", "", "", ""], correct_index: q.correct_index ?? 0, marks: 1, explanation: q.explanation || "" };
+      });
+      setGeneratedQuestions(questions);
+      setStep("preview");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to generate questions. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const saveQuiz = async () => {
     setSaving(true);
-    const totalMarks = generatedQuestions.reduce((s, q) => s + (q.marks || 1), 0);
-    await base44.entities.CourseTopic.create({
-      type: "quiz",
-      title: quizTitle,
-      course_id: courseId,
-      module_id: moduleId || "",
-      sort_order: 0,
-      passing_marks: passingScore,
-      total_marks: totalMarks,
-      quiz_questions: generatedQuestions,
-    });
-    toast.success(`Quiz "${quizTitle}" saved with ${generatedQuestions.length} AI-generated questions!`);
-    setSaving(false);
-    onSave();
-    onClose();
+    try {
+      const totalMarks = generatedQuestions.reduce((s, q) => s + (q.marks || 1), 0);
+      await base44.entities.CourseTopic.create({
+        type: "quiz",
+        title: quizTitle,
+        course_id: courseId,
+        module_id: moduleId || "",
+        sort_order: 0,
+        passing_marks: passingScore,
+        total_marks: totalMarks,
+        quiz_questions: generatedQuestions,
+      });
+      toast.success(`Quiz "${quizTitle}" saved with ${generatedQuestions.length} AI-generated questions!`);
+      onSave();
+      onClose();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to save quiz. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const updateQuestion = (i, field, value) => {

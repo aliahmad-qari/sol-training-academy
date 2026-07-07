@@ -268,6 +268,36 @@ export const ADMIN_TOOLS = {
       }\n\nProvide:\n1. Overall Performance Analysis\n2. Key Problem Areas (based on pass rates and score distributions)\n3. Student Struggles — what types of students are failing (high scorers who barely pass, consistently low scorers, etc.)\n4. Recommendations for Instructors (how to improve quiz results)\n5. Content Improvement Suggestions (what course content may need clarification)\n6. Action Plan (3 concrete steps to improve pass rates)`,
   },
 
+  quizgenerator: {
+    mode: 'json',
+    buildPrompt: ({ content, numQuestions = 5, difficulty = 'medium', questionType = 'mcq' }) => {
+      const typeLabel = {
+        mcq: 'multiple choice (4 options, 1 correct)',
+        true_false: 'True/False',
+        mixed: 'a mix of multiple choice and True/False',
+      }[questionType] || 'multiple choice';
+      return `You are an expert quiz creator for a training academy. Generate exactly ${str(numQuestions)} ${typeLabel} quiz questions at ${str(difficulty)} difficulty level based on the following content.\n\nCONTENT:\n${str(content)}\n\nRULES:\n- Each question must be clear, unambiguous, and directly based on the content\n- For MCQ: provide exactly 4 options — only one is correct\n- For True/False: correct_index must be 0 (True) or 1 (False)\n- Include a brief explanation for why the correct answer is right\n- Vary the questions across different parts of the content`;
+    },
+    schema: {
+      type: 'object',
+      properties: {
+        questions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string' },
+              question: { type: 'string' },
+              options: { type: 'array', items: { type: 'string' } },
+              correct_index: { type: 'number' },
+              explanation: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+
   dropout: {
     mode: 'text',
     buildPrompt: ({ riskList = [] }) =>

@@ -64,7 +64,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
   const failed   = quizAttempts.length - passed;
   const passRate = Math.round((passed / quizAttempts.length) * 100);
   const avgScore = Math.round(
-    quizAttempts.reduce((s, q) => s + (q.total_questions > 0 ? (q.score / q.total_questions) * 100 : 0), 0) / quizAttempts.length
+    quizAttempts.reduce((s, q) => s + (q.score || 0), 0) / quizAttempts.length
   );
 
   const filtered = quizAttempts.filter(q => {
