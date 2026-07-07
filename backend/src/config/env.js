@@ -87,7 +87,7 @@ export const env = {
   // without a key in dev; AI routes then return a clear "not configured" error.
   gemini: {
     apiKey: optional('GEMINI_API_KEY', ''),
-    model: optional('GEMINI_MODEL', 'gemini-1.5-flash'),
+    model: optional('GEMINI_MODEL', 'gemini-2.0-flash'),
   },
 
   company: {
