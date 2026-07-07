@@ -83,11 +83,11 @@ export const env = {
     folder: optional('CLOUDINARY_FOLDER', 'sol_training_academy'),
   },
 
-  // Google Gemini (AI tools). Kept `optional` so the server still boots
+  // Groq AI. Kept `optional` so the server still boots
   // without a key in dev; AI routes then return a clear "not configured" error.
-  gemini: {
-    apiKey: optional('GEMINI_API_KEY', ''),
-    model: optional('GEMINI_MODEL', 'gemini-2.0-flash'),
+  groq: {
+    apiKey: optional('GROQ_API_KEY', ''),
+    model: optional('GROQ_MODEL', 'llama-3.3-70b-versatile'),
   },
 
   company: {

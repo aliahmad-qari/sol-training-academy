@@ -5,7 +5,7 @@ import { generateText, generateJSON, extractText } from '../services/ai.service.
 import { STUDENT_TOOLS, ADMIN_TOOLS } from '../services/ai.prompts.js';
 
 /**
- * ai.controller.js — dispatches AI tool requests to Gemini.
+ * ai.controller.js — dispatches AI tool requests to Groq.
  *
  * The frontend sends structured inputs (topic, level, ticket text, precomputed
  * stats) to /ai/student/:toolId or /ai/admin/:toolId. The prompt text and JSON
