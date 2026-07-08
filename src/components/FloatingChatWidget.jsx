@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { runChatAssistant } from "@/api/aiClient";
 import { Bot, X, Send, Minimize2, Maximize2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +10,14 @@ const QUICK_QUESTIONS = [
   "Tell me about your pricing",
   "I need help with bookkeeping",
 ];
+
+const GREETING = {
+  role: "assistant",
+  content: "Hi! I'm the SOL Assistant 👋 Ask me anything about our services, or pick a question below.",
+};
+
+const FALLBACK_ERROR =
+  "Sorry — I couldn't respond just now. Please try again, or call us on +61 460 003 494.";
 
 function TypingIndicator() {
   return (
@@ -31,58 +39,65 @@ function TypingIndicator() {
 export default function FloatingChatWidget() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [starting, setStarting] = useState(false);
   const [unread, setUnread] = useState(0);
   const bottomRef = useRef(null);
-  const unsubRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const initConversation = async () => {
-    if (conversation) return;
-    setStarting(true);
-    const conv = await base44.agents.createConversation({
-      agent_name: "sol_assistant",
-      metadata: { name: "Widget Chat" },
-    });
-    setConversation(conv);
-    setMessages(conv.messages || []);
-    unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
-      setMessages(data.messages || []);
-      if (!open) setUnread((n) => n + 1);
-    });
-    setStarting(false);
-  };
-
   const handleOpen = () => {
     setOpen(true);
     setUnread(0);
-    initConversation();
   };
 
   const handleClose = () => setOpen(false);
 
-  useEffect(() => {
-    return () => { if (unsubRef.current) unsubRef.current(); };
-  }, []);
+  const reset = () => {
+    setMessages([]);
+    setInput("");
+    setLoading(false);
+  };
 
+  /**
+   * Stateless chat: we keep the running message array in React state and send
+   * the recent turns to the backend, which forwards them to Groq and returns a
+   * single reply. No base44.agents, no streaming subscription — so there is no
+   * `undefined.createConversation` crash, and every failure is caught below.
+   */
   const sendMessage = async (text) => {
-    const msg = text || input.trim();
-    if (!msg || loading || !conversation) return;
+    const msg = (text || input).trim();
+    if (!msg || loading) return;
+
+    const nextHistory = [...messages, { role: "user", content: msg }];
+    setMessages(nextHistory);
     setInput("");
     setLoading(true);
-    await base44.agents.addMessage(conversation, { role: "user", content: msg });
-    setLoading(false);
+
+    try {
+      const reply = await runChatAssistant(
+        nextHistory.map(({ role, content }) => ({ role, content }))
+      );
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      if (!open) setUnread((n) => n + 1);
+    } catch (err) {
+      const apiMsg = err?.response?.data?.message;
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: apiMsg || FALLBACK_ERROR, isError: true },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const panelH = expanded ? "h-[600px]" : "h-[460px]";
   const panelW = expanded ? "w-[420px]" : "w-[360px]";
+
+  const shownMessages = messages.length === 0 ? [] : messages;
 
   return (
     <div className="fixed right-4 bottom-8 z-50 flex flex-col items-end gap-3">
@@ -112,6 +127,9 @@ export default function FloatingChatWidget() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button onClick={reset} className="text-white/40 hover:text-white transition-colors" title="New chat">
+                  <RefreshCcwIcon />
+                </button>
                 <button onClick={() => setExpanded((e) => !e)} className="text-white/40 hover:text-white transition-colors">
                   {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
@@ -123,18 +141,13 @@ export default function FloatingChatWidget() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50">
-              {starting ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="w-5 h-5 border-2 border-harvest border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : messages.length === 0 ? (
+              {shownMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-2">
                   <div className="w-12 h-12 rounded-2xl bg-harvest/10 flex items-center justify-center">
                     <Bot className="w-6 h-6 text-harvest" />
                   </div>
                   <div>
-                    <p className="font-display font-semibold text-ink text-sm mb-1">Hi! I'm the SOL Assistant 👋</p>
-                    <p className="text-slate_mist text-xs">Ask me anything about our services or pick a question below:</p>
+                    <p className="font-display font-semibold text-ink text-sm mb-1">{GREETING.content}</p>
                   </div>
                   <div className="grid grid-cols-1 gap-1.5 w-full">
                     {QUICK_QUESTIONS.map((q) => (
@@ -150,7 +163,7 @@ export default function FloatingChatWidget() {
                 </div>
               ) : (
                 <>
-                  {messages.map((msg, i) => {
+                  {shownMessages.map((msg, i) => {
                     const isUser = msg.role === "user";
                     return (
                       <div key={i} className={`flex gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -159,7 +172,13 @@ export default function FloatingChatWidget() {
                             <div className="w-1.5 h-1.5 rounded-full bg-harvest" />
                           </div>
                         )}
-                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${isUser ? "bg-ink text-white" : "bg-white border border-border text-ink"}`}>
+                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                          isUser
+                            ? "bg-ink text-white"
+                            : msg.isError
+                            ? "bg-red-50 border border-red-200 text-red-700"
+                            : "bg-white border border-border text-ink"
+                        }`}>
                           {isUser ? (
                             <p>{msg.content}</p>
                           ) : (
@@ -198,7 +217,7 @@ export default function FloatingChatWidget() {
                 />
                 <button
                   onClick={() => sendMessage()}
-                  disabled={!input.trim() || loading || starting}
+                  disabled={!input.trim() || loading}
                   className="w-9 h-9 rounded-xl bg-ink hover:bg-harvest disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
                 >
                   <Send className="w-3.5 h-3.5 text-white" />
@@ -239,5 +258,15 @@ export default function FloatingChatWidget() {
         </button>
       </div>
     </div>
+  );
+}
+
+/* Small inline "new chat" glyph so we don't add another lucide import line. */
+function RefreshCcwIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 2v6h6" />
+      <path d="M3 13a9 9 0 1 0 3-7.7L3 8" />
+    </svg>
   );
 }

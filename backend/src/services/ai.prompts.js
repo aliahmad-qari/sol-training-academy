@@ -106,6 +106,65 @@ export const STUDENT_TOOLS = {
       },
     },
   },
+
+  // Personalised student progress report (migrated from the old base44
+  // InvokeLLM call in AIProgressReport.jsx). The frontend sends precomputed,
+  // non-sensitive aggregates; the shape below MUST match the keys the component
+  // renders: greeting / summary / strengths / improvements / next_step / encouragement.
+  progress_report: {
+    mode: 'json',
+    buildPrompt: ({
+      studentName = 'Student',
+      enrolledCount = 0,
+      completedCount = 0,
+      avgProgress = 0,
+      quizAttempts = 0,
+      passRate = null,
+      avgScore = null,
+      recentAttempts = [],
+      courseBreakdown = [],
+    }) =>
+      `You are a supportive, encouraging learning coach at SOL Training Academy. Write a warm, personalised progress report for this student.\n\nSTUDENT NAME: ${str(
+        studentName
+      )}\n\nLEARNING DATA:\n- Enrolled courses: ${enrolledCount}\n- Completed courses: ${completedCount}\n- Average progress: ${avgProgress}%\n- Quiz attempts: ${quizAttempts}\n- Quiz pass rate: ${
+        passRate !== null ? passRate + '%' : 'No attempts yet'
+      }\n- Average quiz score: ${
+        avgScore !== null ? avgScore + '%' : 'No attempts yet'
+      }\n- Recent quiz results: ${JSON.stringify(recentAttempts)}\n- Course breakdown: ${JSON.stringify(
+        courseBreakdown
+      )}\n\nWrite the report using the student's first name, in plain, motivating English.`,
+    schema: {
+      type: 'object',
+      properties: {
+        greeting: { type: 'string' },
+        summary: { type: 'string' },
+        strengths: { type: 'array', items: { type: 'string' } },
+        improvements: { type: 'array', items: { type: 'string' } },
+        next_step: { type: 'string' },
+        encouragement: { type: 'string' },
+      },
+    },
+  },
+};
+
+/* ─────────────────────────── CHAT ASSISTANT ─────────────────────────── */
+
+/**
+ * System persona for the public "SOL Assistant" chat (FloatingChatWidget +
+ * AIAssistant page). Stateless: the frontend sends the recent message history
+ * on every turn and we forward it to Groq. Keyed as `chat_assistant` so the
+ * route and the frontend helper share one identifier.
+ */
+export const CHAT_ASSISTANT = {
+  id: 'chat_assistant',
+  systemInstruction: `You are "SOL Assistant", the friendly AI helper for SOL Business Consultant Pty Ltd (an Australian firm offering NDIS provider registration, support coordination training, website development, software automation, accountancy, and marketing services).
+
+Guidelines:
+- Be warm, concise, and professional. Use plain Australian English.
+- Answer questions about SOL's services, NDIS registration, training courses, and general enquiries.
+- If asked something outside SOL's scope or that needs a human (pricing quotes, account-specific issues, legal/medical advice), politely say so and point them to call +61 460 003 494 or use the contact form.
+- Never invent specific prices, dates, or guarantees. If unsure, say you're not certain and suggest contacting the team.
+- Keep replies short (2-4 sentences) unless the user asks for detail. You may use light Markdown (bold, bullet lists).`,
 };
 
 /* ──────────────────────────── ADMIN TOOLS ──────────────────────────── */
@@ -298,6 +357,22 @@ export const ADMIN_TOOLS = {
     },
   },
 
+  // Draft a message to a student about a document verification decision
+  // (migrated from the old base44 InvokeLLM call in AdminDocumentVerification.jsx).
+  docmessage: {
+    mode: 'text',
+    buildPrompt: ({ studentName, docType, docTitle, fileName, notes, decision }) =>
+      `You are an admin at SOL Training Academy (NDIS training provider in Australia).\nA student named "${str(
+        studentName
+      ) || 'the student'}" has uploaded a document:\n- Document Type: ${str(docType)}\n- Document Title: ${str(
+        docTitle
+      )}\n- File: ${str(fileName)}\n- Student Notes: ${str(notes) || 'None'}\n- Verification Decision: ${str(
+        decision
+      )}\n\nWrite a professional, warm, and clear message to send to the student about their document submission.\nThe message should:\n- Address the student by their first name\n- Clearly state the verification outcome (${str(
+        decision
+      )})\n- If verified: congratulate them and confirm it's on record\n- If rejected or resubmit_required: explain what's needed clearly and encourage resubmission\n- Be 3-5 sentences, professional but friendly\n- Mention next steps if applicable\n\nReturn only the message text, no subject line or greeting prefix.`,
+  },
+
   dropout: {
     mode: 'text',
     buildPrompt: ({ riskList = [] }) =>
@@ -311,4 +386,4 @@ export const ADMIN_TOOLS = {
   },
 };
 
-export default { STUDENT_TOOLS, ADMIN_TOOLS };
+export default { STUDENT_TOOLS, ADMIN_TOOLS, CHAT_ASSISTANT };

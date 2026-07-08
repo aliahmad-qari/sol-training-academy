@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { runAdminTool } from "@/api/aiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Loader2, CheckCircle, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,57 +31,36 @@ export default function AIQuizQuestionsPanel({ onAddQuestions, onClose }) {
     setGenerated([]);
     setSelected(new Set());
 
-    const typeLabel = {
-      mcq: "multiple choice (4 options, 1 correct)",
-      true_false: "True/False",
-      mixed: "a mix of multiple choice and True/False",
-    }[questionType];
+    try {
+      // Backend owns the prompt + JSON schema (ADMIN_TOOLS.quizgenerator); we
+      // only send structured inputs. Same tool the AIQuizGenerator modal uses.
+      const result = await runAdminTool("quizgenerator", {
+        content,
+        numQuestions,
+        difficulty,
+        questionType,
+      });
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert quiz creator for a training academy. Generate exactly ${numQuestions} ${typeLabel} quiz questions at ${difficulty} difficulty based on the following content.
-
-CONTENT:
-${content}
-
-RULES:
-- Each question must be clear, unambiguous, and directly based on the content
-- For MCQ: provide exactly 4 options — only one is correct
-- For True/False: correct_index 0 = True, 1 = False
-- Include a brief explanation for why the correct answer is right
-- Make questions test understanding, not just memorization
-
-Return ONLY valid JSON, no extra text.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          questions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                type: { type: "string" },
-                question: { type: "string" },
-                options: { type: "array", items: { type: "string" } },
-                correct_index: { type: "number" },
-                explanation: { type: "string" },
-              }
-            }
-          }
+      const questions = (result.questions || []).map(q => {
+        if (q.type === "true_false") {
+          return { type: "true_false", question: q.question, correct_index: q.correct_index ?? 0, marks: 1, explanation: q.explanation || "" };
         }
-      }
-    });
+        return { type: "mcq", question: q.question, options: q.options || ["", "", "", ""], correct_index: q.correct_index ?? 0, marks: 1, explanation: q.explanation || "" };
+      });
 
-    const questions = (result.questions || []).map(q => {
-      if (q.type === "true_false") {
-        return { type: "true_false", question: q.question, correct_index: q.correct_index ?? 0, marks: 1, explanation: q.explanation || "" };
+      if (questions.length === 0) {
+        toast.error("The AI didn't return any questions. Try adding more content and regenerate.");
+        return;
       }
-      return { type: "mcq", question: q.question, options: q.options || ["", "", "", ""], correct_index: q.correct_index ?? 0, marks: 1, explanation: q.explanation || "" };
-    });
 
-    setGenerated(questions);
-    setSelected(new Set(questions.map((_, i) => i))); // select all by default
-    setGenerating(false);
-    toast.success(`${questions.length} questions generated!`);
+      setGenerated(questions);
+      setSelected(new Set(questions.map((_, i) => i))); // select all by default
+      toast.success(`${questions.length} questions generated!`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to generate questions. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const toggleSelect = (i) => {

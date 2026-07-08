@@ -341,14 +341,15 @@ const Core = {
   },
 
   /**
-   * ExtractDataFromUploadedFile({ file_url, mimeType }) → { status, output: { text } }.
+   * ExtractDataFromUploadedFile({ file_url, mimeType, fileName }) → { status, output: { text } }.
    * Preserves the original base44 contract (status 'success'|'error', output.text)
-   * so the assignment upload tools consume it unchanged. Backed by Gemini
-   * multimodal extraction on the server (POST /ai/extract).
+   * so the assignment upload tools consume it unchanged. Backed by server-side
+   * text extraction (pdf-parse / mammoth) on POST /ai/extract — the extracted
+   * text is what gets fed to the Groq AI tools (Groq models are text-only).
    */
-  async ExtractDataFromUploadedFile({ file_url, mimeType } = {}) {
+  async ExtractDataFromUploadedFile({ file_url, mimeType, fileName } = {}) {
     try {
-      const { text } = await extractDocument({ file_url, mimeType });
+      const { text } = await extractDocument({ file_url, mimeType, fileName });
       return { status: 'success', output: { text } };
     } catch (err) {
       return {

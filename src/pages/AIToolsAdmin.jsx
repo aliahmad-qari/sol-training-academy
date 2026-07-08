@@ -657,6 +657,7 @@ function AssignmentAutoGrader() {
       const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         mimeType: file.type,
+        fileName: file.name,
       });
       if (extracted.status === "success") {
         setSubmission(extracted.output?.text || "");

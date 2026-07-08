@@ -1,13 +1,14 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { runStudentTool } from "@/api/aiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp,
   TrendingUp, AlertTriangle, CheckCircle, Target, Star
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-export default function AIProgressReport({ user, enrollments, quizAttempts }) {
+export default function AIProgressReport({ user, enrollments = [], quizAttempts = [] }) {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [expanded, setExpanded] = useState(true);
@@ -16,43 +17,49 @@ export default function AIProgressReport({ user, enrollments, quizAttempts }) {
     setLoading(true);
     setReport(null);
 
-    const avgProgress = enrollments.length > 0
-      ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length) : 0;
-    const completed = enrollments.filter(e => e.status === "completed").length;
-    const passRate = quizAttempts.length > 0
-      ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100) : null;
-    const avgScore = quizAttempts.length > 0
-      ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length) : null;
-    const recentAttempts = quizAttempts
-      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-      .slice(0, 5)
-      .map(a => ({ score: a.score_percent, passed: a.passed, topic: a.topic_title || "Quiz" }));
+    try {
+      const avgProgress = enrollments.length > 0
+        ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length) : 0;
+      const completed = enrollments.filter(e => e.status === "completed").length;
+      const passRate = quizAttempts.length > 0
+        ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100) : null;
+      const avgScore = quizAttempts.length > 0
+        ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length) : null;
+      const recentAttempts = [...quizAttempts]
+        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+        .slice(0, 5)
+        .map(a => ({ score: a.score_percent, passed: a.passed, topic: a.topic_title || "Quiz" }));
 
-    const courseBreakdown = enrollments.map(e => ({
-      title: e.course_title,
-      progress: `${e.progress_percent || 0}%`,
-      status: e.status,
-      lessonsCompleted: e.completed_topic_ids?.length || 0,
-    }));
+      const courseBreakdown = enrollments.map(e => ({
+        title: e.course_title,
+        progress: `${e.progress_percent || 0}%`,
+        status: e.status,
+        lessonsCompleted: e.completed_topic_ids?.length || 0,
+      }));
 
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a supportive, encouraging learning coach at SOL Training Academy. Write a warm, personalised progress report for this student.\n\nSTUDENT NAME: ${user?.full_name || "Student"}\n\nLEARNING DATA:\n- Enrolled courses: ${enrollments.length}\n- Completed courses: ${completed}\n- Average progress: ${avgProgress}%\n- Quiz attempts: ${quizAttempts.length}\n- Quiz pass rate: ${passRate !== null ? passRate + "%" : "No attempts yet"}\n- Average quiz score: ${avgScore !== null ? avgScore + "%" : "No attempts yet"}\n- Recent quiz results: ${JSON.stringify(recentAttempts)}\n- Course breakdown: ${JSON.stringify(courseBreakdown)}\n\nWrite a JSON response with exactly these keys:\n- greeting: A warm 1-sentence personalised greeting using their first name\n- summary: 2-3 sentences summarising their overall progress in plain English\n- strengths: Array of exactly 2-3 specific strengths based on their data (short bullet points)\n- improvements: Array of exactly 2-3 specific, actionable areas to improve (short bullet points)\n- next_step: One clear, motivating next action they should take this week\n- encouragement: One short, genuine motivational sentence to end on`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          greeting:      { type: "string" },
-          summary:       { type: "string" },
-          strengths:     { type: "array", items: { type: "string" } },
-          improvements:  { type: "array", items: { type: "string" } },
-          next_step:     { type: "string" },
-          encouragement: { type: "string" },
-        }
-      }
-    });
+      // Backend owns the prompt + JSON schema (STUDENT_TOOLS.progress_report);
+      // we only send precomputed, non-sensitive aggregates. The returned object
+      // has exactly: greeting, summary, strengths[], improvements[], next_step,
+      // encouragement — matching the fields rendered below.
+      const res = await runStudentTool("progress_report", {
+        studentName: user?.full_name || "Student",
+        enrolledCount: enrollments.length,
+        completedCount: completed,
+        avgProgress,
+        quizAttempts: quizAttempts.length,
+        passRate,
+        avgScore,
+        recentAttempts,
+        courseBreakdown,
+      });
 
-    setReport(res);
-    setLoading(false);
-    setExpanded(true);
+      setReport(res);
+      setExpanded(true);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Couldn't generate your report. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

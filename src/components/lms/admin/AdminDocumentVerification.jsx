@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { runAdminTool } from "@/api/aiClient";
 import { motion } from "framer-motion";
 import {
   FileText, CheckCircle, XCircle, Clock, Eye, AlertTriangle,
@@ -78,28 +79,23 @@ function DocumentRow({ doc, onUpdate }) {
 
   const generateAIMessage = async () => {
     setGenerating(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an admin at SOL Training Academy (NDIS training provider in Australia).
-A student named "${doc.user_name}" has uploaded a document:
-- Document Type: ${DOC_TYPE_LABELS[doc.document_type] || doc.document_type}
-- Document Title: ${doc.document_title}
-- File: ${doc.file_name}
-- Student Notes: ${doc.notes || "None"}
-- Verification Decision: ${status}
-
-Write a professional, warm, and clear message to send to the student about their document submission.
-The message should:
-- Address the student by their first name
-- Clearly state the verification outcome (${status})
-- If verified: congratulate them and confirm it's on record
-- If rejected or resubmit_required: explain what's needed clearly and encourage resubmission
-- Be 3–5 sentences, professional but friendly
-- Mention next steps if applicable
-Return only the message text, no subject line or greeting prefix.`,
-    });
-    setMessage(typeof result === "string" ? result : result?.text || "");
-    setGenerating(false);
-    toast.success("AI message generated!");
+    try {
+      // Backend owns the prompt (ADMIN_TOOLS.docmessage); returns the message text.
+      const result = await runAdminTool("docmessage", {
+        studentName: doc.user_name,
+        docType: DOC_TYPE_LABELS[doc.document_type] || doc.document_type,
+        docTitle: doc.document_title,
+        fileName: doc.file_name,
+        notes: doc.notes || "None",
+        decision: status,
+      });
+      setMessage(typeof result === "string" ? result : result?.text || "");
+      toast.success("AI message generated!");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Couldn't generate the message. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleSave = async () => {

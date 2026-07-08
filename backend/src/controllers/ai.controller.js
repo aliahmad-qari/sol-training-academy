@@ -1,8 +1,8 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
-import { generateText, generateJSON, extractText } from '../services/ai.service.js';
-import { STUDENT_TOOLS, ADMIN_TOOLS } from '../services/ai.prompts.js';
+import { generateText, generateJSON, extractText, chatConversation } from '../services/ai.service.js';
+import { STUDENT_TOOLS, ADMIN_TOOLS, CHAT_ASSISTANT } from '../services/ai.prompts.js';
 
 /**
  * ai.controller.js — dispatches AI tool requests to Groq.
@@ -13,7 +13,7 @@ import { STUDENT_TOOLS, ADMIN_TOOLS } from '../services/ai.prompts.js';
  * build the prompt, and return the model output in the standard envelope.
  */
 
-/** Shared runner: look up the tool in `registry`, build the prompt, call Gemini. */
+/** Shared runner: look up the tool in `registry`, build the prompt, call Groq. */
 const runTool = async (registry, toolId, input) => {
   const tool = registry[toolId];
   if (!tool) throw ApiError.notFound(`Unknown AI tool: "${toolId}".`);
@@ -56,7 +56,7 @@ export const runAdminTool = asyncHandler(async (req, res) => {
  * extracted text. Mirrors the old base44 ExtractDataFromUploadedFile contract.
  */
 export const extractDocument = asyncHandler(async (req, res) => {
-  const { file_url, mimeType } = req.body;
+  const { file_url, mimeType, fileName } = req.body;
   if (!file_url) throw ApiError.badRequest('file_url is required.');
 
   let buffer;
@@ -68,8 +68,37 @@ export const extractDocument = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Could not download the uploaded file for extraction.');
   }
 
-  const text = await extractText({ buffer, mimeType });
+  // Fall back to the file_url's own extension when no explicit fileName is sent.
+  const nameForKind = fileName || file_url.split('?')[0];
+  const text = await extractText({ buffer, mimeType, fileName: nameForKind });
   return sendOk(res, { text }, 'Document extracted');
 });
 
-export default { runStudentTool, runAdminTool, extractDocument };
+/**
+ * POST /api/v1/ai/chat   (public; optionalAuth)
+ * Body: { messages: [{ role: 'user' | 'assistant', content }] }
+ * Stateless SOL Assistant chat — the client sends the running history and we
+ * return a single assistant reply. Also accepts a single { message } string
+ * for convenience.
+ */
+export const runChatAssistant = asyncHandler(async (req, res) => {
+  let { messages, message } = req.body;
+
+  // Convenience: allow a bare { message } and wrap it as one user turn.
+  if (!Array.isArray(messages)) {
+    if (typeof message === 'string' && message.trim()) {
+      messages = [{ role: 'user', content: message }];
+    } else {
+      throw ApiError.badRequest('Provide `messages` (array) or `message` (string).');
+    }
+  }
+
+  const reply = await chatConversation({
+    history: messages,
+    systemInstruction: CHAT_ASSISTANT.systemInstruction,
+  });
+
+  return sendOk(res, { reply }, 'AI reply');
+});
+
+export default { runStudentTool, runAdminTool, extractDocument, runChatAssistant };

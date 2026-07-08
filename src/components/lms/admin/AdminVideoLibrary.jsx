@@ -260,7 +260,8 @@ export default function AdminVideoLibrary({ courses }) {
     setLoading(true);
     try {
       const res = await apiClient.get("/topics?type=video&limit=500");
-      setTopics(Array.isArray(res.data?.data) ? res.data.data : []);
+      const data = Array.isArray(res.data?.data) ? res.data.data : [];
+      setTopics([...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (err) {
       console.error("Failed to load video topics:", err);
       setTopics([]);

@@ -24,7 +24,16 @@ export const runAdminTool = (toolId, input = {}) =>
  * Extract text from an already-uploaded document/image (Cloudinary URL).
  * Returns { text }.
  */
-export const extractDocument = ({ file_url, mimeType } = {}) =>
-  apiClient.post('/ai/extract', { file_url, mimeType }).then((r) => r.data.data);
+export const extractDocument = ({ file_url, mimeType, fileName } = {}) =>
+  apiClient.post('/ai/extract', { file_url, mimeType, fileName }).then((r) => r.data.data);
 
-export default { runStudentTool, runAdminTool, extractDocument };
+/**
+ * Send a message to the public SOL Assistant chat. Stateless: pass the running
+ * history as `messages` ([{ role: 'user' | 'assistant', content }]) and it
+ * returns the assistant's reply string. Works logged-out (the /ai/chat route
+ * uses optionalAuth), so it never triggers the 401→/login redirect.
+ */
+export const runChatAssistant = (messages = []) =>
+  apiClient.post('/ai/chat', { messages }).then((r) => r.data.data.reply);
+
+export default { runStudentTool, runAdminTool, extractDocument, runChatAssistant };

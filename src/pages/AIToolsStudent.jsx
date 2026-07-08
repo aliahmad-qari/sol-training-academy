@@ -125,6 +125,7 @@ function AssignmentFeedback() {
       const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         mimeType: file.type,
+        fileName: file.name,
       });
       if (extracted.status === "success") {
         const text = extracted.output?.text || JSON.stringify(extracted.output);

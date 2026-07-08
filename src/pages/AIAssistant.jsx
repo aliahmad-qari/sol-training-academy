@@ -1,50 +1,56 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { runChatAssistant } from "@/api/aiClient";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import MessageBubble from "@/components/agent/MessageBubble";
 import { Send, Bot, Sparkles, RefreshCw } from "lucide-react";
 
+const FALLBACK_ERROR =
+  "Sorry — I couldn't respond just now. Please try again, or call us on +61 460 003 494.";
+
 export default function AIAssistant() {
-  const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [starting, setStarting] = useState(true);
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    startConversation();
-  }, []);
-
-  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loading]);
 
-  const startConversation = async () => {
-    setStarting(true);
-    const conv = await base44.agents.createConversation({
-      agent_name: "sol_assistant",
-      metadata: { name: "SOL Assistant Chat" },
-    });
-    setConversation(conv);
-    setMessages(conv.messages || []);
-
-    const unsubscribe = base44.agents.subscribeToConversation(conv.id, (data) => {
-      setMessages(data.messages || []);
-    });
-
-    setStarting(false);
-    return unsubscribe;
+  /** Reset to a fresh conversation (stateless — just clears local history). */
+  const startConversation = () => {
+    setMessages([]);
+    setInput("");
+    setLoading(false);
   };
 
+  /**
+   * Stateless chat: keep the running history in state and send the recent turns
+   * to the backend, which forwards them to Groq and returns one reply. No
+   * base44.agents dependency, and every failure is caught so the input never
+   * locks up.
+   */
   const sendMessage = async () => {
-    if (!input.trim() || loading || !conversation) return;
     const text = input.trim();
+    if (!text || loading) return;
+
+    const nextHistory = [...messages, { role: "user", content: text }];
+    setMessages(nextHistory);
     setInput("");
     setLoading(true);
-    await base44.agents.addMessage(conversation, { role: "user", content: text });
-    setLoading(false);
+
+    try {
+      const reply = await runChatAssistant(
+        nextHistory.map(({ role, content }) => ({ role, content }))
+      );
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch (err) {
+      const apiMsg = err?.response?.data?.message;
+      setMessages((prev) => [...prev, { role: "assistant", content: apiMsg || FALLBACK_ERROR }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -109,11 +115,7 @@ export default function AIAssistant() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-              {starting ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="w-6 h-6 border-2 border-harvest border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : messages.length === 0 ? (
+              {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                   <div className="w-14 h-14 rounded-2xl bg-harvest/10 flex items-center justify-center">
                     <Bot className="w-7 h-7 text-harvest" />
@@ -170,7 +172,7 @@ export default function AIAssistant() {
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={!input.trim() || loading || starting}
+                  disabled={!input.trim() || loading}
                   className="w-10 h-10 rounded-xl bg-ink hover:bg-harvest disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
                 >
                   <Send className="w-4 h-4 text-white" />

@@ -33,6 +33,7 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
   const generate = async () => {
     if (!content.trim()) { toast.error("Please paste some content first."); return; }
     if (!courseId) { toast.error("Please select a course."); return; }
+    if (!moduleId) { toast.error("Please select a module — quizzes must belong to a module."); return; }
     if (!quizTitle.trim()) { toast.error("Please enter a quiz title."); return; }
 
     setGenerating(true);
@@ -59,16 +60,22 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
   };
 
   const saveQuiz = async () => {
+    if (!moduleId) { toast.error("Please select a module before saving."); return; }
     setSaving(true);
     try {
       const totalMarks = generatedQuestions.reduce((s, q) => s + (q.marks || 1), 0);
+      // `passingScore` is a PERCENTAGE from the UI, but the whole system stores
+      // `passing_marks` as ABSOLUTE marks (see TopicModal + quiz.controller
+      // gradeAnswers: passed = score >= passing_marks). Convert here, otherwise
+      // e.g. 75% on a 5-mark quiz would be saved as "needs 75/5" — impossible to pass.
+      const passingMarks = Math.max(1, Math.round((passingScore / 100) * totalMarks));
       await base44.entities.CourseTopic.create({
         type: "quiz",
         title: quizTitle,
         course_id: courseId,
-        module_id: moduleId || "",
+        module_id: moduleId,
         sort_order: 0,
-        passing_marks: passingScore,
+        passing_marks: passingMarks,
         total_marks: totalMarks,
         quiz_questions: generatedQuestions,
       });
@@ -145,11 +152,14 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Module (Optional)</Label>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Module *</Label>
                   <Select value={moduleId} onValueChange={setModuleId} disabled={!courseId}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Select module…" /></SelectTrigger>
+                    <SelectTrigger className="h-10"><SelectValue placeholder={courseId ? "Select module…" : "Select a course first"} /></SelectTrigger>
                     <SelectContent>{courseMods.map(m => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)}</SelectContent>
                   </Select>
+                  {courseId && courseMods.length === 0 && (
+                    <p className="text-[10px] text-amber-600 mt-1">This course has no modules yet — create one before adding a quiz.</p>
+                  )}
                 </div>
               </div>
 
