@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import apiClient from "@/api/apiClient";
 import { uploadFile } from "@/api/uploadClient";
-import { Video, Search, Trash2, Play, Upload, ExternalLink, X, Save, Link, Youtube } from "lucide-react";
+import { Video, Search, Trash2, Play, Upload, ExternalLink, X, Save, Link, Youtube, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -256,17 +256,55 @@ export default function AdminVideoLibrary({ courses }) {
   const [courseFilter, setCourseFilter] = useState("all");
   const [showUpload, setShowUpload]     = useState(false);
 
+  const dragItem     = useRef(null);
+  const dragOverItem = useRef(null);
+
   const load = async () => {
     setLoading(true);
     try {
       const res = await apiClient.get("/topics?type=video&limit=500");
       const data = Array.isArray(res.data?.data) ? res.data.data : [];
-      setTopics([...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      setTopics([...data].sort((a, b) =>
+        a.sort_order !== b.sort_order
+          ? a.sort_order - b.sort_order
+          : new Date(a.createdAt) - new Date(b.createdAt)
+      ));
     } catch (err) {
       console.error("Failed to load video topics:", err);
       setTopics([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDragStart = (id) => { dragItem.current = id; };
+  const handleDragEnter = (id) => { dragOverItem.current = id; };
+
+  const handleDrop = async () => {
+    const fromId = dragItem.current;
+    const toId   = dragOverItem.current;
+    dragItem.current = null;
+    dragOverItem.current = null;
+    if (!fromId || !toId || fromId === toId) return;
+
+    const reordered = [...topics];
+    const fromIdx = reordered.findIndex(t => (t._id || t.id) === fromId);
+    const toIdx   = reordered.findIndex(t => (t._id || t.id) === toId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    const updated = reordered.map((t, i) => ({ ...t, sort_order: i }));
+    setTopics(updated);
+
+    try {
+      await apiClient.patch("/topics/reorder", {
+        items: updated.map(t => ({ id: t._id || t.id, sort_order: t.sort_order })),
+      });
+      toast.success("Order saved.");
+    } catch {
+      toast.error("Failed to save order.");
+      load();
     }
   };
 
@@ -368,17 +406,29 @@ export default function AdminVideoLibrary({ courses }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-border/30">
+                  <th className="w-8 px-2 py-3"></th>
                   {["Thumbnail", "Title", "Course", "Level", "Duration", "URL", "Actions"].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate_mist uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(topic => {
+                {filtered.map((topic) => {
                   const course = getCourse(topic.course_id);
                   const thumb  = getVideoThumb(topic.video_url);
                   return (
-                    <tr key={topic._id || topic.id} className="border-b border-border/20 hover:bg-slate-50 transition-colors">
+                    <tr
+                      key={topic._id || topic.id}
+                      draggable
+                      onDragStart={() => handleDragStart(topic._id || topic.id)}
+                      onDragEnter={() => handleDragEnter(topic._id || topic.id)}
+                      onDragEnd={handleDrop}
+                      onDragOver={e => e.preventDefault()}
+                      className="border-b border-border/20 hover:bg-slate-50 transition-colors cursor-grab active:cursor-grabbing active:bg-harvest/5"
+                    >
+                      <td className="px-2 py-3 text-slate_mist/40 hover:text-slate_mist">
+                        <GripVertical className="w-4 h-4" />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="w-16 h-10 rounded-lg overflow-hidden bg-slate-200 flex items-center justify-center flex-shrink-0">
                           {thumb
