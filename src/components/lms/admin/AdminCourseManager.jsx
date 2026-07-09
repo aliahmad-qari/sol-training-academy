@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import {
   Plus, Edit2, Trash2, ChevronDown, ChevronRight, Video, HelpCircle,
-  BookOpen, Eye, EyeOff, X, Save, FileText, Users, BarChart2, Award, ClipboardList
+  BookOpen, Eye, EyeOff, X, Save, FileText, Users, BarChart2, Award, ClipboardList, ImagePlus
 } from "lucide-react";
+import { uploadFile } from "@/api/uploadClient";
 import TopicModal from "@/components/lms/admin/TopicModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ function CourseModal({ course, onClose, onSave }) {
   });
   const [outcomesText, setOutcomesText] = useState((course?.outcomes || []).join("\n"));
   const [saving, setSaving] = useState(false);
+  const [thumbUploading, setThumbUploading] = useState(false);
 
   const handleLevelChange = (v) => setForm(f => ({ ...f, level: v, badge: LEVEL_BADGE[v] }));
 
@@ -165,6 +167,47 @@ function CourseModal({ course, onClose, onSave }) {
             )}
           </div>
 
+          {/* Thumbnail */}
+          <div>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Course Thumbnail</Label>
+            <div className="flex items-start gap-3">
+              {form.thumbnail_url ? (
+                <div className="relative flex-shrink-0">
+                  <img src={form.thumbnail_url} alt="thumbnail" className="w-32 aspect-video object-cover rounded-lg border border-border/50" />
+                  <button type="button" onClick={() => setForm(f => ({ ...f, thumbnail_url: "" }))}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white border border-border rounded-full flex items-center justify-center shadow-sm hover:bg-red-50">
+                    <X className="w-3 h-3 text-slate_mist" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-32 aspect-video rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center bg-slate-50 flex-shrink-0">
+                  <ImagePlus className="w-6 h-6 text-slate_mist/40" />
+                </div>
+              )}
+              <div className="flex-1">
+                <label className="cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setThumbUploading(true);
+                      try {
+                        const { file_url } = await uploadFile({ file, kind: "thumbnail" });
+                        setForm(f => ({ ...f, thumbnail_url: file_url }));
+                      } catch { toast.error("Thumbnail upload failed."); }
+                      finally { setThumbUploading(false); }
+                    }}
+                  />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border/50 text-xs font-medium text-slate_mist hover:bg-slate-50 transition-colors">
+                    <ImagePlus className="w-3.5 h-3.5" />
+                    {thumbUploading ? "Uploading…" : form.thumbnail_url ? "Replace" : "Upload Image"}
+                  </div>
+                </label>
+                <p className="text-[10px] text-slate_mist/60 mt-1.5">Recommended: 16:9, min 640×360px. JPG or PNG.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Description */}
           <div>
             <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Description</Label>
@@ -221,7 +264,7 @@ function CourseModal({ course, onClose, onSave }) {
         {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-border/50 bg-slate-50/50">
           <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button onClick={save} disabled={saving} className="flex-1 bg-harvest hover:bg-harvest/90 text-white font-semibold">
+          <Button onClick={save} disabled={saving || thumbUploading} className="flex-1 bg-harvest hover:bg-harvest/90 text-white font-semibold">
             <Save className="w-4 h-4 mr-1.5" />
             {saving ? "Saving…" : course ? "Update Course" : form.is_published ? "Create & Publish" : "Save as Draft"}
           </Button>

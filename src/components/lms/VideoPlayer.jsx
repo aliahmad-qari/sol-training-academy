@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle, ChevronRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -18,21 +18,6 @@ function getEmbedUrl(url) {
   return null;
 }
 
-function isDirectVideo(url) {
-  if (!url) return false;
-  // Uploaded files from Base44 storage or direct video file links
-  const directPatterns = [
-    /\.(mp4|webm|ogg|mov|avi|mkv)(\?|$)/i,
-    /storage\.googleapis\.com/,
-    /supabase\.co\/storage/,
-    /base44.*upload/i,
-    /amazonaws\.com/,
-    /cloudinary\.com/,
-    /storage\./,
-  ];
-  return directPatterns.some(p => p.test(url));
-}
-
 /* ── Native video player ─────────────────────────────────────────────────── */
 function NativePlayer({ topic, watched, onWatched, isCompleted }) {
   const videoRef = useRef(null);
@@ -44,17 +29,17 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
   const [showControls, setShowControls] = useState(true);
   const hideTimer = useRef(null);
 
-  const revealControls = () => {
+  const revealControls = useCallback(() => {
     setShowControls(true);
     clearTimeout(hideTimer.current);
     if (playing) {
       hideTimer.current = setTimeout(() => setShowControls(false), 2500);
     }
-  };
+  }, [playing]);
 
   useEffect(() => () => clearTimeout(hideTimer.current), []);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
     if (playing) {
       videoRef.current.pause();
@@ -65,35 +50,44 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
       setPlaying(true);
       hideTimer.current = setTimeout(() => setShowControls(false), 2500);
     }
-  };
+  }, [playing]);
 
-  const handleTimeUpdate = () => {
+  const handleTimeUpdate = useCallback(() => {
     if (!videoRef.current) return;
     const pct = (videoRef.current.currentTime / videoRef.current.duration) * 100;
     setProgress(pct);
     setCurrent(videoRef.current.currentTime);
     if (pct >= 80 && !watched) onWatched();
-  };
+  }, [watched, onWatched]);
 
-  const handleSeek = (e) => {
+  const handleSeek = useCallback((e) => {
     if (!videoRef.current || !duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     videoRef.current.currentTime = pct * duration;
     setProgress(pct * 100);
-  };
+  }, [duration]);
 
-  const handleEnded = () => {
+  const handleEnded = useCallback(() => {
     setPlaying(false);
     setShowControls(true);
     onWatched();
-  };
+  }, [onWatched]);
+
+  const toggleMute = useCallback(() => setMuted(m => !m), []);
+  const handleFullscreen = useCallback(() => videoRef.current?.requestFullscreen?.(), []);
+  const handleReplay = useCallback(() => { if (videoRef.current) videoRef.current.currentTime = 0; }, []);
+  const handleMouseLeave = useCallback(() => { if (playing) setShowControls(false); }, [playing]);
+  const handleLoadedMetadata = useCallback(() => setDuration(videoRef.current?.duration || 0), []);
+  const handlePlay = useCallback(() => setPlaying(true), []);
+  const handlePause = useCallback(() => setPlaying(false), []);
+  const stopPropagation = useCallback((e) => e.stopPropagation(), []);
 
   return (
     <div
       className="relative bg-black rounded-2xl overflow-hidden aspect-video cursor-pointer select-none"
       onMouseMove={revealControls}
-      onMouseLeave={() => playing && setShowControls(false)}
+      onMouseLeave={handleMouseLeave}
       onClick={togglePlay}
     >
       <video
@@ -102,14 +96,11 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
         className="w-full h-full object-contain"
         muted={muted}
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+        onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
+        onPlay={handlePlay}
+        onPause={handlePause}
         preload="metadata"
-        // Keep playback inline on iOS Safari instead of forcing native
-        // fullscreen — otherwise our custom controls + 80%-watched completion
-        // tracking are bypassed.
         playsInline
       />
 
@@ -126,7 +117,7 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
       <div
         className={`absolute bottom-0 left-0 right-0 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"}`}
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)" }}
-        onClick={e => e.stopPropagation()}
+        onClick={stopPropagation}
       >
         {/* Seek bar */}
         <div className="px-4 pt-4 pb-1">
@@ -144,42 +135,20 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
         </div>
 
         <div className="flex items-center gap-3 px-4 pb-3">
-          {/* Play/Pause */}
-          <button
-            onClick={togglePlay}
-            className="text-white hover:text-harvest transition-colors"
-          >
+          <button onClick={togglePlay} className="text-white hover:text-harvest transition-colors">
             {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </button>
-
-          {/* Replay */}
-          <button
-            onClick={() => { if (videoRef.current) { videoRef.current.currentTime = 0; } }}
-            className="text-white/50 hover:text-white transition-colors"
-          >
+          <button onClick={handleReplay} className="text-white/50 hover:text-white transition-colors">
             <RotateCcw className="w-4 h-4" />
           </button>
-
-          {/* Time */}
           <span className="text-xs text-white/60 tabular-nums">
             {formatTime(current)} / {formatTime(duration)}
           </span>
-
           <div className="flex-1" />
-
-          {/* Mute */}
-          <button
-            onClick={() => setMuted(m => !m)}
-            className="text-white/60 hover:text-white transition-colors"
-          >
+          <button onClick={toggleMute} className="text-white/60 hover:text-white transition-colors">
             {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
-
-          {/* Fullscreen */}
-          <button
-            onClick={() => videoRef.current?.requestFullscreen?.()}
-            className="text-white/60 hover:text-white transition-colors"
-          >
+          <button onClick={handleFullscreen} className="text-white/60 hover:text-white transition-colors">
             <Maximize className="w-4 h-4" />
           </button>
         </div>

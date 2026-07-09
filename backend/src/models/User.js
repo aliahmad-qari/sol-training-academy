@@ -45,6 +45,12 @@ const userSchema = new Schema(
     },
 
     is_active: { type: Boolean, default: true },
+    status: {
+      type: String,
+      enum: ['active', 'suspended', 'deactivated'],
+      default: 'active',
+      index: true,
+    },
     last_login_at: { type: Date },
 
     // Hashed refresh tokens for multi-device sessions / revocation.

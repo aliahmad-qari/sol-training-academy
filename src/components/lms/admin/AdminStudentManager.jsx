@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import { Users, Search, CheckCircle, Award, Clock, Plus, X, Save, Upload, UserX, UserCheck, ShieldOff } from "lucide-react";
+import { Users, Search, CheckCircle, Award, Clock, Plus, X, Save, Upload, UserX, UserCheck } from "lucide-react";
 import AdminBulkEnroll from "@/components/lms/admin/AdminBulkEnroll";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import apiClient from "@/api/apiClient";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -21,34 +20,40 @@ const STATUS_COLORS = {
   paused: "bg-gray-100 text-gray-600"
 };
 
-function AddEnrollmentModal({ courses, onClose, onSave }) {
-  const [form, setForm] = useState({ user_name: "", user_email: "", course_id: "", status: "active" });
+function AddStudentModal({ courses, onClose, onSave }) {
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", course_ids: [] });
   const [saving, setSaving] = useState(false);
 
+  const toggleCourse = (id) =>
+    setForm(f => ({
+      ...f,
+      course_ids: f.course_ids.includes(id)
+        ? f.course_ids.filter(c => c !== id)
+        : [...f.course_ids, id],
+    }));
+
   const save = async () => {
-    if (!form.user_email || !form.course_id) { toast.error("Email and course are required"); return; }
+    if (!form.email.trim()) { toast.error("Email is required"); return; }
+    if (!form.full_name.trim()) { toast.error("Full name is required"); return; }
+    if (!form.password || form.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (form.course_ids.length === 0) { toast.error("Select at least one course"); return; }
     setSaving(true);
     try {
-      // Search users by email using the search param (not a filter)
-      const usersRes = await apiClient.get(`/users?search=${encodeURIComponent(form.user_email)}`);
-      const users = usersRes.data?.data ?? [];
-      const foundUser = users.find(u =>
-        u.email?.toLowerCase() === form.user_email.toLowerCase()
-      );
-      if (!foundUser) {
-        toast.error("No account found for that email. The student must register first.");
-        setSaving(false);
-        return;
-      }
-      await apiClient.post('/enrollments', {
-        user_id: foundUser._id || foundUser.id,
-        course_id: form.course_id,
+      // 1. Create user account
+      const userRes = await apiClient.post('/users', {
+        full_name: form.full_name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        role: 'student',
       });
-      toast.success("Student enrolled successfully!");
+      const userId = userRes.data?.data?._id || userRes.data?.data?.id;
+      // 2. Bulk enroll in selected courses
+      await apiClient.post('/enrollments/bulk', { user_id: userId, course_ids: form.course_ids });
+      toast.success(`Student created and enrolled in ${form.course_ids.length} course(s).`);
       onSave();
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Enrollment failed.");
+      toast.error(err.response?.data?.message || "Failed to create student.");
     } finally {
       setSaving(false);
     }
@@ -57,48 +62,43 @@ function AddEnrollmentModal({ courses, onClose, onSave }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
+        className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-5">
-          <h3 className="font-display font-bold text-xl text-ink">Add Student Enrollment</h3>
+          <h3 className="font-display font-bold text-xl text-ink">Add New Student</h3>
           <button onClick={onClose} className="text-slate_mist hover:text-ink"><X className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
           <div>
-            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Student Name</Label>
-            <Input value={form.user_name} onChange={e => setForm(f => ({ ...f, user_name: e.target.value }))} placeholder="Jane Smith" />
+            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Full Name *</Label>
+            <Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} placeholder="Jane Smith" autoFocus />
           </div>
           <div>
-            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Student Email *</Label>
-            <Input type="email" value={form.user_email} onChange={e => setForm(f => ({ ...f, user_email: e.target.value }))} placeholder="jane@example.com" />
+            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Email *</Label>
+            <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="jane@example.com" />
           </div>
           <div>
-            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Course *</Label>
-            <Select value={form.course_id} onValueChange={v => setForm(f => ({ ...f, course_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select a course…" /></SelectTrigger>
-              <SelectContent>
-                {courses.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Password *</Label>
+            <Input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Min. 8 characters" />
           </div>
           <div>
-            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Status</Label>
-            <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="paused">Paused</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label className="text-xs uppercase tracking-wider text-slate_mist mb-2 block">Enrol in Courses *</Label>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {courses.map(c => (
+                <label key={c.id} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                  form.course_ids.includes(c.id) ? "border-harvest bg-harvest/5" : "border-border/50 hover:bg-slate-50"
+                }`}>
+                  <input type="checkbox" className="accent-harvest" checked={form.course_ids.includes(c.id)} onChange={() => toggleCourse(c.id)} />
+                  <span className="text-sm text-ink">{c.title}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex gap-3 mt-6">
           <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
           <Button onClick={save} disabled={saving} className="flex-1 bg-harvest text-white">
-            <Save className="w-4 h-4 mr-1.5" />{saving ? "Saving…" : "Enroll Student"}
+            <Save className="w-4 h-4 mr-1.5" />{saving ? "Creating…" : "Create & Enrol"}
           </Button>
         </div>
       </motion.div>
@@ -145,7 +145,7 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
 
   return (
     <div>
-      {showAddModal && <AddEnrollmentModal courses={courses} onClose={() => setShowAddModal(false)} onSave={onRefresh} />}
+      {showAddModal && <AddStudentModal courses={courses} onClose={() => setShowAddModal(false)} onSave={onRefresh} />}
       {showBulkEnroll && <AdminBulkEnroll courses={courses} onClose={() => setShowBulkEnroll(false)} onDone={onRefresh} />}
       {/* Header */}
       <div className="flex justify-end gap-2 mb-4">

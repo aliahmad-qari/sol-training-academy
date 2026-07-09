@@ -1,8 +1,9 @@
-import React, { useState, useRef } from "react";
-import { FileText, Upload, CheckCircle, Clock, Award, ChevronRight, X, AlertTriangle } from "lucide-react";
+import React, { useState, useRef, useCallback } from "react";
+import { FileText, Upload, CheckCircle, Clock, Award, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/api/uploadClient";
+import apiClient from "@/api/apiClient";
 import { toast } from "sonner";
 
 export default function AssessmentTopicView({ topic, user, enrollment, isCompleted, onComplete }) {
@@ -13,8 +14,8 @@ export default function AssessmentTopicView({ topic, user, enrollment, isComplet
   const fileRef = useRef(null);
 
   const dueDate = (() => {
-    if (!topic.assessment_due_days || !enrollment?.created_date) return null;
-    const start = new Date(enrollment.created_date);
+    if (!topic.assessment_due_days || !enrollment?.createdAt) return null;
+    const start = new Date(enrollment.createdAt);
     start.setDate(start.getDate() + topic.assessment_due_days);
     return start;
   })();
@@ -24,27 +25,38 @@ export default function AssessmentTopicView({ topic, user, enrollment, isComplet
   const handleSubmit = async () => {
     if (!file) { toast.error("Please select a file to upload."); return; }
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.AssignmentSubmission.create({
-      assignment_id: topic.id,
-      assignment_title: topic.title,
-      course_id: enrollment.course_id,
-      course_title: enrollment.course_title,
-      user_id: user.id,
-      user_name: user.full_name || "",
-      user_email: user.email || "",
-      file_url,
-      file_name: file.name,
-      file_type: file.name.split(".").pop().toLowerCase(),
-      submission_notes: notes,
-      status: "submitted",
-      max_marks: topic.assessment_max_marks || 100,
-    });
-    toast.success("Assessment submitted successfully!");
-    setUploading(false);
-    setSubmitted(true);
-    onComplete();
+    try {
+      const { file_url } = await uploadFile({ file, kind: "assignment" });
+      await apiClient.post('/submissions', {
+        assignment_id: topic._id || topic.id,
+        assignment_title: topic.title,
+        course_id: enrollment.course_id,
+        course_title: enrollment.course_title,
+        user_id: user._id || user.id,
+        user_name: user.full_name || "",
+        user_email: user.email || "",
+        file_url,
+        file_name: file.name,
+        file_type: file.name.split(".").pop().toLowerCase(),
+        submission_notes: notes,
+        status: "submitted",
+        max_marks: topic.assessment_max_marks || 100,
+      });
+      toast.success("Assessment submitted successfully!");
+      setSubmitted(true);
+      onComplete();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Submission failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
+
+  const handleFileChange = useCallback((e) => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  }, []);
+
+  const handleDropZoneClick = useCallback(() => fileRef.current?.click(), []);
 
   return (
     <div className="space-y-6">
@@ -113,7 +125,7 @@ export default function AssessmentTopicView({ topic, user, enrollment, isComplet
         <div className="space-y-4">
           <div>
             <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2">Upload Your Submission</p>
-            <div onClick={() => fileRef.current?.click()}
+            <div onClick={handleDropZoneClick}
               className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-harvest/50 hover:bg-harvest/5 transition-all">
               <Upload className="w-8 h-8 text-white/30 mx-auto mb-2" />
               {file ? (
@@ -129,7 +141,7 @@ export default function AssessmentTopicView({ topic, user, enrollment, isComplet
               )}
               <input ref={fileRef} type="file" className="hidden"
                 accept=".pdf,.doc,.docx,.zip,.jpg,.png"
-                onChange={e => { if (e.target.files[0]) setFile(e.target.files[0]); }} />
+                onChange={handleFileChange} />
             </div>
           </div>
           <div>

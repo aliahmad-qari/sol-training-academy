@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { CheckCircle, XCircle, RotateCcw, Trophy, Star, Clock, AlertTriangle, ChevronRight, Play, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 
 const STORAGE_KEY = (topicId, attempt) => `quiz_timer_${topicId}_${attempt}`;
 
@@ -52,8 +52,8 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
     const s = total > 0 ? Math.round((earned / total) * 100) : 0;
     setScore(s); setEarnedMarks(earned); setTotalMarks(total); setSubmitted(true);
     if (isAutoSubmit) setTimedOut(true);
-    await base44.entities.QuizAttempt.create({
-      user_id: userId, course_id: courseId, topic_id: topic.id,
+    await apiClient.post('/quizzes/attempts', {
+      user_id: userId, course_id: courseId, topic_id: topic._id || topic.id,
       answers: currentAnswers, score: s, total_questions: questions.length,
       passed: s >= PASS_THRESHOLD, attempt_number: attempt,
       timed_out: isAutoSubmit,

@@ -21,15 +21,16 @@ const TOPIC_TYPE = {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 function CourseSidebar({ modules, topics, enrollment, activeTopicId, setActiveTopicId, onShowOverview, showingOverview }) {
-  const completedIds = enrollment.completed_topic_ids || [];
+  const completedIds = (enrollment.completed_topic_ids || []).map(String);
+  const tid = (t) => t._id || t.id;
+  const mid = (m) => m._id || m.id;
   const [expandedModules, setExpandedModules] = useState(() => {
-    // Auto-expand the module containing the active topic
     const set = new Set();
     if (activeTopicId) {
-      const t = topics.find(t => t.id === activeTopicId);
-      if (t) set.add(t.module_id);
+      const t = topics.find(t => tid(t) === activeTopicId);
+      if (t) set.add(t.module_id?.toString());
     } else {
-      modules.forEach(m => set.add(m.id));
+      modules.forEach(m => set.add(mid(m)));
     }
     return set;
   });
@@ -67,15 +68,16 @@ function CourseSidebar({ modules, topics, enrollment, activeTopicId, setActiveTo
       {/* Module list */}
       <nav className="flex-1 overflow-y-auto py-2">
         {modules.map((mod, mi) => {
-          const modTopics  = topics.filter(t => t.module_id === mod.id);
-          const modDone    = modTopics.filter(t => completedIds.includes(t.id)).length;
-          const expanded   = expandedModules.has(mod.id);
+          const modId      = mid(mod);
+          const modTopics  = topics.filter(t => String(t.module_id) === String(modId));
+          const modDone    = modTopics.filter(t => completedIds.includes(String(tid(t)))).length;
+          const expanded   = expandedModules.has(modId);
           const modPct     = modTopics.length > 0 ? Math.round((modDone / modTopics.length) * 100) : 0;
 
           return (
-            <div key={mod.id} className="mb-1">
+            <div key={modId} className="mb-1">
               {/* Module header */}
-              <button onClick={() => toggleModule(mod.id)}
+              <button onClick={() => toggleModule(modId)}
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-white/5 transition-colors">
                 <div className="w-5 h-5 rounded bg-harvest/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-harvest text-[10px] font-bold">{mi + 1}</span>
@@ -89,11 +91,12 @@ function CourseSidebar({ modules, topics, enrollment, activeTopicId, setActiveTo
 
               {/* Topics */}
               {expanded && modTopics.map(topic => {
-                const tc   = TOPIC_TYPE[topic.type] || TOPIC_TYPE.video;
-                const done = completedIds.includes(topic.id);
-                const active = topic.id === activeTopicId;
+                const tc     = TOPIC_TYPE[topic.type] || TOPIC_TYPE.video;
+                const topicId = tid(topic);
+                const done   = completedIds.includes(String(topicId));
+                const active = topicId === activeTopicId;
                 return (
-                  <button key={topic.id} onClick={() => setActiveTopicId(topic.id)}
+                  <button key={topicId} onClick={() => setActiveTopicId(topicId)}
                     className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all pl-8 ${active ? "bg-harvest/20 border-r-2 border-harvest" : "hover:bg-white/5"}`}>
                     <span className="text-base flex-shrink-0">{tc.icon}</span>
                     <div className="flex-1 min-w-0">
@@ -118,11 +121,13 @@ function CourseSidebar({ modules, topics, enrollment, activeTopicId, setActiveTo
 // ── Topic Content ─────────────────────────────────────────────────────────────
 function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext, onPrev, hasPrev, hasNext, topics, modules }) {
   const tc = TOPIC_TYPE[topic.type] || TOPIC_TYPE.video;
+  const tid = (t) => t._id || t.id;
+  const mid = (m) => m._id || m.id;
 
   // Module info
-  const mod = modules.find(m => m.id === topic.module_id);
-  const modTopics = topics.filter(t => t.module_id === topic.module_id);
-  const topicIndexInModule = modTopics.findIndex(t => t.id === topic.id) + 1;
+  const mod = modules.find(m => String(mid(m)) === String(topic.module_id));
+  const modTopics = topics.filter(t => String(t.module_id) === String(topic.module_id));
+  const topicIndexInModule = modTopics.findIndex(t => String(tid(t)) === String(tid(topic))) + 1;
 
   return (
     <div className="flex flex-col h-full">
@@ -146,7 +151,7 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
       {/* Main content area */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <AnimatePresence mode="wait">
-          <motion.div key={topic.id}
+          <motion.div key={tid(topic)}
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
 
@@ -157,7 +162,7 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
               <ReadingTopicView topic={topic} isCompleted={isCompleted} onComplete={onComplete} />
             )}
             {topic.type === "quiz" && (
-              <QuizComponent topic={topic} userId={user?.id} courseId={enrollment.course_id}
+              <QuizComponent topic={topic} userId={user?._id || user?.id} courseId={enrollment.course_id}
                 onPass={onComplete} onNext={onNext} isCompleted={isCompleted} />
             )}
             {topic.type === "assessment" && (
@@ -168,9 +173,9 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
             {/* Topic Notes */}
             {topic.type !== "quiz" && (
               <div className="mt-8">
-                <TopicNotes userId={user?.id} courseId={enrollment.course_id}
+                <TopicNotes userId={user?._id || user?.id} courseId={enrollment.course_id}
                   courseTitle={enrollment.course_title}
-                  topicId={topic.id} topicTitle={topic.title} />
+                  topicId={tid(topic)} topicTitle={topic.title} />
               </div>
             )}
           </motion.div>
@@ -203,9 +208,10 @@ export default function CoursePlayer({ enrollment, course, modules, topics, user
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOverview, setShowOverview] = useState(!activeTopicId);
 
-  const activeTopic = topics.find(t => t.id === activeTopicId);
-  const topicIndex  = topics.findIndex(t => t.id === activeTopicId);
-  const completedIds = enrollment.completed_topic_ids || [];
+  const tid = (t) => t._id || t.id;
+  const activeTopic = topics.find(t => tid(t) === activeTopicId);
+  const topicIndex  = topics.findIndex(t => tid(t) === activeTopicId);
+  const completedIds = (enrollment.completed_topic_ids || []).map(String);
   const progress     = enrollment.progress_percent || 0;
   const completedCount = completedIds.length;
 
@@ -217,10 +223,10 @@ export default function CoursePlayer({ enrollment, course, modules, topics, user
   })();
 
   const goPrev = () => {
-    if (topicIndex > 0) { setActiveTopicId(topics[topicIndex - 1].id); setShowOverview(false); }
+    if (topicIndex > 0) { setActiveTopicId(tid(topics[topicIndex - 1])); setShowOverview(false); }
   };
   const goNext = () => {
-    if (topicIndex < topics.length - 1) { setActiveTopicId(topics[topicIndex + 1].id); setShowOverview(false); }
+    if (topicIndex < topics.length - 1) { setActiveTopicId(tid(topics[topicIndex + 1])); setShowOverview(false); }
   };
 
   const handleOpenTopic = (topicId) => {
@@ -298,8 +304,8 @@ export default function CoursePlayer({ enrollment, course, modules, topics, user
                 enrollment={enrollment} course={course}
                 modules={modules} topics={topics}
                 onStartLearning={() => {
-                  const next = topics.find(t => !completedIds.includes(t.id)) || topics[0];
-                  if (next) { setActiveTopicId(next.id); setShowOverview(false); }
+                  const next = topics.find(t => !completedIds.includes(String(tid(t)))) || topics[0];
+                  if (next) { setActiveTopicId(tid(next)); setShowOverview(false); }
                 }}
                 onOpenTopic={handleOpenTopic}
               />
@@ -307,8 +313,8 @@ export default function CoursePlayer({ enrollment, course, modules, topics, user
           ) : (
             <TopicContent
               topic={activeTopic} user={user} enrollment={enrollment}
-              isCompleted={completedIds.includes(activeTopic.id)}
-              onComplete={() => onMarkComplete(activeTopic.id)}
+              isCompleted={completedIds.includes(String(tid(activeTopic)))}
+              onComplete={() => onMarkComplete(tid(activeTopic))}
               onNext={goNext} onPrev={goPrev}
               hasPrev={topicIndex > 0} hasNext={topicIndex < topics.length - 1}
               topics={topics} modules={modules}

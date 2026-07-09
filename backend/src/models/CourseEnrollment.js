@@ -25,6 +25,7 @@ const courseEnrollmentSchema = new Schema(
     },
     course_level: { type: String, trim: true },
     course_title: { type: String, trim: true },
+    course_thumbnail_url: { type: String, trim: true },
 
     status: {
       type: String,

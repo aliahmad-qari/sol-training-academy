@@ -38,6 +38,7 @@ import CourseReviews from "@/components/lms/student/CourseReviews";
 import StudentRequests from "@/components/lms/student/StudentRequests";
 import StudentDocumentUpload from "@/components/lms/student/StudentDocumentUpload";
 import AIToolsStudent from "@/pages/AIToolsStudent";
+import StudentMyCourses from "@/components/lms/student/StudentMyCourses";
 
 
 
@@ -436,125 +437,7 @@ function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, on
         <p className="text-sm font-semibold text-ink mb-3">
           My Enrolled Courses <span className="text-slate_mist font-normal">({enrollments.length})</span>
         </p>
-        {enrollments.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border/50 p-10 text-center shadow-sm">
-            <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate_mist text-sm">You haven't enrolled in any courses yet. See available courses below.</p>
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            {enrollments.map((enr, i) => {
-              const cfg    = LEVEL_CONFIG[enr.course_level] || LEVEL_CONFIG.level1;
-              const course = courses.find(c => c.id === enr.course_id);
-              const lastActivity = enr.updated_date
-                ? new Date(enr.updated_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
-                : "Not started";
-          return (
-            <motion.div key={enr.id}
-              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-              className="bg-white rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-all group flex flex-col">
-
-              {/* Thumbnail strip */}
-              <div className={`h-2 ${cfg.bar}`} />
-
-              {/* Course thumbnail placeholder */}
-              <div className="relative h-32 bg-gradient-to-br from-[#1a1a1a] to-[#2d1f00] flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 opacity-10"
-                  style={{ backgroundImage: "radial-gradient(circle at 20% 80%, #D97706 0%, transparent 50%), radial-gradient(circle at 80% 20%, #10b981 0%, transparent 50%)" }} />
-                <div className="text-center z-10 px-4">
-                  <BookOpen className="w-8 h-8 text-white/60 mx-auto mb-1" />
-                  <p className="text-white/80 text-xs font-medium leading-tight">{enr.course_title}</p>
-                </div>
-                {enr.status === "completed" && (
-                  <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <CheckCircle className="w-2.5 h-2.5" /> Completed
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4 flex flex-col flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${cfg.pill}`}>{cfg.label}</span>
-                  <ProgressRing progress={enr.progress_percent || 0} size={38} />
-                </div>
-
-                <h3 className="font-display font-semibold text-ink text-sm leading-snug mb-2 group-hover:text-harvest transition-colors">
-                  {enr.course_title}
-                </h3>
-
-                {/* Progress bar */}
-                <div className="mb-1">
-                  <div className="flex justify-between text-[10px] text-slate_mist mb-1">
-                    <span>Progress</span>
-                    <span className="font-semibold text-ink">{enr.progress_percent || 0}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-1.5 rounded-full transition-all duration-500 ${cfg.bar}`}
-                      style={{ width: `${enr.progress_percent || 0}%` }} />
-                  </div>
-                </div>
-
-                {/* Last activity */}
-                <p className="text-[10px] text-slate_mist flex items-center gap-1 mb-1 mt-1">
-                  <Clock className="w-3 h-3" /> Last activity: {lastActivity}
-                </p>
-
-                {/* Expiry badge */}
-                {(() => {
-                  if (!enr.expiry_date) return null;
-                  const d = enrollmentDaysLeft(enr);
-                  if (d < 0) return (
-                    <p className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg px-2 py-1 mb-2 flex items-center gap-1">
-                      ⛔ Expired — {new Date(enr.expiry_date).toLocaleDateString("en-AU")}
-                    </p>
-                  );
-                  if (d <= 7) return (
-                    <p className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg px-2 py-1 mb-2 flex items-center gap-1">
-                      ⚠ {d} day{d !== 1 ? "s" : ""} remaining
-                    </p>
-                  );
-                  if (d <= 30) return (
-                    <p className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mb-2 flex items-center gap-1">
-                      ⏰ {d} days remaining
-                    </p>
-                  );
-                  return (
-                    <p className="text-[10px] text-slate_mist mb-2">
-                      Expires: {new Date(enr.expiry_date).toLocaleDateString("en-AU")}
-                    </p>
-                  );
-                })()}
-
-                <div className="mt-auto">
-                  {enr.status === "completed" ? (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => onOpenCourse(enr)}
-                        className="flex-1 text-xs gap-1">
-                        <Play className="w-3 h-3" /> Review
-                      </Button>
-                      <Button size="sm" onClick={() => setActiveTab("certificates")}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1">
-                        <Award className="w-3 h-3" /> Certificate
-                      </Button>
-                    </div>
-                  ) : enrollmentDaysLeft(enr) !== null && enrollmentDaysLeft(enr) < 0 ? (
-                    <Button disabled className="w-full gap-2 text-sm">
-                      ⛔ Access Expired
-                    </Button>
-                  ) : (
-                    <Button onClick={() => onOpenCourse(enr)}
-                      className="w-full bg-harvest text-white gap-2 text-sm">
-                      <Play className="w-4 h-4" />
-                      {(enr.progress_percent || 0) > 0 ? "Continue Learning" : "Start Course"}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-            );
-          })}
-          </div>
-        )}
+        <StudentMyCourses enrollments={enrollments} onOpenCourse={onOpenCourse} />
       </div>
 
       {/* Available courses to enrol */}

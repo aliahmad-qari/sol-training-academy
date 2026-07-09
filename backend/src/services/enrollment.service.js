@@ -32,6 +32,7 @@ export const enrollUserInCourse = async ({ userId, courseId }) => {
       course_id: course._id,
       course_level: course.level,
       course_title: course.title,
+      course_thumbnail_url: course.thumbnail_url || '',
       status: 'active',
       progress_percent: 0,
       expiry_date: expiryDate,
