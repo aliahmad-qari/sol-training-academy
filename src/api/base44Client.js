@@ -163,7 +163,42 @@ const entities = {
   Certificate: restEntity('/certificates'),
   CoursePayment: restEntity('/payments'),
   Coupon: restEntity('/coupons'),
-  SupportTicket: restEntity('/support-tickets', { updateMethod: 'patch' }),
+  SupportTicket: restEntity('/support-tickets', {
+    updateMethod: 'patch',
+    overrides: {
+      // Threaded replies must hit the dedicated endpoint — the PATCH handler
+      // only accepts status/priority/assigned_to and would silently drop
+      // `messages`. Preserves the old `.reply(id, message)` call sites.
+      async reply(id, message) {
+        const res = await apiClient.post(`/support-tickets/${id}/reply`, { message });
+        return normalize(unwrap(res));
+      },
+    },
+  }),
+
+  // ── Student-portal engagement entities (backed by dedicated Express routes) ──
+  StudentNote: restEntity('/notes'),        // PUT update (default)
+  StudentGoal: restEntity('/goals'),        // PUT update (default)
+  StudentRequest: restEntity('/requests', { updateMethod: 'patch' }),
+  Referral: restEntity('/referrals'),
+  CourseFeedback: restEntity('/feedback'),
+
+  // Discussion board: standard CRUD + a like TOGGLE (PATCH /discussion/:id/like).
+  // The old Base44 code called `.update(id, { likes, liked_by })` to like a post;
+  // we override `update` so any such call is routed to the atomic toggle endpoint,
+  // and expose `.like(post)` for new code.
+  DiscussionPost: restEntity('/discussion', {
+    overrides: {
+      async update(id) {
+        const res = await apiClient.patch(`/discussion/${id}/like`);
+        return normalize(unwrap(res));
+      },
+      async like(id) {
+        const res = await apiClient.patch(`/discussion/${id}/like`);
+        return normalize(unwrap(res));
+      },
+    },
+  }),
 
   // Enrollments: staff use /enrollments; a student self-enrolling must hit
   // /student/enroll (RBAC on /enrollments POST is staff-only).
@@ -234,8 +269,7 @@ const entities = {
 // Portal. Listed explicitly so a typo elsewhere surfaces as undefined, not a
 // silent stub. Implement a backend + move into `entities` above to enable.
 const ORPHANED = [
-  'Enquiry', 'StudentDocument', 'StudentRequest', 'StudentNote', 'StudentGoal',
-  'CourseFeedback', 'DiscussionPost', 'CourseWaitlist', 'Referral',
+  'Enquiry', 'StudentDocument', 'CourseWaitlist',
   'TeamMember', 'TeamFile', 'TeamActivityLog',
   'Subscription', 'EmailSequence', 'AutomationLog',
   'Complaint', 'ReadinessQuizLead', 'Document', 'Invoice',

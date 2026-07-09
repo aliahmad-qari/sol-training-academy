@@ -32,7 +32,7 @@ function StarRating({ value, onChange, disabled }) {
   );
 }
 
-export default function CourseFeedbackForm({ enrollment, user }) {
+export default function CourseFeedbackForm({ enrollment, user, onSubmitted }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
@@ -47,12 +47,16 @@ export default function CourseFeedbackForm({ enrollment, user }) {
   });
 
   useEffect(() => {
+    let active = true;
     base44.entities.CourseFeedback
       .filter({ enrollment_id: enrollment.id, user_id: user.id })
       .then(existing => {
-        if (existing.length > 0) setSubmitted(true);
-        setLoading(false);
-      });
+        if (!active) return;
+        if (Array.isArray(existing) && existing.length > 0) setSubmitted(true);
+      })
+      .catch(err => console.error("Failed to check existing feedback:", err))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [enrollment.id, user.id]);
 
   const setField = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -60,18 +64,29 @@ export default function CourseFeedbackForm({ enrollment, user }) {
   const handleSubmit = async () => {
     if (!form.overall_rating) { toast.error("Please give an overall rating."); return; }
     setSaving(true);
-    await base44.entities.CourseFeedback.create({
-      user_id:       user.id,
-      user_name:     user.full_name || user.email,
-      enrollment_id: enrollment.id,
-      course_id:     enrollment.course_id,
-      course_title:  enrollment.course_title,
-      course_level:  enrollment.course_level,
-      ...form,
-    });
-    toast.success("Thank you! Your feedback has been submitted.");
-    setSubmitted(true);
-    setSaving(false);
+    try {
+      await base44.entities.CourseFeedback.create({
+        enrollment_id: enrollment.id,
+        course_id:     enrollment.course_id,
+        course_title:  enrollment.course_title,
+        course_level:  enrollment.course_level,
+        ...form,
+      });
+      toast.success("Thank you! Your feedback has been submitted.");
+      setSubmitted(true);
+      onSubmitted?.();
+    } catch (err) {
+      console.error("Failed to submit feedback:", err);
+      // A 409 means feedback already exists for this enrollment — treat as done.
+      if (err?.response?.status === 409) {
+        setSubmitted(true);
+        onSubmitted?.();
+      } else {
+        toast.error(err?.response?.data?.message || "Couldn't submit your feedback. Please try again.");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return null;

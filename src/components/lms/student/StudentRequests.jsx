@@ -44,10 +44,17 @@ function NewRequestForm({ user, onCreated, onCancel }) {
       return;
     }
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setAttachment({ file, name: file.name, url: file_url });
-    setUploading(false);
-    toast.success("File attached successfully.");
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setAttachment({ file, name: file.name, url: file_url });
+      toast.success("File attached successfully.");
+    } catch (err) {
+      console.error("File upload failed:", err);
+      toast.error("Couldn't upload the file. Please try again.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeAttachment = () => {
@@ -61,16 +68,19 @@ function NewRequestForm({ user, onCreated, onCancel }) {
       return;
     }
     setSubmitting(true);
-    await base44.entities.StudentRequest.create({
-      student_id: user.id,
-      student_name: user.full_name || user.email,
-      student_email: user.email,
-      ...form,
-      ...(attachment ? { attachment_url: attachment.url, attachment_name: attachment.name } : {}),
-    });
-    toast.success("Request submitted! Admin will review it shortly.");
-    onCreated();
-    setSubmitting(false);
+    try {
+      await base44.entities.StudentRequest.create({
+        ...form,
+        ...(attachment ? { attachment_url: attachment.url, attachment_name: attachment.name } : {}),
+      });
+      toast.success("Request submitted! Admin will review it shortly.");
+      onCreated();
+    } catch (err) {
+      console.error("Failed to submit request:", err);
+      toast.error(err?.response?.data?.message || "Couldn't submit your request. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -238,12 +248,19 @@ export default function StudentRequests({ user }) {
 
   const load = async () => {
     setLoading(true);
-    const data = await base44.entities.StudentRequest.filter({ student_id: user.id }, "-created_date");
-    setRequests(data);
-    setLoading(false);
+    try {
+      const data = await base44.entities.StudentRequest.filter({ student_id: user.id }, "-created_date");
+      setRequests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load requests:", err);
+      setRequests([]);
+      toast.error("Couldn't load your requests. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, [user.id]);
+  useEffect(() => { if (user?.id) load(); }, [user?.id]);
 
   const handleCreated = () => {
     setShowForm(false);

@@ -18,44 +18,75 @@ export default function NotesAndBookmarks({ user, enrollments }) {
 
   const load = async () => {
     setLoading(true);
-    const n = await base44.entities.StudentNote.filter({ user_id: user.id }, "-created_date");
-    setNotes(n);
-    setLoading(false);
+    try {
+      const n = await base44.entities.StudentNote.filter({ user_id: user.id }, "-created_date");
+      setNotes(Array.isArray(n) ? n : []);
+    } catch (err) {
+      console.error("Failed to load notes:", err);
+      setNotes([]);
+      toast.error("Couldn't load your notes. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { if (user) load(); }, [user]);
+  useEffect(() => { if (user?.id) load(); }, [user?.id]);
 
   const addNote = async () => {
     if (!newNote.trim()) return;
     setSaving(true);
-    await base44.entities.StudentNote.create({
-      user_id: user.id,
-      course_id: "general",
-      course_title: "General Notes",
-      content: newNote.trim(),
-      is_bookmarked: false,
-    });
-    setNewNote("");
-    setAdding(false);
-    toast.success("Note saved!");
-    setSaving(false);
-    load();
+    try {
+      await base44.entities.StudentNote.create({
+        user_id: user.id,
+        course_id: "general",
+        course_title: "General Notes",
+        content: newNote.trim(),
+        is_bookmarked: false,
+      });
+      setNewNote("");
+      setAdding(false);
+      toast.success("Note saved!");
+      load();
+    } catch (err) {
+      console.error("Failed to save note:", err);
+      toast.error("Couldn't save your note. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleBookmark = async (note) => {
-    await base44.entities.StudentNote.update(note.id, { is_bookmarked: !note.is_bookmarked });
-    setNotes(prev => prev.map(n => n.id === note.id ? { ...n, is_bookmarked: !n.is_bookmarked } : n));
+    const next = !note.is_bookmarked;
+    // Optimistic update, rolled back on failure.
+    setNotes(prev => prev.map(n => n.id === note.id ? { ...n, is_bookmarked: next } : n));
+    try {
+      await base44.entities.StudentNote.update(note.id, { is_bookmarked: next });
+    } catch (err) {
+      console.error("Failed to update bookmark:", err);
+      setNotes(prev => prev.map(n => n.id === note.id ? { ...n, is_bookmarked: !next } : n));
+      toast.error("Couldn't update the bookmark. Please try again.");
+    }
   };
 
   const deleteNote = async (id) => {
-    await base44.entities.StudentNote.delete(id);
-    setNotes(prev => prev.filter(n => n.id !== id));
-    toast.success("Note deleted.");
+    const prev = notes;
+    setNotes(cur => cur.filter(n => n.id !== id)); // optimistic
+    try {
+      await base44.entities.StudentNote.delete(id);
+      toast.success("Note deleted.");
+    } catch (err) {
+      console.error("Failed to delete note:", err);
+      setNotes(prev); // rollback
+      toast.error("Couldn't delete the note. Please try again.");
+    }
   };
 
   const displayed = notes.filter(n => {
     const matchTab = tab === "notes" ? true : n.is_bookmarked;
-    const matchSearch = !search || n.content.toLowerCase().includes(search.toLowerCase()) || (n.topic_title || "").toLowerCase().includes(search.toLowerCase());
+    const term = search.toLowerCase();
+    const matchSearch = !search
+      || (n.content || "").toLowerCase().includes(term)
+      || (n.topic_title || "").toLowerCase().includes(term);
     return matchTab && matchSearch;
   });
 

@@ -66,24 +66,43 @@ export default function GoalSetting({ user, enrollments }) {
 
   const load = async () => {
     setLoading(true);
-    const g = await base44.entities.StudentGoal.filter({ user_id: user.id });
-    setGoals(g);
-    setLoading(false);
+    try {
+      const g = await base44.entities.StudentGoal.filter({ user_id: user.id });
+      setGoals(Array.isArray(g) ? g : []);
+    } catch (err) {
+      console.error("Failed to load goals:", err);
+      setGoals([]);
+      toast.error("Couldn't load your goals. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { if (user) load(); }, [user]);
+  useEffect(() => { if (user?.id) load(); }, [user?.id]);
 
   const saveGoal = async (data) => {
-    await base44.entities.StudentGoal.create({ user_id: user.id, ...data });
-    toast.success("Goal set!");
-    setShowForm(false);
-    load();
+    try {
+      await base44.entities.StudentGoal.create({ user_id: user.id, ...data });
+      toast.success("Goal set!");
+      setShowForm(false);
+      load();
+    } catch (err) {
+      console.error("Failed to save goal:", err);
+      toast.error("Couldn't save your goal. Please try again.");
+    }
   };
 
   const deleteGoal = async (id) => {
-    await base44.entities.StudentGoal.delete(id);
-    setGoals(prev => prev.filter(g => g.id !== id));
-    toast.success("Goal removed.");
+    const prev = goals;
+    setGoals(cur => cur.filter(g => g.id !== id)); // optimistic
+    try {
+      await base44.entities.StudentGoal.delete(id);
+      toast.success("Goal removed.");
+    } catch (err) {
+      console.error("Failed to delete goal:", err);
+      setGoals(prev); // rollback
+      toast.error("Couldn't remove the goal. Please try again.");
+    }
   };
 
   const getDaysLeft = (targetDate) => {

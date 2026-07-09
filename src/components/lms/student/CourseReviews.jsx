@@ -19,12 +19,21 @@ export default function CourseReviews({ user, enrollments }) {
   const [loading, setLoading] = useState(true);
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
 
+  const loadReviews = async () => {
+    try {
+      const data = await base44.entities.CourseFeedback.filter({ user_id: user.id });
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load reviews:", err);
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!user?.id) return;
-    base44.entities.CourseFeedback.filter({ user_id: user.id }).then(data => {
-      setReviews(data);
-      setLoading(false);
-    });
+    loadReviews();
   }, [user?.id]);
 
   // Enrollments that don't have a review yet
@@ -71,7 +80,7 @@ export default function CourseReviews({ user, enrollments }) {
                       user={user}
                       onSubmitted={() => {
                         setSelectedEnrollment(null);
-                        base44.entities.CourseFeedback.filter({ user_id: user.id }).then(setReviews);
+                        loadReviews();
                       }}
                     />
                   </div>

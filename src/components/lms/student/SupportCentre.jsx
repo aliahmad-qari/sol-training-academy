@@ -33,7 +33,12 @@ function TicketThreadModal({ ticket, user, onClose, onUpdated }) {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
-  const messages = ticket.messages || [];
+  // The opening message is shown in its own "Original" block below, and the
+  // backend also seeds it as messages[0]; drop that duplicate so replies only.
+  const allMessages = ticket.messages || [];
+  const messages = allMessages.filter(
+    (m, i) => !(i === 0 && m.sender_role === "student" && m.message === ticket.message)
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,20 +47,19 @@ function TicketThreadModal({ ticket, user, onClose, onUpdated }) {
   const sendReply = async () => {
     if (!reply.trim()) return;
     setSending(true);
-    const newMsg = {
-      sender_id: user.id,
-      sender_name: user.full_name || user.email,
-      sender_role: "student",
-      message: reply.trim(),
-      created_at: new Date().toISOString(),
-    };
-    await base44.entities.SupportTicket.update(ticket.id, {
-      messages: [...messages, newMsg],
-    });
-    toast.success("Reply sent.");
-    setSending(false);
-    setReply("");
-    onUpdated();
+    try {
+      // Use the dedicated reply endpoint — the PATCH handler ignores `messages`.
+      // The server stamps sender identity from the auth token.
+      await base44.entities.SupportTicket.reply(ticket.id, reply.trim());
+      toast.success("Reply sent.");
+      setReply("");
+      onUpdated();
+    } catch (err) {
+      console.error("Failed to send reply:", err);
+      toast.error("Couldn't send your reply. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -155,19 +159,21 @@ function NewTicketForm({ user, onSubmitted, onCancel }) {
       return;
     }
     setLoading(true);
-    await base44.entities.SupportTicket.create({
-      user_id: user.id,
-      user_name: user.full_name || "",
-      user_email: user.email || "",
-      category: form.category,
-      subject: form.subject,
-      message: form.message,
-      status: "open",
-      messages: [],
-    });
-    setLoading(false);
-    toast.success("Support ticket submitted! We'll respond within 1 business day.");
-    onSubmitted();
+    try {
+      // Server stamps user identity and seeds the opening message from the body.
+      await base44.entities.SupportTicket.create({
+        category: form.category,
+        subject: form.subject,
+        message: form.message,
+      });
+      toast.success("Support ticket submitted! We'll respond within 1 business day.");
+      onSubmitted();
+    } catch (err) {
+      console.error("Failed to submit ticket:", err);
+      toast.error(err?.response?.data?.message || "Couldn't submit your ticket. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -250,14 +256,21 @@ export default function SupportCentre({ user }) {
   const [openTicket, setOpenTicket] = useState(null);
 
   const loadTickets = async () => {
-    if (!user) return;
+    if (!user?.id) return;
     setLoadingTickets(true);
-    const tkts = await base44.entities.SupportTicket.filter({ user_id: user.id }, "-created_date");
-    setTickets(tkts);
-    setLoadingTickets(false);
+    try {
+      const tkts = await base44.entities.SupportTicket.filter({ user_id: user.id }, "-created_date");
+      setTickets(Array.isArray(tkts) ? tkts : []);
+    } catch (err) {
+      console.error("Failed to load tickets:", err);
+      setTickets([]);
+      toast.error("Couldn't load your tickets. Please try again.");
+    } finally {
+      setLoadingTickets(false);
+    }
   };
 
-  useEffect(() => { loadTickets(); }, [user]);
+  useEffect(() => { loadTickets(); }, [user?.id]);
 
   const handleSubmitted = () => {
     setShowForm(false);

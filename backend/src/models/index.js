@@ -16,3 +16,11 @@ export { default as CoursePayment } from './CoursePayment.js';
 export { default as Invoice } from './Invoice.js';
 export { default as Coupon } from './Coupon.js';
 export { default as SupportTicket } from './SupportTicket.js';
+
+// Student-portal engagement entities (notes, discussion, goals, requests, referrals, feedback).
+export { default as StudentNote } from './StudentNote.js';
+export { default as DiscussionPost } from './DiscussionPost.js';
+export { default as StudentGoal } from './StudentGoal.js';
+export { default as StudentRequest } from './StudentRequest.js';
+export { default as Referral } from './Referral.js';
+export { default as CourseFeedback } from './CourseFeedback.js';

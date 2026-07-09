@@ -18,6 +18,12 @@ import adminRoutes from './admin.routes.js';
 import studentRoutes from './student.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import aiRoutes from './ai.routes.js';
+import studentNoteRoutes from './studentNote.routes.js';
+import studentGoalRoutes from './studentGoal.routes.js';
+import discussionRoutes from './discussion.routes.js';
+import studentRequestRoutes from './studentRequest.routes.js';
+import referralRoutes from './referral.routes.js';
+import courseFeedbackRoutes from './courseFeedback.routes.js';
 
 /**
  * Central API v1 router. Every feature module is registered here.
@@ -43,5 +49,13 @@ router.use('/admin', adminRoutes);
 router.use('/student', studentRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/ai', aiRoutes);
+
+// Student-portal engagement features.
+router.use('/notes', studentNoteRoutes);
+router.use('/goals', studentGoalRoutes);
+router.use('/discussion', discussionRoutes);
+router.use('/requests', studentRequestRoutes);
+router.use('/referrals', referralRoutes);
+router.use('/feedback', courseFeedbackRoutes);
 
 export default router;

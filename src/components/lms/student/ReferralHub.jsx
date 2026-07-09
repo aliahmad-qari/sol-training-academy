@@ -16,27 +16,58 @@ export default function ReferralHub({ user }) {
   const [loading, setLoading]     = useState(true);
   const [copied, setCopied]       = useState(false);
 
-  // Generate a stable referral code from the user ID
-  const referralCode = user ? `SOL-${user.id.slice(-8).toUpperCase()}` : "";
-  const referralLink = `${window.location.origin}/register?ref=${referralCode}`;
+  // Generate a stable referral code from the user ID. Guard against a missing or
+  // short id so this never throws on `.slice()` of undefined.
+  const rawId = user?.id ? String(user.id) : "";
+  const referralCode = rawId ? `SOL-${rawId.slice(-8).toUpperCase()}` : "";
+  const referralLink = referralCode
+    ? `${window.location.origin}/register?ref=${encodeURIComponent(referralCode)}`
+    : "";
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     loadReferrals();
-  }, [user]);
+  }, [user?.id]);
 
   const loadReferrals = async () => {
     setLoading(true);
-    const refs = await base44.entities.Referral.filter({ referrer_id: user.id }, "-created_date");
-    setReferrals(refs);
-    setLoading(false);
+    try {
+      const refs = await base44.entities.Referral.filter({ referrer_id: user.id }, "-created_date");
+      setReferrals(Array.isArray(refs) ? refs : []);
+    } catch (err) {
+      console.error("Failed to load referrals:", err);
+      setReferrals([]);
+      toast.error("Couldn't load your referrals. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    toast.success("Referral link copied!");
-    setTimeout(() => setCopied(false), 2000);
+  const copyLink = async () => {
+    if (!referralLink) return;
+    try {
+      // navigator.clipboard is only available in secure (HTTPS) contexts.
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(referralLink);
+      } else {
+        // Fallback for insecure contexts / older browsers.
+        const ta = document.createElement("textarea");
+        ta.value = referralLink;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      toast.success("Referral link copied!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Clipboard copy failed:", err);
+      toast.error("Couldn't copy the link. Please copy it manually.");
+    }
   };
 
   const shareLink = async () => {

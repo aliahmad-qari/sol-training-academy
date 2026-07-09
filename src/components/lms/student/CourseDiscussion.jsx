@@ -103,53 +103,75 @@ export default function CourseDiscussion({ user, enrollments }) {
 
   const load = async () => {
     setLoading(true);
-    const all = await base44.entities.DiscussionPost.list("-created_date", 200);
-    setPosts(all);
-    setLoading(false);
+    try {
+      // Backend scopes results to the courses this student is enrolled in, so
+      // all enrolled students see each other's posts. Staff see everything.
+      const all = await base44.entities.DiscussionPost.list("-created_date");
+      setPosts(Array.isArray(all) ? all : []);
+    } catch (err) {
+      console.error("Failed to load discussions:", err);
+      setPosts([]);
+      toast.error("Couldn't load the discussion board. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { if (user) load(); }, [user]);
+  useEffect(() => { if (user?.id) load(); }, [user?.id]);
 
   const submitPost = async () => {
     if (!newPost.content.trim() || !newPost.course_id) { toast.error("Please fill all required fields."); return; }
     setSaving(true);
-    const enrollment = enrollments.find(e => e.course_id === newPost.course_id);
-    await base44.entities.DiscussionPost.create({
-      course_id: newPost.course_id,
-      course_title: enrollment?.course_title || "",
-      user_id: user.id,
-      user_name: user.full_name || user.email,
-      title: newPost.title,
-      content: newPost.content.trim(),
-      likes: 0,
-      liked_by: [],
-    });
-    setNewPost({ title: "", content: "", course_id: "" });
-    setShowNewForm(false);
-    toast.success("Post published!");
-    setSaving(false);
-    load();
+    try {
+      const enrollment = enrollments.find(e => e.course_id === newPost.course_id);
+      await base44.entities.DiscussionPost.create({
+        course_id: newPost.course_id,
+        course_title: enrollment?.course_title || "",
+        title: newPost.title,
+        content: newPost.content.trim(),
+      });
+      setNewPost({ title: "", content: "", course_id: "" });
+      setShowNewForm(false);
+      toast.success("Post published!");
+      load();
+    } catch (err) {
+      console.error("Failed to publish post:", err);
+      toast.error(err?.response?.data?.message || "Couldn't publish your post. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReply = async (parentPost, text) => {
-    await base44.entities.DiscussionPost.create({
-      course_id: parentPost.course_id,
-      course_title: parentPost.course_title,
-      user_id: user.id,
-      user_name: user.full_name || user.email,
-      parent_id: parentPost.id,
-      content: text,
-      likes: 0,
-      liked_by: [],
-    });
-    load();
+    try {
+      await base44.entities.DiscussionPost.create({
+        course_id: parentPost.course_id,
+        course_title: parentPost.course_title,
+        parent_id: parentPost.id,
+        content: text,
+      });
+      load();
+    } catch (err) {
+      console.error("Failed to post reply:", err);
+      toast.error("Couldn't post your reply. Please try again.");
+    }
   };
 
   const handleLike = async (post) => {
-    const liked = (post.liked_by || []).includes(user.id);
-    const liked_by = liked ? post.liked_by.filter(id => id !== user.id) : [...(post.liked_by || []), user.id];
-    await base44.entities.DiscussionPost.update(post.id, { likes: liked_by.length, liked_by });
-    setPosts(prev => prev.map(p => p.id === post.id ? { ...p, likes: liked_by.length, liked_by } : p));
+    // Optimistic toggle; the atomic backend endpoint returns the source of truth.
+    const liked = (post.liked_by || []).some(id => String(id) === String(user.id));
+    const optimistic = liked
+      ? { ...post, liked_by: post.liked_by.filter(id => String(id) !== String(user.id)), likes: Math.max(0, (post.likes || 0) - 1) }
+      : { ...post, liked_by: [...(post.liked_by || []), user.id], likes: (post.likes || 0) + 1 };
+    setPosts(prev => prev.map(p => p.id === post.id ? optimistic : p));
+    try {
+      const updated = await base44.entities.DiscussionPost.like(post.id);
+      if (updated) setPosts(prev => prev.map(p => p.id === post.id ? { ...p, ...updated } : p));
+    } catch (err) {
+      console.error("Failed to like post:", err);
+      setPosts(prev => prev.map(p => p.id === post.id ? post : p)); // rollback
+      toast.error("Couldn't register your like. Please try again.");
+    }
   };
 
   const topLevelPosts = posts.filter(p => !p.parent_id);
