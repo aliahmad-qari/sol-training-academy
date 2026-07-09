@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { MessageSquare, Trash2, CheckCircle, Flag, Search, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import apiClient from "@/api/apiClient";
+import { MessageSquare, Trash2, Search, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,24 +15,38 @@ export default function AdminDiscussionModeration({ courses }) {
 
   const load = async () => {
     setLoading(true);
-    const allPosts = await base44.entities.DiscussionPost.list("-created_date", 200);
-    setPosts(allPosts);
-    setLoading(false);
+    try {
+      const res = await apiClient.get("/discussion?limit=200");
+      setPosts(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch {
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
 
   const deletePost = async (post) => {
     if (!confirm(`Delete this post by "${post.user_name}"? This cannot be undone.`)) return;
-    setDeletingId(post.id);
-    await base44.entities.DiscussionPost.delete(post.id);
-    setPosts(prev => prev.filter(p => p.id !== post.id));
-    toast.success("Post deleted.");
-    setDeletingId(null);
+    setDeletingId(post._id || post.id);
+    try {
+      await apiClient.delete(`/discussion/${post._id || post.id}`);
+      // Backend cascade-deletes replies too
+      setPosts(prev => prev.filter(p =>
+        (p._id || p.id) !== (post._id || post.id) &&
+        String(p.parent_id) !== String(post._id || post.id)
+      ));
+      toast.success("Post deleted.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const filtered = posts.filter(p => {
-    const matchCourse = courseFilter === "all" || p.course_id === courseFilter;
+    const matchCourse = courseFilter === "all" || String(p.course_id) === courseFilter;
     const q = search.toLowerCase();
     const matchSearch = !search ||
       p.content?.toLowerCase().includes(q) ||
@@ -42,14 +56,16 @@ export default function AdminDiscussionModeration({ courses }) {
   });
 
   const topLevel = filtered.filter(p => !p.parent_id);
-  const replies = filtered.filter(p => !!p.parent_id);
+  const replies  = filtered.filter(p => !!p.parent_id);
 
   const stats = [
-    { label: "Total Posts", value: posts.length, color: "text-blue-600 bg-blue-50" },
-    { label: "Top-Level", value: posts.filter(p => !p.parent_id).length, color: "text-purple-600 bg-purple-50" },
-    { label: "Replies", value: posts.filter(p => !!p.parent_id).length, color: "text-emerald-600 bg-emerald-50" },
-    { label: "Courses Active", value: new Set(posts.map(p => p.course_id)).size, color: "text-amber-600 bg-amber-50" },
+    { label: "Total Posts",    value: posts.length,                                  color: "text-blue-600 bg-blue-50" },
+    { label: "Top-Level",      value: posts.filter(p => !p.parent_id).length,        color: "text-purple-600 bg-purple-50" },
+    { label: "Replies",        value: posts.filter(p => !!p.parent_id).length,       color: "text-emerald-600 bg-emerald-50" },
+    { label: "Courses Active", value: new Set(posts.map(p => String(p.course_id))).size, color: "text-amber-600 bg-amber-50" },
   ];
+
+  const getCourse = (courseId) => courses.find(c => (c._id || c.id) === String(courseId));
 
   return (
     <div className="space-y-5">
@@ -89,7 +105,7 @@ export default function AdminDiscussionModeration({ courses }) {
           <SelectTrigger className="w-48 h-9 text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
-            {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+            {courses.map(c => <SelectItem key={c._id || c.id} value={c._id || c.id}>{c.title}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -112,10 +128,11 @@ export default function AdminDiscussionModeration({ courses }) {
           </div>
           <div className="divide-y divide-border/20">
             {filtered.map(post => {
-              const course = courses.find(c => c.id === post.course_id);
+              const course = getCourse(post.course_id);
               const isReply = !!post.parent_id;
+              const postId = post._id || post.id;
               return (
-                <div key={post.id} className={`px-5 py-4 hover:bg-slate-50 transition-colors ${isReply ? "pl-10 bg-slate-50/50" : ""}`}>
+                <div key={postId} className={`px-5 py-4 hover:bg-slate-50 transition-colors ${isReply ? "pl-10 bg-slate-50/50" : ""}`}>
                   <div className="flex items-start gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5 ${
                       isReply ? "bg-slate-100 text-slate-500" : "bg-harvest/10 text-harvest"
@@ -132,7 +149,7 @@ export default function AdminDiscussionModeration({ courses }) {
                           <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-medium">{course.title}</span>
                         )}
                         <span className="text-[10px] text-slate-400">
-                          {new Date(post.created_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                          {post.createdAt ? new Date(post.createdAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : ""}
                         </span>
                         {(post.likes || 0) > 0 && (
                           <span className="text-[10px] text-slate-500">❤️ {post.likes}</span>
@@ -143,11 +160,11 @@ export default function AdminDiscussionModeration({ courses }) {
                     </div>
                     <button
                       onClick={() => deletePost(post)}
-                      disabled={deletingId === post.id}
+                      disabled={deletingId === postId}
                       className="flex-shrink-0 p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
                       title="Delete post"
                     >
-                      {deletingId === post.id
+                      {deletingId === postId
                         ? <Loader2 className="w-4 h-4 animate-spin" />
                         : <Trash2 className="w-4 h-4" />
                       }

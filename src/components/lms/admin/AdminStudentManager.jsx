@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users, Search, CheckCircle, Award, Clock, Plus, X, Save, Upload } from "lucide-react";
+import { Users, Search, CheckCircle, Award, Clock, Plus, X, Save, Upload, UserX, UserCheck, ShieldOff } from "lucide-react";
 import AdminBulkEnroll from "@/components/lms/admin/AdminBulkEnroll";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,24 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkEnroll, setShowBulkEnroll] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
+
+  const toggleUserStatus = async (enrollment, action) => {
+    // action: "suspend" | "activate"
+    const userId = enrollment.user_id;
+    if (!userId) { toast.error("No user ID on this enrollment."); return; }
+    if (!confirm(`${action === "suspend" ? "Suspend" : "Re-activate"} ${enrollment.user_name || enrollment.user_email}?`)) return;
+    setTogglingId(userId);
+    try {
+      await apiClient.patch(`/users/${userId}`, { is_active: action === "activate" });
+      toast.success(action === "suspend" ? "Student suspended." : "Student re-activated.");
+      onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Action failed.");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const uniqueStudents = [...new Set(enrollments.map(e => e.user_id))];
   const completed = enrollments.filter(e => e.status === "completed").length;
@@ -187,7 +205,7 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-border/30">
-                  {["Student", "Course", "Level", "Progress", "Status", "Enrolled", "Certificate"].map(h => (
+                  {["Student", "Course", "Level", "Progress", "Status", "Enrolled", "Certificate", "Actions"].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate_mist uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -237,6 +255,25 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                       {e.certificate_issued
                         ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
                         : <span className="text-slate_mist/40 text-lg">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        {e.is_active === false ? (
+                          <Button size="sm" variant="outline"
+                            onClick={() => toggleUserStatus(e, "activate")}
+                            disabled={togglingId === e.user_id}
+                            className="h-7 px-2 text-[10px] text-emerald-700 border-emerald-300 hover:bg-emerald-50 gap-1">
+                            <UserCheck className="w-3 h-3" /> Activate
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline"
+                            onClick={() => toggleUserStatus(e, "suspend")}
+                            disabled={togglingId === e.user_id}
+                            className="h-7 px-2 text-[10px] text-red-600 border-red-300 hover:bg-red-50 gap-1">
+                            <UserX className="w-3 h-3" /> Suspend
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
