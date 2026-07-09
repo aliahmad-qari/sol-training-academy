@@ -248,7 +248,7 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                     <td className="px-4 py-3 text-xs text-slate_mist whitespace-nowrap">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {e.created_date ? new Date(e.created_date).toLocaleDateString("en-AU") : "—"}
+                        {e.createdAt ? new Date(e.createdAt).toLocaleDateString("en-AU") : "—"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -258,7 +258,7 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        {e.is_active === false ? (
+                        {(e.is_active === false || e.status === 'suspended') ? (
                           <Button size="sm" variant="outline"
                             onClick={() => toggleUserStatus(e, "activate")}
                             disabled={togglingId === e.user_id}

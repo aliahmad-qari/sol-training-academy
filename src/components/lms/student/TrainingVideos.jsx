@@ -1,89 +1,80 @@
-import React, { useState } from "react";
-import { Video, Search, Play, CheckCircle, Clock, Filter, BookOpen, Eye } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Video, Search, Play, CheckCircle, Clock, BookOpen, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import apiClient from "@/api/apiClient";
 
-const VIDEO_CATEGORIES = [
-  {
-    id: "all", label: "All Videos", count: 237,
-  },
-  {
-    id: "l1", label: "Level 1 — Foundation", count: 72,
-  },
-  {
-    id: "l2", label: "Level 2 — Professional", count: 89,
-  },
-  {
-    id: "l3", label: "Level 3 — Advanced", count: 76,
-  },
-];
-
-const MODULES = [
-  {
-    id: 1, level: "l1", title: "Introduction to NDIS",
-    videos: [
-      { id: 1, title: "What is the NDIS? An Overview", duration: "12:30", completed: true, views: 1 },
-      { id: 2, title: "NDIS Eligibility Criteria Explained", duration: "9:45", completed: true, views: 1 },
-      { id: 3, title: "The Role of a Support Coordinator", duration: "14:20", completed: false, views: 0 },
-      { id: 4, title: "NDIS Participant Pathways", duration: "11:00", completed: false, views: 0 },
-    ]
-  },
-  {
-    id: 2, level: "l1", title: "NDIS Plans & Funding",
-    videos: [
-      { id: 5, title: "Understanding NDIS Plans", duration: "16:10", completed: false, views: 0 },
-      { id: 6, title: "Funding Categories & Budgets", duration: "13:55", completed: false, views: 0 },
-      { id: 7, title: "Plan Management Options", duration: "10:20", completed: false, views: 0 },
-    ]
-  },
-  {
-    id: 3, level: "l2", title: "Advanced Support Coordination",
-    videos: [
-      { id: 8, title: "Complex Support Needs Assessment", duration: "18:40", completed: false, views: 0 },
-      { id: 9, title: "Crisis Intervention Strategies", duration: "22:15", completed: false, views: 0 },
-      { id: 10, title: "Specialist Disability Accommodation", duration: "15:30", completed: false, views: 0 },
-    ]
-  },
-  {
-    id: 4, level: "l2", title: "NDIS Practice Standards",
-    videos: [
-      { id: 11, title: "Quality & Safeguards Framework", duration: "20:00", completed: false, views: 0 },
-      { id: 12, title: "Incident Reporting Requirements", duration: "12:45", completed: false, views: 0 },
-      { id: 13, title: "Complaint Management Process", duration: "11:30", completed: false, views: 0 },
-    ]
-  },
-  {
-    id: 5, level: "l3", title: "Specialist Coordination",
-    videos: [
-      { id: 14, title: "Behaviour Support Plans", duration: "25:10", completed: false, views: 0 },
-      { id: 15, title: "Complex Case Management", duration: "28:00", completed: false, views: 0 },
-      { id: 16, title: "Tribunal & Appeals Process", duration: "19:20", completed: false, views: 0 },
-    ]
-  },
-];
-
-const LEVEL_COLORS = {
-  l1: "bg-harvest/10 text-harvest border-harvest/30",
-  l2: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  l3: "bg-amber-50 text-amber-700 border-amber-200",
+const LEVEL_CONFIG = {
+  level1: { pill: "bg-harvest/10 text-harvest border-harvest/30",         bar: "bg-harvest",     label: "Level 1 — Foundation" },
+  level2: { pill: "bg-emerald-50 text-emerald-700 border-emerald-200",    bar: "bg-emerald-500", label: "Level 2 — Professional" },
+  level3: { pill: "bg-amber-50 text-amber-700 border-amber-200",          bar: "bg-amber-500",   label: "Level 3 — Advanced" },
 };
-const LEVEL_LABELS = { l1: "Level 1", l2: "Level 2", l3: "Level 3" };
 
 export default function TrainingVideos({ enrollments = [] }) {
-  const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [expandedModule, setExpandedModule] = useState(1);
+  const [topics, setTopics]         = useState([]);   // all video topics across enrolled courses
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState("");
+  const [activeEnrId, setActiveEnrId] = useState("all");
 
-  const totalCompleted = MODULES.flatMap(m => m.videos).filter(v => v.completed).length;
-  const totalRemaining = 237 - totalCompleted;
+  // Fetch video topics for every enrolled course
+  useEffect(() => {
+    if (!enrollments.length) { setLoading(false); return; }
+    const courseIds = [...new Set(enrollments.map(e => e.course_id))];
+    Promise.all(
+      courseIds.map(cid =>
+        apiClient.get(`/topics?course_id=${cid}&type=video&limit=200`)
+          .then(r => r.data?.data ?? [])
+          .catch(() => [])
+      )
+    ).then(results => {
+      setTopics(results.flat());
+      setLoading(false);
+    });
+  }, [enrollments]);
 
-  const filteredModules = MODULES.filter(m => {
-    if (activeCategory !== "all" && m.level !== activeCategory) return false;
-    if (search) {
-      return m.videos.some(v => v.title.toLowerCase().includes(search.toLowerCase())) ||
-        m.title.toLowerCase().includes(search.toLowerCase());
-    }
-    return true;
+  if (!enrollments.length) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-sm">
+        <Video className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+        <h3 className="font-display font-bold text-xl text-[#0d2348] mb-2">No training videos yet</h3>
+        <p className="text-slate-500 text-sm">Enrol in a course to access its training videos.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-harvest border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Build per-enrollment completed set for quick lookup
+  const completedMap = {};
+  enrollments.forEach(e => {
+    (e.completed_topic_ids || []).forEach(id => { completedMap[String(id)] = true; });
+  });
+
+  // Filter topics by selected enrollment and search
+  const visibleTopics = topics.filter(t => {
+    const enrMatch = activeEnrId === "all" || enrollments.find(
+      e => String(e.course_id) === String(t.course_id) && (e._id || e.id) === activeEnrId
+    );
+    const searchMatch = !search || t.title.toLowerCase().includes(search.toLowerCase());
+    return enrMatch && searchMatch;
+  });
+
+  const totalVideos    = visibleTopics.length;
+  const totalCompleted = visibleTopics.filter(t => completedMap[String(t._id || t.id)]).length;
+  const totalMins      = visibleTopics.reduce((s, t) => s + (t.video_duration_mins || 0), 0);
+  const totalHours     = totalMins > 0 ? (totalMins / 60).toFixed(1) : "—";
+
+  // Group by course
+  const grouped = {};
+  visibleTopics.forEach(t => {
+    const key = String(t.course_id);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(t);
   });
 
   return (
@@ -96,7 +87,7 @@ export default function TrainingVideos({ enrollments = [] }) {
           </div>
           <div className="flex-1">
             <h2 className="font-display font-bold text-white text-lg">Training Videos</h2>
-            <p className="text-white/50 text-sm">237 professional NDIS training videos across 3 certification levels</p>
+            <p className="text-white/50 text-sm">Video lessons from your enrolled courses</p>
           </div>
           <div className="relative w-full sm:w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
@@ -106,15 +97,15 @@ export default function TrainingVideos({ enrollments = [] }) {
           </div>
         </div>
 
-        {/* Stats row */}
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Total Videos", value: "237", color: "text-white" },
-            { label: "Completed", value: totalCompleted.toString(), color: "text-emerald-400" },
-            { label: "Remaining", value: totalRemaining.toString(), color: "text-amber-400" },
-            { label: "Est. Hours", value: "~58h", color: "text-harvest" },
+            { label: "Total Videos",  value: totalVideos,                    color: "text-white" },
+            { label: "Completed",     value: totalCompleted,                 color: "text-emerald-400" },
+            { label: "Remaining",     value: totalVideos - totalCompleted,   color: "text-amber-400" },
+            { label: "Est. Hours",    value: `~${totalHours}h`,              color: "text-harvest" },
           ].map(s => (
-            <div key={s.label} className="bg-white/8 border border-white/10 rounded-xl px-4 py-3 text-center">
+            <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center">
               <p className={`font-display font-bold text-xl ${s.color}`}>{s.value}</p>
               <p className="text-white/40 text-[10px] mt-0.5">{s.label}</p>
             </div>
@@ -122,132 +113,116 @@ export default function TrainingVideos({ enrollments = [] }) {
         </div>
       </div>
 
-      {/* Category filter tabs */}
+      {/* Course filter tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {VIDEO_CATEGORIES.map(cat => (
-          <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-              activeCategory === cat.id
-                ? "bg-harvest text-white border-harvest shadow-sm"
+        <button onClick={() => setActiveEnrId("all")}
+          className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+            activeEnrId === "all"
+              ? "bg-harvest text-white border-harvest"
+              : "bg-white text-slate-600 border-border hover:border-harvest/50 hover:text-harvest"
+          }`}>
+          All Courses
+        </button>
+        {enrollments.map(e => (
+          <button key={e._id || e.id} onClick={() => setActiveEnrId(e._id || e.id)}
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all border truncate max-w-[200px] ${
+              activeEnrId === (e._id || e.id)
+                ? "bg-harvest text-white border-harvest"
                 : "bg-white text-slate-600 border-border hover:border-harvest/50 hover:text-harvest"
             }`}>
-            {cat.label}
-            <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-              activeCategory === cat.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-            }`}>{cat.count}</span>
+            {e.course_title}
           </button>
         ))}
       </div>
 
-      {/* Continue watching */}
-      <div className="bg-white rounded-2xl border border-border/50 p-5 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <Eye className="w-4 h-4 text-harvest" />
-          <h3 className="font-display font-semibold text-ink">Continue Watching</h3>
+      {/* No results */}
+      {visibleTopics.length === 0 && (
+        <div className="bg-white rounded-2xl border border-border/50 p-12 text-center">
+          <Video className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 text-sm">
+            {search ? "No videos match your search." : "No video topics found in your enrolled courses."}
+          </p>
         </div>
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-4 flex items-center gap-4">
-          <div className="w-16 h-10 bg-black/40 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Play className="w-5 h-5 text-white fill-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium truncate">The Role of a Support Coordinator</p>
-            <p className="text-white/40 text-xs mt-0.5">Level 1 · Introduction to NDIS · 14:20</p>
-            <div className="mt-2 flex items-center gap-2">
-              <div className="flex-1 h-1 bg-white/10 rounded-full">
-                <div className="h-1 bg-harvest rounded-full" style={{ width: "35%" }} />
+      )}
+
+      {/* Grouped by course */}
+      {Object.entries(grouped).map(([courseId, courseTopics]) => {
+        const enr = enrollments.find(e => String(e.course_id) === courseId);
+        if (!enr) return null;
+        const cfg = LEVEL_CONFIG[enr.course_level] || LEVEL_CONFIG.level1;
+        const doneCourse = courseTopics.filter(t => completedMap[String(t._id || t.id)]).length;
+
+        return (
+          <div key={courseId} className="bg-white rounded-2xl border border-border/50 overflow-hidden shadow-sm">
+            {/* Course header */}
+            <div className="px-5 py-4 bg-slate-50 border-b border-border/30 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.pill}`}>
+                    {cfg.label}
+                  </span>
+                  <h4 className="font-display font-semibold text-ink text-sm truncate">{enr.course_title}</h4>
+                </div>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <div className="w-32 h-1 bg-slate-200 rounded-full overflow-hidden">
+                    <div className={`h-1 rounded-full ${cfg.bar}`}
+                      style={{ width: `${courseTopics.length ? (doneCourse / courseTopics.length) * 100 : 0}%` }} />
+                  </div>
+                  <span className="text-[10px] text-slate-400">{doneCourse}/{courseTopics.length} videos</span>
+                </div>
               </div>
-              <span className="text-white/40 text-[10px] flex-shrink-0">35% watched</span>
             </div>
-          </div>
-          <Button size="sm" className="bg-harvest text-white flex-shrink-0 gap-1 text-xs">
-            <Play className="w-3 h-3 fill-white" /> Resume
-          </Button>
-        </div>
-      </div>
 
-      {/* Modules */}
-      <div className="space-y-3">
-        {filteredModules.map(module => {
-          const moduleVideos = search
-            ? module.videos.filter(v => v.title.toLowerCase().includes(search.toLowerCase()))
-            : module.videos;
-          const doneCount = moduleVideos.filter(v => v.completed).length;
-          const isOpen = expandedModule === module.id;
+            {/* Video list */}
+            <div className="divide-y divide-slate-50">
+              {courseTopics
+                .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+                .map(topic => {
+                  const topicId   = String(topic._id || topic.id);
+                  const done      = !!completedMap[topicId];
+                  const isExpired = enr.expiry_date && new Date(enr.expiry_date) < new Date();
 
-          return (
-            <div key={module.id} className="bg-white rounded-2xl border border-border/50 overflow-hidden shadow-sm">
-              <button onClick={() => setExpandedModule(isOpen ? null : module.id)}
-                className="w-full text-left px-5 py-4 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  doneCount === moduleVideos.length && moduleVideos.length > 0
-                    ? "bg-emerald-100" : "bg-slate-100"
-                }`}>
-                  {doneCount === moduleVideos.length && moduleVideos.length > 0
-                    ? <CheckCircle className="w-4 h-4 text-emerald-600" />
-                    : <BookOpen className="w-4 h-4 text-slate-500" />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_COLORS[module.level]}`}>
-                      {LEVEL_LABELS[module.level]}
-                    </span>
-                    <h4 className="font-display font-semibold text-ink text-sm">{module.title}</h4>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <div className="flex-1 max-w-32 h-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-1 bg-harvest rounded-full"
-                      style={{ width: `${moduleVideos.length ? (doneCount / moduleVideos.length) * 100 : 0}%` }} />
-                    </div>
-                    <span className="text-[10px] text-slate-400">{doneCount}/{moduleVideos.length} videos</span>
-                  </div>
-                </div>
-                <span className={`text-white/80 transition-transform duration-200 text-slate-300 ${isOpen ? "rotate-90" : ""}`}>›</span>
-              </button>
-
-              {isOpen && (
-                <div className="border-t border-slate-100 divide-y divide-slate-50">
-                  {moduleVideos.map(video => (
-                    <div key={video.id} className={`flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors group cursor-pointer`}>
+                  return (
+                    <div key={topicId}
+                      className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors group">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors
-                        ${video.completed ? "bg-emerald-100" : "bg-slate-100 group-hover:bg-harvest/10"}`}>
-                        {video.completed
+                        ${done ? "bg-emerald-100" : isExpired ? "bg-slate-100" : "bg-slate-100 group-hover:bg-harvest/10"}`}>
+                        {done
                           ? <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          : isExpired
+                          ? <Lock className="w-4 h-4 text-slate-400" />
                           : <Play className="w-4 h-4 text-slate-400 group-hover:text-harvest" />
                         }
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-medium truncate transition-colors
-                          ${video.completed ? "text-slate-400 line-through" : "text-ink group-hover:text-harvest"}`}>
-                          {video.title}
+                          ${done ? "text-slate-400 line-through" : "text-ink group-hover:text-harvest"}`}>
+                          {topic.title}
                         </p>
+                        {topic.content && (
+                          <p className="text-xs text-slate-400 truncate mt-0.5">{topic.content}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        {video.completed && (
+                        {done && (
                           <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                             Watched
                           </span>
                         )}
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                          <Clock className="w-3 h-3" />
-                          <span>{video.duration}</span>
-                        </div>
+                        {topic.video_duration_mins > 0 && (
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            <span>{topic.video_duration_mins}m</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
             </div>
-          );
-        })}
-
-        {filteredModules.length === 0 && (
-          <div className="bg-white rounded-2xl border border-border/50 p-12 text-center">
-            <Video className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 text-sm">No videos found matching your search.</p>
           </div>
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 }

@@ -306,7 +306,7 @@ export default function StudentDashboard() {
     return (
       <CoursePlayer
         enrollment={activeCourse}
-        course={courses.find(c => c.id === activeCourse.course_id)}
+        course={courses.find(c => String(c._id || c.id) === String(activeCourse.course_id))}
         modules={modules}
         topics={topics}
         user={user}
@@ -427,8 +427,8 @@ export default function StudentDashboard() {
 
 /* ── My Courses tab ────────────────────────────────────────────────────────── */
 function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, onEnroll, enrollmentDaysLeft }) {
-  const enrolledCourseIds = new Set(enrollments.map(e => e.course_id));
-  const availableCourses  = courses.filter(c => !enrolledCourseIds.has(c.id));
+  const enrolledCourseIds = new Set(enrollments.map(e => String(e.course_id)));
+  const availableCourses  = courses.filter(c => !enrolledCourseIds.has(String(c._id || c.id)));
 
   return (
     <div className="space-y-8">
@@ -437,7 +437,7 @@ function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, on
         <p className="text-sm font-semibold text-ink mb-3">
           My Enrolled Courses <span className="text-slate_mist font-normal">({enrollments.length})</span>
         </p>
-        <StudentMyCourses enrollments={enrollments} onOpenCourse={onOpenCourse} />
+        <StudentMyCourses enrollments={enrollments} courses={courses} onOpenCourse={onOpenCourse} />
       </div>
 
       {/* Available courses to enrol */}
@@ -454,8 +454,15 @@ function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, on
                   initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                   className="bg-white rounded-2xl border-2 border-dashed border-border/60 overflow-hidden shadow-sm hover:shadow-md hover:border-harvest/40 transition-all flex flex-col">
                   <div className={`h-2 ${cfg.bar} opacity-40`} />
-                  <div className="relative h-28 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <BookOpen className="w-8 h-8 text-slate-400" />
+                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                    {course.thumbnail_url ? (
+                      <img src={course.thumbnail_url} alt={course.title}
+                        className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen className="w-8 h-8 text-slate-400" />
+                      </div>
+                    )}
                     <span className="absolute top-2 left-2 text-[10px] font-bold bg-white border border-border/50 text-slate_mist px-2 py-0.5 rounded-full">New</span>
                   </div>
                   <div className="p-4 flex flex-col flex-1">

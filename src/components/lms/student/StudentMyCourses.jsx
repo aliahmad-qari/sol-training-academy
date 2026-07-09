@@ -11,8 +11,19 @@ const LEVEL_CONFIG = {
 
 const STATUS_FILTER = ["all", "active", "completed", "paused"];
 
-export default function StudentMyCourses({ enrollments, onOpenCourse }) {
+export default function StudentMyCourses({ enrollments, courses = [], onOpenCourse }) {
   const [filter, setFilter] = useState("all");
+
+  // Build lookup: course_id (string) → thumbnail_url
+  // Normalise both sides to String so ObjectId vs string never mismatches
+  const thumbMap = {};
+  courses.forEach(c => {
+    const key = String(c._id || c.id);
+    if (key) thumbMap[key] = c.thumbnail_url || "";
+  });
+
+  const getThumbnail = (enr) =>
+    enr.course_thumbnail_url || thumbMap[String(enr.course_id)] || "";
 
   const filtered = filter === "all" ? enrollments : enrollments.filter(e => e.status === filter);
 
@@ -56,13 +67,18 @@ export default function StudentMyCourses({ enrollments, onOpenCourse }) {
               <button key={enr.id} onClick={() => onOpenCourse(enr)}
                 className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all text-left group">
                 {/* Thumbnail */}
-                <div className="relative aspect-video bg-slate-100 overflow-hidden">
-                  {enr.course_thumbnail_url ? (
-                    <img src={enr.course_thumbnail_url} alt={enr.course_title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="relative w-full h-48 bg-slate-100 overflow-hidden">
+                  {getThumbnail(enr) ? (
+                    <img
+                      src={getThumbnail(enr)}
+                      alt={enr.course_title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
                   ) : (
-                    <div className={`w-full h-full flex items-center justify-center ${cfg.bar} bg-opacity-20`}>
-                      <BookOpen className="w-10 h-10 text-white/60" />
+                    <div className={`w-full h-full flex items-center justify-center`}
+                      style={{ background: `linear-gradient(135deg, #1a1a1a 0%, #2d1f00 100%)` }}>
+                      <BookOpen className="w-10 h-10 text-white/30" />
                     </div>
                   )}
                   {/* Play overlay */}

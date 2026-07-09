@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { base44 } from "@/api/base44Client";
 import {
   Plus, Edit2, Trash2, ChevronDown, ChevronRight, Video, HelpCircle,
   BookOpen, Eye, EyeOff, X, Save, FileText, Users, BarChart2, Award, ClipboardList, ImagePlus
 } from "lucide-react";
 import { uploadFile } from "@/api/uploadClient";
+import apiClient from "@/api/apiClient";
 import TopicModal from "@/components/lms/admin/TopicModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,27 +38,44 @@ function CourseModal({ course, onClose, onSave }) {
 
   const handleLevelChange = (v) => setForm(f => ({ ...f, level: v, badge: LEVEL_BADGE[v] }));
 
+  const handleThumbUpload = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setThumbUploading(true);
+    try {
+      const { file_url } = await uploadFile({ file, kind: "thumbnail" });
+      setForm(f => ({ ...f, thumbnail_url: file_url }));
+    } catch { toast.error("Thumbnail upload failed."); }
+    finally { setThumbUploading(false); }
+  }, []);
+
+  const clearThumb = useCallback(() => setForm(f => ({ ...f, thumbnail_url: "" })), []);
+
   const save = async () => {
     if (!form.title.trim()) { toast.error("Course title is required"); return; }
     if (!form.level) { toast.error("Please select a level"); return; }
     setSaving(true);
-    const outcomes = outcomesText.split("\n").map(s => s.trim()).filter(Boolean);
-    const data = { ...form, outcomes };
-    let savedCourse;
-    if (course?.id) {
-      savedCourse = await base44.entities.Course.update(course.id, data);
-      toast.success("Course updated successfully.");
-    } else {
-      savedCourse = await base44.entities.Course.create(data);
-      if (data.is_published) {
-        toast.success("Course created and published — students can now enrol!", { duration: 5000 });
+    try {
+      const outcomes = outcomesText.split("\n").map(s => s.trim()).filter(Boolean);
+      const data = { ...form, outcomes };
+      if (course?._id || course?.id) {
+        await apiClient.put(`/courses/${course._id || course.id}`, data);
+        toast.success("Course updated successfully.");
       } else {
-        toast.success("Course saved as draft. Publish it when ready for students.");
+        await apiClient.post('/courses', data);
+        if (data.is_published) {
+          toast.success("Course created and published — students can now enrol!", { duration: 5000 });
+        } else {
+          toast.success("Course saved as draft. Publish it when ready for students.");
+        }
       }
+      onClose();
+      await onSave();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Save failed.");
+    } finally {
+      setSaving(false);
     }
-    onClose();
-    await onSave();
-    setSaving(false);
   };
 
   const levelPill = LEVEL_PILL[form.level];
@@ -170,42 +187,39 @@ function CourseModal({ course, onClose, onSave }) {
           {/* Thumbnail */}
           <div>
             <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Course Thumbnail</Label>
-            <div className="flex items-start gap-3">
-              {form.thumbnail_url ? (
-                <div className="relative flex-shrink-0">
-                  <img src={form.thumbnail_url} alt="thumbnail" className="w-32 aspect-video object-cover rounded-lg border border-border/50" />
-                  <button type="button" onClick={() => setForm(f => ({ ...f, thumbnail_url: "" }))}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white border border-border rounded-full flex items-center justify-center shadow-sm hover:bg-red-50">
-                    <X className="w-3 h-3 text-slate_mist" />
+            {form.thumbnail_url ? (
+              <div className="relative w-full rounded-xl overflow-hidden border border-border/50 bg-slate-50">
+                <img
+                  src={form.thumbnail_url}
+                  alt="thumbnail preview"
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <label className="cursor-pointer">
+                    <input type="file" accept="image/*" className="hidden" onChange={handleThumbUpload} />
+                    <span className="inline-flex items-center gap-1 bg-white/90 backdrop-blur-sm border border-border/50 text-xs font-medium text-slate_mist px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors shadow-sm">
+                      <ImagePlus className="w-3.5 h-3.5" />
+                      {thumbUploading ? "Uploading…" : "Replace"}
+                    </span>
+                  </label>
+                  <button type="button" onClick={clearThumb}
+                    className="w-7 h-7 bg-white/90 backdrop-blur-sm border border-border/50 rounded-lg flex items-center justify-center hover:bg-red-50 shadow-sm">
+                    <X className="w-3.5 h-3.5 text-slate_mist" />
                   </button>
                 </div>
-              ) : (
-                <div className="w-32 aspect-video rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center bg-slate-50 flex-shrink-0">
-                  <ImagePlus className="w-6 h-6 text-slate_mist/40" />
-                </div>
-              )}
-              <div className="flex-1">
-                <label className="cursor-pointer">
-                  <input type="file" accept="image/*" className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setThumbUploading(true);
-                      try {
-                        const { file_url } = await uploadFile({ file, kind: "thumbnail" });
-                        setForm(f => ({ ...f, thumbnail_url: file_url }));
-                      } catch { toast.error("Thumbnail upload failed."); }
-                      finally { setThumbUploading(false); }
-                    }}
-                  />
-                  <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border/50 text-xs font-medium text-slate_mist hover:bg-slate-50 transition-colors">
-                    <ImagePlus className="w-3.5 h-3.5" />
-                    {thumbUploading ? "Uploading…" : form.thumbnail_url ? "Replace" : "Upload Image"}
-                  </div>
-                </label>
-                <p className="text-[10px] text-slate_mist/60 mt-1.5">Recommended: 16:9, min 640×360px. JPG or PNG.</p>
               </div>
-            </div>
+            ) : (
+              <label className="cursor-pointer block">
+                <input type="file" accept="image/*" className="hidden" onChange={handleThumbUpload} />
+                <div className="w-full h-48 rounded-xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 hover:border-harvest/40 transition-all">
+                  <ImagePlus className="w-8 h-8 text-slate_mist/40" />
+                  <p className="text-sm font-medium text-slate_mist">
+                    {thumbUploading ? "Uploading…" : "Click to upload thumbnail"}
+                  </p>
+                  <p className="text-[10px] text-slate_mist/50">Recommended: 1280×720px (16:9), JPG or PNG, max 5 MB</p>
+                </div>
+              </label>
+            )}
           </div>
 
           {/* Description */}
@@ -279,16 +293,17 @@ function ModuleRow({ module, courseId, topics, onRefresh }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(module.title);
   const [topicModal, setTopicModal] = useState(null);
-  const modTopics = topics.filter(t => t.module_id === module.id).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const modId = module._id || module.id;
+  const modTopics = topics.filter(t => String(t.module_id) === String(modId)).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
   const saveTitle = async () => {
-    await base44.entities.CourseModule.update(module.id, { title });
+    await apiClient.put(`/modules/${modId}`, { title });
     setEditing(false); onRefresh();
   };
   const deleteMod = async () => {
     if (!confirm("Delete this module and all its topics?")) return;
-    for (const t of modTopics) await base44.entities.CourseTopic.delete(t.id);
-    await base44.entities.CourseModule.delete(module.id);
+    await Promise.all(modTopics.map(t => apiClient.delete(`/topics/${t._id || t.id}`)));
+    await apiClient.delete(`/modules/${modId}`);
     onRefresh();
   };
 
@@ -315,7 +330,7 @@ function ModuleRow({ module, courseId, topics, onRefresh }) {
       {expanded && (
         <div className="p-3 space-y-1.5 bg-white">
           {modTopics.map(t => (
-            <div key={t.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border/30 hover:bg-slate-50 transition-colors text-sm">
+            <div key={t._id || t.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border/30 hover:bg-slate-50 transition-colors text-sm">
               <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${t.type === "quiz" ? "bg-purple-100" : t.type === "reading" ? "bg-green-100" : t.type === "assessment" ? "bg-amber-100" : "bg-blue-100"}`}>
                 {t.type === "quiz" ? <HelpCircle className="w-3.5 h-3.5 text-purple-600" /> : t.type === "reading" ? <BookOpen className="w-3.5 h-3.5 text-green-600" /> : t.type === "assessment" ? <FileText className="w-3.5 h-3.5 text-amber-600" /> : <Video className="w-3.5 h-3.5 text-blue-600" />}
               </div>
@@ -323,7 +338,7 @@ function ModuleRow({ module, courseId, topics, onRefresh }) {
               {t.is_free_preview && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold">Preview</span>}
               {t.video_duration_mins > 0 && <span className="text-xs text-slate_mist">{t.video_duration_mins}m</span>}
               <button onClick={() => setTopicModal(t)} className="text-slate_mist hover:text-ink p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-              <button onClick={async () => { if (confirm("Delete topic?")) { await base44.entities.CourseTopic.delete(t.id); onRefresh(); } }}
+              <button onClick={async () => { if (confirm("Delete topic?")) { await apiClient.delete(`/topics/${t._id || t.id}`); onRefresh(); } }}
                 className="text-slate_mist hover:text-destructive p-1"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
@@ -336,7 +351,7 @@ function ModuleRow({ module, courseId, topics, onRefresh }) {
 
       {topicModal && (
         <TopicModal topic={topicModal === "new" ? null : topicModal}
-          moduleId={module.id} courseId={courseId}
+          moduleId={modId} courseId={courseId}
           onClose={() => setTopicModal(null)} onSave={onRefresh} />
       )}
     </div>
@@ -365,12 +380,13 @@ function CourseRow({ course, onRefresh }) {
 
   const loadMods = async () => {
     setLoading(true);
-    const [mods, tops, enrs] = await Promise.all([
-      base44.entities.CourseModule.filter({ course_id: course.id }, "sort_order"),
-      base44.entities.CourseTopic.filter({ course_id: course.id }, "sort_order"),
-      base44.entities.CourseEnrollment.filter({ course_id: course.id }),
+    const courseId = course._id || course.id;
+    const [modsRes, topsRes, enrs] = await Promise.all([
+      apiClient.get(`/modules?course_id=${courseId}&limit=200`).then(r => r.data?.data ?? []).catch(() => []),
+      apiClient.get(`/topics?course_id=${courseId}&limit=500`).then(r => r.data?.data ?? []).catch(() => []),
+      apiClient.get(`/enrollments?course_id=${courseId}&limit=1000`).then(r => r.data?.data ?? []).catch(() => []),
     ]);
-    setModules(mods); setTopics(tops);
+    setModules(modsRes); setTopics(topsRes);
     setEnrollmentCount(enrs.length);
     setLoading(false);
   };
@@ -379,24 +395,26 @@ function CourseRow({ course, onRefresh }) {
 
   const addModule = async () => {
     if (!newModuleTitle.trim()) return;
-    await base44.entities.CourseModule.create({ course_id: course.id, title: newModuleTitle.trim(), sort_order: modules.length });
+    const courseId = course._id || course.id;
+    await apiClient.post('/modules', { course_id: courseId, title: newModuleTitle.trim(), sort_order: modules.length });
     setNewModuleTitle(""); setAddingModule(false); loadMods();
   };
 
   const deleteCourse = async () => {
     if (!confirm("Delete this course and all its content?")) return;
+    const courseId = course._id || course.id;
     const [mods, tops] = await Promise.all([
-      base44.entities.CourseModule.filter({ course_id: course.id }),
-      base44.entities.CourseTopic.filter({ course_id: course.id }),
+      apiClient.get(`/modules?course_id=${courseId}&limit=200`).then(r => r.data?.data ?? []).catch(() => []),
+      apiClient.get(`/topics?course_id=${courseId}&limit=500`).then(r => r.data?.data ?? []).catch(() => []),
     ]);
-    for (const t of tops) await base44.entities.CourseTopic.delete(t.id);
-    for (const m of mods) await base44.entities.CourseModule.delete(m.id);
-    await base44.entities.Course.delete(course.id);
+    await Promise.all(tops.map(t => apiClient.delete(`/topics/${t._id || t.id}`)));
+    await Promise.all(mods.map(m => apiClient.delete(`/modules/${m._id || m.id}`)));
+    await apiClient.delete(`/courses/${courseId}`);
     onRefresh();
   };
 
   const togglePublish = async () => {
-    await base44.entities.Course.update(course.id, { is_published: !course.is_published });
+    await apiClient.patch(`/courses/${course._id || course.id}/publish`, { is_published: !course.is_published });
     toast.success(course.is_published ? "Course unpublished" : "Course published");
     onRefresh();
   };
@@ -483,7 +501,7 @@ function CourseRow({ course, onRefresh }) {
                     </div>
                     <div className="space-y-2">
                       {modules.map(mod => (
-                        <ModuleRow key={mod.id} module={mod} courseId={course.id} topics={topics} onRefresh={loadMods} />
+                        <ModuleRow key={mod._id || mod.id} module={mod} courseId={course._id || course.id} topics={topics} onRefresh={loadMods} />
                       ))}
                     </div>
                   </div>
@@ -493,7 +511,7 @@ function CourseRow({ course, onRefresh }) {
                 {activeTab === "modules" && (
                   <div className="space-y-2">
                     {modules.map(mod => (
-                      <ModuleRow key={mod.id} module={mod} courseId={course.id} topics={topics} onRefresh={loadMods} />
+                      <ModuleRow key={mod._id || mod.id} module={mod} courseId={course._id || course.id} topics={topics} onRefresh={loadMods} />
                     ))}
                     {addingModule ? (
                       <div className="flex items-center gap-2 mt-1">
@@ -520,7 +538,7 @@ function CourseRow({ course, onRefresh }) {
 
                 {/* Certificates tab */}
                 {activeTab === "certificates" && (
-                  <CourseEnrollmentCertificatesTab courseId={course.id} />
+                  <CourseEnrollmentCertificatesTab courseId={course._id || course.id} />
                 )}
 
                 {/* Enrolled Students tab */}
@@ -555,9 +573,9 @@ function CourseEnrollmentCertificatesTab({ courseId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.CourseEnrollment.filter({ course_id: courseId }).then(e => {
-      setEnrollments(e); setLoading(false);
-    });
+    apiClient.get(`/enrollments?course_id=${courseId}&limit=1000`)
+      .then(r => { setEnrollments(r.data?.data ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [courseId]);
 
   if (loading) return <div className="py-8 text-center text-slate_mist text-sm">Loading certificates…</div>;
@@ -569,9 +587,12 @@ function CourseAnalyticsTab({ course, topics, modules }) {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const cId = course._id || course.id;
   useEffect(() => {
-    base44.entities.CourseEnrollment.filter({ course_id: course.id }).then(e => { setEnrollments(e); setLoading(false); });
-  }, [course.id]);
+    apiClient.get(`/enrollments?course_id=${cId}&limit=1000`)
+      .then(r => { setEnrollments(r.data?.data ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [cId]);
 
   if (loading) return <div className="py-8 text-center text-slate_mist text-sm">Loading analytics…</div>;
 
@@ -583,8 +604,8 @@ function CourseAnalyticsTab({ course, topics, modules }) {
   const topicCompletion = topics.map(t => ({
     title: t.title,
     type: t.type || "video",
-    count: enrollments.filter(e => (e.completed_topic_ids || []).includes(t.id)).length,
-    pct: total > 0 ? Math.round((enrollments.filter(e => (e.completed_topic_ids || []).includes(t.id)).length / total) * 100) : 0,
+    count: enrollments.filter(e => (e.completed_topic_ids || []).map(String).includes(String(t._id || t.id))).length,
+    pct: total > 0 ? Math.round((enrollments.filter(e => (e.completed_topic_ids || []).map(String).includes(String(t._id || t.id))).length / total) * 100) : 0,
   }));
 
   return (
@@ -666,7 +687,7 @@ export default function AdminCourseManager({ courses, onRefresh, filterType }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(c => <CourseRow key={c.id} course={c} onRefresh={onRefresh} />)}
+          {filtered.map(c => <CourseRow key={c._id || c.id} course={c} onRefresh={onRefresh} />)}
         </div>
       )}
       {courseModal && <CourseModal onClose={() => setCourseModal(false)} onSave={onRefresh} />}
