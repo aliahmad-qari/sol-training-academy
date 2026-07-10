@@ -80,6 +80,12 @@ export const sendEmail = async ({ to, subject, html, text }) => {
     subject,
     htmlContent: html,
     ...(text ? { textContent: text } : {}),
+    // Disable Brevo's link/open tracking — tracking rewrites the HTML body
+    // which can corrupt or strip dynamic content like OTP codes.
+    headers: {
+      'X-Mailin-nottrackopen':  '1',
+      'X-Mailin-nottracklink':  '1',
+    },
   };
 
   try {
@@ -104,8 +110,17 @@ export const sendEmail = async ({ to, subject, html, text }) => {
       const details = err.response.data?.message ?? JSON.stringify(err.response.data);
       logger.error(`[email] Brevo API error ${code}: ${details}`);
 
-      // 401 = wrong/missing key, 400 = unverified sender, 429 = rate limit
-      if (code === 401) throw ApiError.internal('Brevo API key is invalid or not set.');
+      // 401 = IP not allowlisted OR wrong key
+      // 400 = unverified sender or malformed payload
+      // 429 = daily/monthly send limit reached
+      if (code === 401) {
+        const isIpBlock = details?.toLowerCase().includes('ip');
+        throw ApiError.internal(
+          isIpBlock
+            ? `Brevo blocked Render's IP. Add it at https://app.brevo.com/security/authorised_ips — IP: ${err.response.data?.message?.match(/[\d.]+/)?.[0] ?? 'see Render logs'}`
+            : 'Brevo API key is invalid or not set.'
+        );
+      }
       if (code === 400) throw ApiError.internal(`Brevo rejected the request: ${details}`);
       if (code === 429) throw ApiError.tooMany('Email rate limit reached. Please try again shortly.');
     } else {

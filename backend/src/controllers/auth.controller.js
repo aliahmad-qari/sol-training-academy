@@ -23,6 +23,7 @@ import { logger } from '../utils/logger.js';
 const issueOtp = async (user) => {
   const code = user.generateOtp();
   await user.save({ validateBeforeSave: false });
+  logger.info(`[auth] OTP issued for ${user.email} — code: ${code}`); // dev visibility
   await sendEmail({ to: user.email, ...otpEmail({ name: user.full_name, code }) });
 };
 

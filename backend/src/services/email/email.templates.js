@@ -73,19 +73,33 @@ const layout = (bodyHtml) => `<!doctype html>
  */
 export const otpEmail = ({ name, code }) => {
   const greeting = name ? `Hi ${name},` : 'Hi there,';
+
+  // Render each digit in its own table cell — the safest cross-client approach.
+  // letter-spacing on a <span> gets clipped by Gmail when it overflows the cell.
+  const digits = String(code).split('');
+  const digitCells = digits
+    .map(
+      (d) =>
+        `<td style="width:44px;height:54px;background:#ffffff;border:2px solid ${BRAND.harvest};` +
+        `border-radius:10px;text-align:center;vertical-align:middle;` +
+        `font-size:28px;font-weight:700;color:${BRAND.harvest};` +
+        `font-family:'Courier New',Courier,monospace;padding:0 4px;">${d}</td>`
+    )
+    .join('<td style="width:8px;"></td>'); // spacer between cells
+
   const html = layout(`
-    <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:${BRAND.ink};">Verify your email</h1>
-    <p style="margin:0 0 20px;color:${BRAND.slate};">${greeting}</p>
-    <p style="margin:0 0 20px;">Use the verification code below to finish setting up your account. This code expires in <strong>10 minutes</strong>.</p>
+    <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:${BRAND.ink};">Verify your email</h1>
+    <p style="margin:0 0 8px;color:${BRAND.slate};">${greeting}</p>
+    <p style="margin:0 0 24px;">Use the code below to finish setting up your account. It expires in <strong>10 minutes</strong>.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
-      <tr>
-        <td style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:12px;padding:18px 28px;">
-          <span style="font-size:34px;font-weight:700;letter-spacing:10px;color:${BRAND.harvest};font-family:'Courier New',monospace;">${code}</span>
-        </td>
-      </tr>
+      <tr>${digitCells}</tr>
     </table>
-    <p style="margin:0;color:${BRAND.slate};font-size:13px;">If you didn't create an account, no action is needed and you can ignore this email.</p>
+    <p style="margin:0 0 16px;text-align:center;font-size:13px;color:${BRAND.slate};">
+      Can't see the boxes? Your code is: <strong style="color:${BRAND.ink};font-size:16px;">${code}</strong>
+    </p>
+    <p style="margin:0;color:${BRAND.slate};font-size:13px;">If you didn't create an account, you can safely ignore this email.</p>
   `);
+
   const text = `${greeting}\n\nYour ${companyName()} verification code is: ${code}\nIt expires in 10 minutes.\n\nIf you didn't create an account, you can ignore this email.`;
   return { subject: `Your verification code: ${code}`, html, text };
 };
