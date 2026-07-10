@@ -79,21 +79,16 @@ export const env = {
     cancelUrl: optional('STRIPE_CANCEL_URL', 'http://localhost:5173/checkout'),
   },
 
-  // Transactional email (OTP + password reset). Delivered over an HTTPS API
-  // (Resend by default) rather than SMTP, which Render blocks/greylists.
-  // `optional` so the server still boots without a key in dev; the email
-  // service then throws a clear "not configured" error only at send time.
   email: {
-    provider: optional('EMAIL_PROVIDER', 'resend'), // 'resend' | 'sendgrid'
-    // Accept RESEND_API_KEY (what's set on Render) OR the generic EMAIL_API_KEY.
-    apiKey: optional('RESEND_API_KEY', optional('EMAIL_API_KEY', '')),
-    // Until the custom domain is verified in Resend, use the shared sandbox
-    // sender (onboarding@resend.dev). Once solbusinessconsultant.com.au is
-    // verified, set EMAIL_FROM back to the branded address on Render.
-    from: optional('EMAIL_FROM', 'SOL Business Consultant <onboarding@resend.dev>'),
-    // Absolute URL to the logo used in email headers. Emails require a public
-    // absolute URL (clients block relative paths / most base64). Served from the
-    // frontend's /public. Falls back to the first client origin.
+    provider: optional('EMAIL_PROVIDER', 'mailjet'), // 'mailjet' | 'resend' | 'sendgrid'
+    // Mailjet uses two keys: public API key + private API secret.
+    // Resend / SendGrid use a single key (EMAIL_API_KEY / RESEND_API_KEY).
+    apiKey:    optional('MJ_APIKEY_PUBLIC',  optional('EMAIL_API_KEY', '')),
+    apiSecret: optional('MJ_APIKEY_PRIVATE', ''),
+    // Verified sender. For Mailjet this is the address you confirmed via
+    // the single-sender inbox link — no DNS setup required.
+    from: optional('EMAIL_FROM', 'SOL Business Consultant <noreply@solbusinessconsultant.com.au>'),
+    // Absolute URL to the logo used in email headers.
     logoUrl: optional(
       'EMAIL_LOGO_URL',
       `${parseOrigins(optional('CLIENT_URL', 'http://localhost:5173'))[0] || 'http://localhost:5173'}/sol-logo.jpg`
