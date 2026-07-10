@@ -80,15 +80,13 @@ export const env = {
   },
 
   email: {
-    provider: optional('EMAIL_PROVIDER', 'mailjet'), // 'mailjet' | 'resend' | 'sendgrid'
-    // Mailjet uses two keys: public API key + private API secret.
-    // Resend / SendGrid use a single key (EMAIL_API_KEY / RESEND_API_KEY).
-    apiKey:    optional('MJ_APIKEY_PUBLIC',  optional('EMAIL_API_KEY', '')),
-    apiSecret: optional('MJ_APIKEY_PRIVATE', ''),
-    // Verified sender. For Mailjet this is the address you confirmed via
-    // the single-sender inbox link — no DNS setup required.
-    from: optional('EMAIL_FROM', 'SOL Business Consultant <noreply@solbusinessconsultant.com.au>'),
-    // Absolute URL to the logo used in email headers.
+    provider: optional('EMAIL_PROVIDER', 'brevo'),
+    // Brevo API key (starts with xkeysib-). Fallbacks for previous key names
+    // so existing Render deployments don't need immediate variable updates.
+    apiKey: optional('BREVO_API_KEY', optional('SENDGRID_API_KEY', optional('MJ_APIKEY_PUBLIC', optional('EMAIL_API_KEY', '')))),
+    // Verified sender — must match the address confirmed in Brevo's Senders panel.
+    from: optional('EMAIL_FROM', 'SOL Business Consultant <saf@solbusinessconsultant.com.au>'),
+    // Absolute URL to the logo shown in email headers.
     logoUrl: optional(
       'EMAIL_LOGO_URL',
       `${parseOrigins(optional('CLIENT_URL', 'http://localhost:5173'))[0] || 'http://localhost:5173'}/sol-logo.jpg`
