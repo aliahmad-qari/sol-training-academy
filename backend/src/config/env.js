@@ -87,7 +87,10 @@ export const env = {
     provider: optional('EMAIL_PROVIDER', 'resend'), // 'resend' | 'sendgrid'
     // Accept RESEND_API_KEY (what's set on Render) OR the generic EMAIL_API_KEY.
     apiKey: optional('RESEND_API_KEY', optional('EMAIL_API_KEY', '')),
-    from: optional('EMAIL_FROM', 'SOL Business Consultant <saf@solbusinessconsultant.com.au>'),
+    // Until the custom domain is verified in Resend, use the shared sandbox
+    // sender (onboarding@resend.dev). Once solbusinessconsultant.com.au is
+    // verified, set EMAIL_FROM back to the branded address on Render.
+    from: optional('EMAIL_FROM', 'SOL Business Consultant <onboarding@resend.dev>'),
     // Absolute URL to the logo used in email headers. Emails require a public
     // absolute URL (clients block relative paths / most base64). Served from the
     // frontend's /public. Falls back to the first client origin.

@@ -56,10 +56,15 @@ try {
     'register student → 201 + pending_verification (no token)'
   );
 
-  const dup = await api('POST', '/api/v1/auth/register', {
+  // Re-registering an UNVERIFIED email resends the OTP (201), not a 409 —
+  // this un-traps rows left behind by an earlier failed email send.
+  const dupUnverified = await api('POST', '/api/v1/auth/register', {
     body: { full_name: 'Jane', email: 'jane@test.com', password: 'password123' },
   });
-  assert(dup.status === 409, 'duplicate email → 409');
+  assert(
+    dupUnverified.status === 201 && dupUnverified.json.data.pending_verification === true,
+    're-register unverified email → 201 + resend'
+  );
 
   // Unverified login is gated (403 + pending_verification) and re-sends a code.
   const gated = await api('POST', '/api/v1/auth/login', {
@@ -91,6 +96,12 @@ try {
     body: { email: 'jane@test.com', password: 'password123' },
   });
   assert(login.status === 200 && login.json.data.accessToken, 'verified login → 200 + token');
+
+  // Now that Jane is verified, re-registering her email is a real conflict.
+  const dupVerified = await api('POST', '/api/v1/auth/register', {
+    body: { full_name: 'Jane', email: 'jane@test.com', password: 'password123' },
+  });
+  assert(dupVerified.status === 409, 'duplicate verified email → 409');
 
   // Register a SEPARATE admin account (keep Jane as a genuine student).
   const adminReg = await api('POST', '/api/v1/auth/register', {

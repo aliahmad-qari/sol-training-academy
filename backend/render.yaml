@@ -56,8 +56,11 @@ services:
         sync: false
       - key: EMAIL_PROVIDER
         value: resend
+      # Sandbox sender — works before domain verification. Switch back to
+      # "SOL Business Consultant <saf@solbusinessconsultant.com.au>" once the
+      # domain is verified in Resend.
       - key: EMAIL_FROM
-        value: SOL Business Consultant <saf@solbusinessconsultant.com.au>
+        value: SOL Business Consultant <onboarding@resend.dev>
       - key: COMPANY_NAME
         value: SOL Business Consultant Pty Ltd
       - key: COMPANY_ABN

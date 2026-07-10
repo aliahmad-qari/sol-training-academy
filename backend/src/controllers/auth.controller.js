@@ -67,8 +67,25 @@ const issueTokens = async (user, res) => {
 export const register = asyncHandler(async (req, res) => {
   const { full_name, email, password, phone } = req.body;
 
-  const existing = await User.findOne({ email });
-  if (existing) throw ApiError.conflict('An account with this email already exists.');
+  const existing = await User.findOne({ email }).select('+password');
+  if (existing) {
+    // A fully-registered (verified) account → real conflict.
+    if (existing.is_verified) {
+      throw ApiError.conflict('An account with this email already exists.');
+    }
+    // An UNVERIFIED account from an earlier attempt (e.g. a previous email send
+    // failed and left the row behind). Refresh its details, re-issue an OTP, and
+    // let the user finish verifying — this un-traps rows created before a failure.
+    existing.full_name = full_name;
+    existing.password = password;
+    if (phone !== undefined) existing.phone = phone;
+    await issueOtp(existing);
+    return sendCreated(
+      res,
+      { email: existing.email, pending_verification: true },
+      'Verification code sent to your email.'
+    );
+  }
 
   const user = await User.create({
     full_name,
@@ -79,7 +96,14 @@ export const register = asyncHandler(async (req, res) => {
     is_verified: false,
   });
 
-  await issueOtp(user);
+  try {
+    await issueOtp(user);
+  } catch (err) {
+    // Roll back the just-created account so a transient email failure doesn't
+    // leave a dangling row that blocks the user from retrying.
+    await User.deleteOne({ _id: user._id });
+    throw err;
+  }
 
   return sendCreated(
     res,
