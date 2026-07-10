@@ -12,6 +12,19 @@ import {
   REFRESH_COOKIE_NAME,
 } from '../helpers/token.js';
 import { env } from '../config/env.js';
+import { sendEmail } from '../services/email/email.service.js';
+import { otpEmail, resetPasswordEmail } from '../services/email/email.templates.js';
+import { logger } from '../utils/logger.js';
+
+/**
+ * Generate a fresh OTP for a user, persist it, and email it.
+ * Shared by register / login-gate / resend so the behaviour stays identical.
+ */
+const issueOtp = async (user) => {
+  const code = user.generateOtp();
+  await user.save({ validateBeforeSave: false });
+  await sendEmail({ to: user.email, ...otpEmail({ name: user.full_name, code }) });
+};
 
 /**
  * Persist a new refresh token hash on the user and prune expired/oversized sets.
@@ -44,7 +57,12 @@ const issueTokens = async (user, res) => {
 /**
  * POST /api/v1/auth/register
  * Body: { full_name, email, password, phone? }
- * 201 → { user, accessToken }
+ *
+ * New accounts start UNVERIFIED — no JWT is issued here. We generate a 6-digit
+ * OTP (10-min expiry), email it, and return a pending-verification state. The
+ * client then completes sign-up via POST /verify-otp.
+ *
+ * 201 → { email, pending_verification: true }
  */
 export const register = asyncHandler(async (req, res) => {
   const { full_name, email, password, phone } = req.body;
@@ -52,13 +70,22 @@ export const register = asyncHandler(async (req, res) => {
   const existing = await User.findOne({ email });
   if (existing) throw ApiError.conflict('An account with this email already exists.');
 
-  const user = await User.create({ full_name, email, password, phone, role: 'student' });
+  const user = await User.create({
+    full_name,
+    email,
+    password,
+    phone,
+    role: 'student',
+    is_verified: false,
+  });
 
-  const accessToken = await issueTokens(user, res);
-  user.last_login_at = new Date();
-  await user.save({ validateBeforeSave: false });
+  await issueOtp(user);
 
-  return sendCreated(res, { user: user.toJSON(), accessToken }, 'Registration successful');
+  return sendCreated(
+    res,
+    { email: user.email, pending_verification: true },
+    'Verification code sent to your email.'
+  );
 });
 
 /**
@@ -76,11 +103,140 @@ export const login = asyncHandler(async (req, res) => {
   const match = await user.comparePassword(password);
   if (!match) throw ApiError.unauthorized('Invalid email or password.');
 
+  // Gate unverified accounts: re-issue a fresh OTP and tell the client to send
+  // the user to the verification screen. Existing accounts predating email
+  // verification are backfilled to is_verified:true (see migrate:verified),
+  // so this only affects genuinely-unverified new sign-ups.
+  if (!user.is_verified) {
+    await issueOtp(user);
+    throw new ApiError(403, 'Please verify your email to continue. We sent you a new code.', {
+      pending_verification: true,
+      email: user.email,
+    });
+  }
+
   const accessToken = await issueTokens(user, res);
   user.last_login_at = new Date();
   await user.save({ validateBeforeSave: false });
 
   return sendOk(res, { user: user.toJSON(), accessToken }, 'Login successful');
+});
+
+/**
+ * POST /api/v1/auth/verify-otp
+ * Body: { email, otp }
+ * Validates the 6-digit code; on success flips is_verified and issues tokens.
+ * 200 → { user, accessToken }
+ */
+export const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  const user = await User.findOne({ email }).select('+otp_code +otp_expires');
+  // Generic error throughout to avoid leaking which accounts exist / their state.
+  if (!user) throw ApiError.badRequest('Invalid or expired verification code.');
+  if (!user.is_active) throw ApiError.forbidden('Account is disabled.');
+
+  if (user.is_verified) {
+    // Already verified — nothing to do, but let them proceed to login cleanly.
+    throw ApiError.badRequest('This account is already verified. Please log in.');
+  }
+
+  if (!user.verifyOtp(otp)) {
+    throw ApiError.badRequest('Invalid or expired verification code.');
+  }
+
+  user.is_verified = true;
+  user.clearOtp();
+  user.last_login_at = new Date();
+
+  const accessToken = await issueTokens(user, res);
+  await user.save({ validateBeforeSave: false });
+
+  return sendOk(res, { user: user.toJSON(), accessToken }, 'Email verified. Welcome!');
+});
+
+/**
+ * POST /api/v1/auth/resend-otp
+ * Body: { email }
+ * Regenerates + resends an OTP for an unverified account. Always responds 200
+ * with a generic message (no account enumeration).
+ * 200 → {}
+ */
+export const resendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (user && user.is_active && !user.is_verified) {
+    await issueOtp(user);
+  }
+
+  return sendOk(
+    res,
+    null,
+    'If an unverified account exists for that email, a new code has been sent.'
+  );
+});
+
+/**
+ * POST /api/v1/auth/forgot-password
+ * Body: { email }
+ * Emails a tokenized reset link if the account exists. Always responds 200 with
+ * a generic message (no account enumeration).
+ * 200 → {}
+ */
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (user && user.is_active) {
+    const token = user.generatePasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    const url = `${env.clientUrl}/reset-password?token=${token}`;
+    try {
+      await sendEmail({ to: user.email, ...resetPasswordEmail({ name: user.full_name, url }) });
+    } catch (err) {
+      // Roll back the token so a failed send doesn't leave a dangling reset.
+      user.clearPasswordReset();
+      await user.save({ validateBeforeSave: false });
+      logger.error('[auth] Failed to send reset email:', err);
+      throw err;
+    }
+  }
+
+  return sendOk(
+    res,
+    null,
+    'If an account exists for that email, a password reset link has been sent.'
+  );
+});
+
+/**
+ * POST /api/v1/auth/reset-password
+ * Body: { token, new_password }
+ * Validates the reset token, sets the new password, and revokes all sessions.
+ * 200 → {}
+ */
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, new_password } = req.body;
+
+  const tokenHash = User.hashResetToken(token);
+  const user = await User.findOne({
+    reset_password_token: tokenHash,
+    reset_password_expires: { $gt: new Date() },
+  }).select('+refresh_tokens');
+
+  if (!user) throw ApiError.badRequest('This reset link is invalid or has expired.');
+
+  user.password = new_password; // pre-save hook re-hashes
+  user.clearPasswordReset();
+  user.refresh_tokens = []; // force re-login on all devices
+  // A password reset via a verified email link also confirms ownership.
+  user.is_verified = true;
+  await user.save();
+
+  res.clearCookie(REFRESH_COOKIE_NAME, { ...refreshCookieOptions(), maxAge: undefined });
+  return sendOk(res, null, 'Password reset successful. Please log in with your new password.');
 });
 
 /**

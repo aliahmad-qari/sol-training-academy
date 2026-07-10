@@ -310,12 +310,17 @@ const auth = {
     if (token) localStorage.setItem('sol_access_token', token);
     else localStorage.removeItem('sol_access_token');
   },
-  // No backend endpoints for these yet — surface a clear message.
-  async resetPasswordRequest() {
-    throw new Error('Password reset is not available yet.');
+  // Password reset — backed by the real auth endpoints.
+  async resetPasswordRequest(email) {
+    const res = await apiClient.post('/auth/forgot-password', { email });
+    return res?.data;
   },
-  async resetPassword() {
-    throw new Error('Password reset is not available yet.');
+  async resetPassword({ resetToken, newPassword } = {}) {
+    const res = await apiClient.post('/auth/reset-password', {
+      token: resetToken,
+      new_password: newPassword,
+    });
+    return res?.data;
   },
   // Legacy login helpers — the app now logs in via useAuth()/AuthContext.
   async loginViaEmailPassword({ email, password } = {}) {

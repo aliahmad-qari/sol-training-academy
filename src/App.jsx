@@ -28,6 +28,7 @@ import CaseStudies from '@/pages/CaseStudies';
 import ReadinessQuiz from '@/pages/ReadinessQuiz';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
+import VerifyOtp from '@/pages/VerifyOtp';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import MarketingServices from '@/pages/services/MarketingServices';
@@ -116,6 +117,7 @@ const AuthenticatedApp = () => {
       {/* ── Auth routes (redirect away if already logged in) ──────── */}
       <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+      <Route path="/verify-otp" element={<PublicOnlyRoute><VerifyOtp /></PublicOnlyRoute>} />
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
 

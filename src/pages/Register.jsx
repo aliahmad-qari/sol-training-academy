@@ -40,10 +40,9 @@ export default function Register() {
     setLoading(false);
 
     if (result.success) {
-      // Account created — send to login. Pass the email so the field is pre-filled.
-      navigate("/login", {
-        state: { registeredEmail: email, message: "Account created! Please sign in." },
-      });
+      // Account created but unverified — send to the OTP screen with the email
+      // so the user can enter the code we just emailed them.
+      navigate("/verify-otp", { state: { email: result.email || email } });
     } else {
       setError(result.error || "Registration failed. Please try again.");
     }

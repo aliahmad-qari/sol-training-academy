@@ -44,33 +44,68 @@ const api = async (method, path, { body, token } = {}) => {
 
 try {
   console.log('\n[1] Auth');
+  const { User } = await import('../src/models/index.js');
+
+  // Registration now returns a pending-verification state (OTP emailed), not a
+  // token — new accounts must verify their email before logging in.
   const reg = await api('POST', '/api/v1/auth/register', {
     body: { full_name: 'Jane Student', email: 'jane@test.com', password: 'password123' },
   });
-  assert(reg.status === 201 && reg.json.data.accessToken, 'register student → 201 + token');
-  const studentToken = reg.json.data.accessToken;
-  const studentId = reg.json.data.user.id || reg.json.data.user._id;
+  assert(
+    reg.status === 201 && reg.json.data.pending_verification === true && !reg.json.data.accessToken,
+    'register student → 201 + pending_verification (no token)'
+  );
 
   const dup = await api('POST', '/api/v1/auth/register', {
     body: { full_name: 'Jane', email: 'jane@test.com', password: 'password123' },
   });
   assert(dup.status === 409, 'duplicate email → 409');
 
+  // Unverified login is gated (403 + pending_verification) and re-sends a code.
+  const gated = await api('POST', '/api/v1/auth/login', {
+    body: { email: 'jane@test.com', password: 'password123' },
+  });
+  assert(
+    gated.status === 403 && gated.json.details?.pending_verification === true,
+    'login while unverified → 403 + pending_verification'
+  );
+
+  // Verify the OTP end-to-end. The code is hashed in the DB, so drive the model
+  // helper to mint a known code, persist it, then hit the real endpoint.
+  const janeDoc = await User.findOne({ email: 'jane@test.com' }).select('+otp_code +otp_expires');
+  const janeCode = janeDoc.generateOtp();
+  await janeDoc.save({ validateBeforeSave: false });
+  const verify = await api('POST', '/api/v1/auth/verify-otp', {
+    body: { email: 'jane@test.com', otp: janeCode },
+  });
+  assert(verify.status === 200 && verify.json.data.accessToken, 'verify-otp → 200 + token');
+  const studentToken = verify.json.data.accessToken;
+  const studentId = verify.json.data.user.id || verify.json.data.user._id;
+
+  const badOtp = await api('POST', '/api/v1/auth/verify-otp', {
+    body: { email: 'jane@test.com', otp: '000000' },
+  });
+  assert(badOtp.status === 400, 'verify-otp with wrong/used code → 400');
+
   const login = await api('POST', '/api/v1/auth/login', {
     body: { email: 'jane@test.com', password: 'password123' },
   });
-  assert(login.status === 200 && login.json.data.accessToken, 'login → 200 + token');
+  assert(login.status === 200 && login.json.data.accessToken, 'verified login → 200 + token');
 
   // Register a SEPARATE admin account (keep Jane as a genuine student).
   const adminReg = await api('POST', '/api/v1/auth/register', {
     body: { full_name: 'Owner Admin', email: 'admin@test.com', password: 'password123' },
   });
-  const adminUserId = adminReg.json.data.user.id || adminReg.json.data.user._id;
-  const { User } = await import('../src/models/index.js');
-  await User.findByIdAndUpdate(adminUserId, { role: 'admin' });
+  assert(adminReg.status === 201, 'register admin → 201');
+  // Promote + verify directly (simulates the migrate:verified / admin path).
+  const adminDoc = await User.findOne({ email: 'admin@test.com' });
+  adminDoc.role = 'admin';
+  adminDoc.is_verified = true;
+  await adminDoc.save({ validateBeforeSave: false });
   const adminLogin = await api('POST', '/api/v1/auth/login', {
     body: { email: 'admin@test.com', password: 'password123' },
   });
+  assert(adminLogin.status === 200 && adminLogin.json.data.accessToken, 'admin login → 200 + token');
   const adminToken = adminLogin.json.data.accessToken;
 
   console.log('\n[2] Course + curriculum (admin)');

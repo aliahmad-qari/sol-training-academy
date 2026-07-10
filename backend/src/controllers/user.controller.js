@@ -52,6 +52,9 @@ export const createUser = asyncHandler(async (req, res) => {
     password,
     role,
     phone,
+    // Admin-provisioned accounts are trusted — they get their password directly
+    // from the admin and log in without the self-service OTP step.
+    is_verified: true,
     page_permissions: role === 'team_member' ? page_permissions || [] : [],
   });
   return sendCreated(res, user.toJSON(), 'User created');

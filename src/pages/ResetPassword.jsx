@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import AuthLayout from "@/components/AuthLayout";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const resetToken = searchParams.get("token");
 
   const [newPassword, setNewPassword] = useState("");
@@ -23,12 +24,24 @@ export default function ResetPassword() {
       setError("Passwords do not match");
       return;
     }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
     setLoading(true);
     try {
-      await base44.auth.resetPassword({ resetToken, newPassword });
-      window.location.href = "/login";
+      await apiClient.post("/auth/reset-password", {
+        token: resetToken,
+        new_password: newPassword,
+      });
+      navigate("/login", {
+        replace: true,
+        state: { message: "Password reset successful. Please sign in." },
+      });
     } catch (err) {
-      setError(err.message || "Failed to reset password");
+      setError(
+        err.response?.data?.message || "Failed to reset password. The link may have expired."
+      );
     } finally {
       setLoading(false);
     }

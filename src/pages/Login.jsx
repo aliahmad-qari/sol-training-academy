@@ -37,6 +37,10 @@ export default function Login() {
       } else {
         navigate("/student-dashboard", { replace: true });
       }
+    } else if (result.pendingVerification) {
+      // Account exists but the email was never verified — the backend re-sent a
+      // code; take the user to the verification screen.
+      navigate("/verify-otp", { state: { email: result.email || email } });
     } else {
       setError(result.error || "Invalid email or password. Please try again.");
     }

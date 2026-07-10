@@ -22,6 +22,7 @@ const run = async () => {
   if (user) {
     user.role = 'admin';
     user.is_active = true;
+    user.is_verified = true; // admin logs in directly — never gate on OTP
     user.full_name = user.full_name || name;
     // Only reset the password if explicitly provided and different.
     user.password = password;
@@ -34,6 +35,7 @@ const run = async () => {
       password,
       role: 'admin',
       is_active: true,
+      is_verified: true,
     });
     logger.info(`Admin created: ${email}`);
   }

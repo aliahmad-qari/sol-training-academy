@@ -56,6 +56,12 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       return { success: true, role: loggedInUser.role };
     } catch (error) {
+      // An unverified account returns 403 with a pending_verification flag so
+      // the UI can route to the OTP screen instead of showing a hard error.
+      const details = error.response?.data?.details;
+      if (details?.pending_verification) {
+        return { success: false, pendingVerification: true, email: details.email || email };
+      }
       const msg =
         error.response?.data?.message || 'Login failed. Please check your credentials.';
       return { success: false, error: msg };
@@ -64,20 +70,64 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Register: POST /auth/register.
-   * Does NOT auto-login — the user is redirected to /login to sign in manually.
-   * Returns { success: boolean, error?: string }
+   * New accounts are unverified — the backend emails a 6-digit OTP and returns
+   * a pending-verification state (no token issued). The caller redirects to the
+   * /verify-otp screen with the returned email.
+   * Returns { success, pendingVerification?, email?, error? }
    */
   const register = async (full_name, email, password, phone) => {
     try {
-      await apiClient.post('/auth/register', { full_name, email, password, phone });
-      // Intentionally do NOT store the token or set user state here.
-      // The user will be sent to /login to authenticate explicitly.
-      return { success: true };
+      const { data } = await apiClient.post('/auth/register', {
+        full_name,
+        email,
+        password,
+        phone,
+      });
+      return {
+        success: true,
+        pendingVerification: true,
+        email: data.data?.email || email,
+      };
     } catch (error) {
       const msg =
         error.response?.data?.message ||
         error.response?.data?.details?.[0]?.message ||
         'Registration failed. Please try again.';
+      return { success: false, error: msg };
+    }
+  };
+
+  /**
+   * Verify OTP: POST /auth/verify-otp. On success, stores the access token and
+   * logs the user in (mirrors `login`).
+   * Returns { success, role?, error? }
+   */
+  const verifyOtp = async (email, otp) => {
+    try {
+      const { data } = await apiClient.post('/auth/verify-otp', { email, otp });
+      const { user: verifiedUser, accessToken } = data.data;
+      localStorage.setItem('sol_access_token', accessToken);
+      setUser(verifiedUser);
+      setIsAuthenticated(true);
+      return { success: true, role: verifiedUser.role };
+    } catch (error) {
+      const msg =
+        error.response?.data?.message || 'Invalid or expired code. Please try again.';
+      return { success: false, error: msg };
+    }
+  };
+
+  /**
+   * Resend OTP: POST /auth/resend-otp. Always resolves (no enumeration).
+   * Returns { success, error? }
+   */
+  const resendOtp = async (email) => {
+    try {
+      await apiClient.post('/auth/resend-otp', { email });
+      return { success: true };
+    } catch (error) {
+      const msg =
+        error.response?.data?.message || 'Could not resend the code. Please try again.';
       return { success: false, error: msg };
     }
   };
@@ -104,6 +154,8 @@ export const AuthProvider = ({ children }) => {
         isLoadingAuth,
         login,
         register,
+        verifyOtp,
+        resendOtp,
         logout,
         checkUserAuth,
       }}

@@ -52,6 +52,9 @@ export const env = {
   port: toNumber(process.env.PORT, 5000),
 
   clientOrigins: parseOrigins(optional('CLIENT_URL', 'http://localhost:5173')),
+  // First configured client origin — used to build absolute links in emails
+  // (e.g. the password-reset link). Falls back to the local dev URL.
+  clientUrl: parseOrigins(optional('CLIENT_URL', 'http://localhost:5173'))[0] || 'http://localhost:5173',
   apiUrl: optional('API_URL', 'http://localhost:5000'),
 
   mongoUri: required('MONGODB_URI'),
@@ -74,6 +77,24 @@ export const env = {
     currency: optional('STRIPE_CURRENCY', 'aud'),
     successUrl: optional('STRIPE_SUCCESS_URL', 'http://localhost:5173/payment-success'),
     cancelUrl: optional('STRIPE_CANCEL_URL', 'http://localhost:5173/checkout'),
+  },
+
+  // Transactional email (OTP + password reset). Delivered over an HTTPS API
+  // (Resend by default) rather than SMTP, which Render blocks/greylists.
+  // `optional` so the server still boots without a key in dev; the email
+  // service then throws a clear "not configured" error only at send time.
+  email: {
+    provider: optional('EMAIL_PROVIDER', 'resend'), // 'resend' | 'sendgrid'
+    // Accept RESEND_API_KEY (what's set on Render) OR the generic EMAIL_API_KEY.
+    apiKey: optional('RESEND_API_KEY', optional('EMAIL_API_KEY', '')),
+    from: optional('EMAIL_FROM', 'SOL Business Consultant <saf@solbusinessconsultant.com.au>'),
+    // Absolute URL to the logo used in email headers. Emails require a public
+    // absolute URL (clients block relative paths / most base64). Served from the
+    // frontend's /public. Falls back to the first client origin.
+    logoUrl: optional(
+      'EMAIL_LOGO_URL',
+      `${parseOrigins(optional('CLIENT_URL', 'http://localhost:5173'))[0] || 'http://localhost:5173'}/sol-logo.jpg`
+    ),
   },
 
   cloudinary: {

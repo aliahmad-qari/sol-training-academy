@@ -11,12 +11,28 @@ List endpoints support: `?page`, `?limit` (max 100), `?sort=-field,field2`, `?se
 ## Auth  `/auth`
 | Method | Path | Access | Body | Success |
 |--------|------|--------|------|---------|
-| POST | `/register` | public | `{full_name,email,password,phone?}` | 201 `{user,accessToken}` |
-| POST | `/login` | public | `{email,password}` | 200 `{user,accessToken}` |
+| POST | `/register` | public | `{full_name,email,password,phone?}` | 201 `{email,pending_verification:true}` — emails a 6-digit OTP, no token issued |
+| POST | `/login` | public | `{email,password}` | 200 `{user,accessToken}`; 403 `{message,details:{pending_verification,email}}` if email unverified (re-sends OTP) |
+| POST | `/verify-otp` | public | `{email,otp}` | 200 `{user,accessToken}` — flips `is_verified`, logs in |
+| POST | `/resend-otp` | public | `{email}` | 200 (generic; re-sends OTP for unverified accounts) |
+| POST | `/forgot-password` | public | `{email}` | 200 (generic; emails a reset link `${CLIENT_URL}/reset-password?token=…`) |
+| POST | `/reset-password` | public | `{token,new_password}` | 200 — sets password, revokes all sessions |
 | POST | `/refresh` | cookie | — | 200 `{accessToken}` |
 | POST | `/logout` | any | — | 200 |
 | GET | `/me` | auth | — | 200 `{user}` |
 | PATCH | `/change-password` | auth | `{current_password,new_password}` | 200 |
+
+**Email verification & reset** — transactional email is delivered via the Resend
+HTTPS API (SMTP is blocked on Render). All the public auth endpoints above are
+rate-limited by `authLimiter`. OTPs are 6 digits, expire in 10 min; reset tokens
+expire in 30 min. Both are stored only as sha256 hashes. Accounts created before
+email verification existed are grandfathered by `npm run migrate:verified`.
+
+Required env vars (set on Render): `RESEND_API_KEY` (or `EMAIL_API_KEY`),
+`EMAIL_FROM` (verified sender, e.g. `SOL Business Consultant <saf@solbusinessconsultant.com.au>`),
+`CLIENT_URL` (frontend origin, used to build reset links + locate the email
+logo). Optional: `EMAIL_PROVIDER` (default `resend`), `EMAIL_LOGO_URL`
+(default `${CLIENT_URL}/sol-logo.jpg`).
 
 ## Users  `/users`
 | Method | Path | Access | Notes |

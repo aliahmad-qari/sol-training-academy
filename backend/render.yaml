@@ -51,6 +51,13 @@ services:
         sync: false
       - key: CLOUDINARY_FOLDER
         value: sol_training_academy
+      # Transactional email (Resend) — OTP verification + password reset.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: EMAIL_FROM
+        value: SOL Business Consultant <saf@solbusinessconsultant.com.au>
       - key: COMPANY_NAME
         value: SOL Business Consultant Pty Ltd
       - key: COMPANY_ABN
