@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+﻿import User from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -15,15 +15,16 @@ import { env } from '../config/env.js';
 import { sendEmail } from '../services/email/email.service.js';
 import { otpEmail, resetPasswordEmail } from '../services/email/email.templates.js';
 import { logger } from '../utils/logger.js';
+import { safeCreateNotification, safeNotifyAdmins } from '../services/notification.service.js';
 
 /**
  * Generate a fresh OTP for a user, persist it, and email it.
  * Shared by register / login-gate / resend so the behaviour stays identical.
  */
-const issueOtp = async (user) => {
+const issueOtp = async (user, context = 'verification') => {
   const code = user.generateOtp();
   await user.save({ validateBeforeSave: false });
-  logger.info(`[auth] OTP issued for ${user.email} — code: ${code}`); // dev visibility
+  logger.info(`[auth] OTP issued for ${user.email} (${context})`);
   await sendEmail({ to: user.email, ...otpEmail({ name: user.full_name, code }) });
 };
 
@@ -59,28 +60,28 @@ const issueTokens = async (user, res) => {
  * POST /api/v1/auth/register
  * Body: { full_name, email, password, phone? }
  *
- * New accounts start UNVERIFIED — no JWT is issued here. We generate a 6-digit
+ * New accounts start UNVERIFIED ? no JWT is issued here. We generate a 6-digit
  * OTP (10-min expiry), email it, and return a pending-verification state. The
  * client then completes sign-up via POST /verify-otp.
  *
- * 201 → { email, pending_verification: true }
+ * 201 ? { email, pending_verification: true }
  */
 export const register = asyncHandler(async (req, res) => {
   const { full_name, email, password, phone } = req.body;
 
   const existing = await User.findOne({ email }).select('+password');
   if (existing) {
-    // A fully-registered (verified) account → real conflict.
+    // A fully-registered (verified) account ? real conflict.
     if (existing.is_verified) {
       throw ApiError.conflict('An account with this email already exists.');
     }
     // An UNVERIFIED account from an earlier attempt (e.g. a previous email send
     // failed and left the row behind). Refresh its details, re-issue an OTP, and
-    // let the user finish verifying — this un-traps rows created before a failure.
+    // let the user finish verifying ? this un-traps rows created before a failure.
     existing.full_name = full_name;
     existing.password = password;
     if (phone !== undefined) existing.phone = phone;
-    await issueOtp(existing);
+    await issueOtp(existing, 'registration_retry');
     return sendCreated(
       res,
       { email: existing.email, pending_verification: true },
@@ -98,7 +99,7 @@ export const register = asyncHandler(async (req, res) => {
   });
 
   try {
-    await issueOtp(user);
+    await issueOtp(user, 'registration');
   } catch (err) {
     // Roll back the just-created account so a transient email failure doesn't
     // leave a dangling row that blocks the user from retrying.
@@ -116,7 +117,7 @@ export const register = asyncHandler(async (req, res) => {
 /**
  * POST /api/v1/auth/login
  * Body: { email, password }
- * 200 → { user, accessToken }
+ * 200 ? { user, accessToken }
  */
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -133,7 +134,7 @@ export const login = asyncHandler(async (req, res) => {
   // verification are backfilled to is_verified:true (see migrate:verified),
   // so this only affects genuinely-unverified new sign-ups.
   if (!user.is_verified) {
-    await issueOtp(user);
+    await issueOtp(user, 'login_gate');
     throw new ApiError(403, 'Please verify your email to continue. We sent you a new code.', {
       pending_verification: true,
       email: user.email,
@@ -151,7 +152,7 @@ export const login = asyncHandler(async (req, res) => {
  * POST /api/v1/auth/verify-otp
  * Body: { email, otp }
  * Validates the 6-digit code; on success flips is_verified and issues tokens.
- * 200 → { user, accessToken }
+ * 200 ? { user, accessToken }
  */
 export const verifyOtp = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
@@ -162,7 +163,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   if (!user.is_active) throw ApiError.forbidden('Account is disabled.');
 
   if (user.is_verified) {
-    // Already verified — nothing to do, but let them proceed to login cleanly.
+    // Already verified ? nothing to do, but let them proceed to login cleanly.
     throw ApiError.badRequest('This account is already verified. Please log in.');
   }
 
@@ -176,6 +177,30 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
   const accessToken = await issueTokens(user, res);
   await user.save({ validateBeforeSave: false });
+
+  void safeCreateNotification({
+    recipientId: user._id,
+    type: 'account_verified',
+    title: 'Welcome to SOL Training Academy',
+    message: 'Your email has been verified and your student account is ready.',
+    category: 'account',
+    priority: 'normal',
+    actionUrl: '/student-dashboard',
+    metadata: { tab: 'overview' },
+    eventKey: `account_verified:${user._id}`,
+  });
+
+  void safeNotifyAdmins({
+    senderId: user._id,
+    type: 'student_verified',
+    title: 'New student verified',
+    message: `${user.full_name} has verified their account and joined the academy.`,
+    category: 'account',
+    priority: 'normal',
+    actionUrl: '/lms-admin',
+    metadata: { tab: 'students', student_id: user._id, student_email: user.email },
+    eventKey: `student_verified:${user._id}`,
+  });
 
   // This endpoint only ever succeeds for a first-time verification (already
   // verified accounts are rejected above), so the client can safely treat
@@ -192,14 +217,14 @@ export const verifyOtp = asyncHandler(async (req, res) => {
  * Body: { email }
  * Regenerates + resends an OTP for an unverified account. Always responds 200
  * with a generic message (no account enumeration).
- * 200 → {}
+ * 200 ? {}
  */
 export const resendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   const user = await User.findOne({ email });
   if (user && user.is_active && !user.is_verified) {
-    await issueOtp(user);
+    await issueOtp(user, 'resend');
   }
 
   return sendOk(
@@ -214,7 +239,7 @@ export const resendOtp = asyncHandler(async (req, res) => {
  * Body: { email }
  * Emails a tokenized reset link if the account exists. Always responds 200 with
  * a generic message (no account enumeration).
- * 200 → {}
+ * 200 ? {}
  */
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -247,7 +272,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
  * POST /api/v1/auth/reset-password
  * Body: { token, new_password }
  * Validates the reset token, sets the new password, and revokes all sessions.
- * 200 → {}
+ * 200 ? {}
  */
 export const resetPassword = asyncHandler(async (req, res) => {
   const { token, new_password } = req.body;
@@ -274,7 +299,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
 /**
  * POST /api/v1/auth/refresh
  * Reads refresh token from the httpOnly cookie, rotates it, returns a new access token.
- * 200 → { accessToken }
+ * 200 ? { accessToken }
  */
 export const refresh = asyncHandler(async (req, res) => {
   const token = req.cookies?.[REFRESH_COOKIE_NAME];
@@ -307,7 +332,7 @@ export const refresh = asyncHandler(async (req, res) => {
 /**
  * POST /api/v1/auth/logout
  * Revokes the current refresh token and clears the cookie.
- * 200 → {}
+ * 200 ? {}
  */
 export const logout = asyncHandler(async (req, res) => {
   const token = req.cookies?.[REFRESH_COOKIE_NAME];
@@ -321,7 +346,7 @@ export const logout = asyncHandler(async (req, res) => {
         await user.save({ validateBeforeSave: false });
       }
     } catch {
-      // token already invalid — nothing to revoke
+      // token already invalid ? nothing to revoke
     }
   }
   res.clearCookie(REFRESH_COOKIE_NAME, { ...refreshCookieOptions(), maxAge: undefined });
@@ -330,7 +355,7 @@ export const logout = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/v1/auth/me   (protected)
- * 200 → { user }
+ * 200 ? { user }
  */
 export const me = asyncHandler(async (req, res) => {
   return sendOk(res, { user: req.user.toJSON() }, 'Current user');
@@ -340,7 +365,7 @@ export const me = asyncHandler(async (req, res) => {
  * PATCH /api/v1/auth/change-password   (protected)
  * Body: { current_password, new_password }
  * Revokes all sessions after a successful change.
- * 200 → {}
+ * 200 ? {}
  */
 export const changePassword = asyncHandler(async (req, res) => {
   const { current_password, new_password } = req.body;
@@ -356,3 +381,4 @@ export const changePassword = asyncHandler(async (req, res) => {
   res.clearCookie(REFRESH_COOKIE_NAME, { ...refreshCookieOptions(), maxAge: undefined });
   return sendOk(res, null, 'Password changed. Please log in again.');
 });
+

@@ -1,15 +1,19 @@
-import { SupportTicket } from '../models/index.js';
+﻿import { SupportTicket } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
+import { safeCreateNotification, safeNotifyAdmins } from '../services/notification.service.js';
+
+const staffRoles = ['admin', 'team_member'];
+const isStaffUser = (user) => staffRoles.includes(user?.role);
 
 /**
  * GET /api/v1/support-tickets   (protected)
  * Students → own tickets; staff → all.
  */
 export const listTickets = asyncHandler(async (req, res) => {
-  const isStaff = ['admin', 'team_member'].includes(req.user.role);
+  const isStaff = isStaffUser(req.user);
   const baseFilter = isStaff ? {} : { user_id: req.user._id };
 
   const { filter, sort, skip, limit, page } = buildQuery(req.query, {
@@ -23,6 +27,7 @@ export const listTickets = asyncHandler(async (req, res) => {
     SupportTicket.find(finalFilter).sort(sort).skip(skip).limit(limit).lean(),
     SupportTicket.countDocuments(finalFilter),
   ]);
+
   return sendOk(res, items, 'Support tickets', paginationMeta(total, page, limit));
 });
 
@@ -32,10 +37,12 @@ export const listTickets = asyncHandler(async (req, res) => {
 export const getTicket = asyncHandler(async (req, res) => {
   const ticket = await SupportTicket.findById(req.params.id).lean();
   if (!ticket) throw ApiError.notFound('Ticket not found.');
-  const isStaff = ['admin', 'team_member'].includes(req.user.role);
+
+  const isStaff = isStaffUser(req.user);
   if (!isStaff && String(ticket.user_id) !== String(req.user._id)) {
     throw ApiError.forbidden('You cannot access this ticket.');
   }
+
   return sendOk(res, ticket, 'Ticket detail');
 });
 
@@ -64,6 +71,19 @@ export const createTicket = asyncHandler(async (req, res) => {
       },
     ],
   });
+
+  void safeNotifyAdmins({
+    senderId: req.user._id,
+    type: 'support_ticket_created',
+    title: 'New support ticket',
+    message: `${req.user.full_name} opened a support ticket: ${subject}.`,
+    category: 'support',
+    priority: 'high',
+    actionUrl: '/lms-admin',
+    metadata: { tab: 'support', ticket_id: ticket._id, student_id: req.user._id, category },
+    eventKey: `support_ticket_created:${ticket._id}`,
+  });
+
   return sendCreated(res, ticket, 'Ticket created');
 });
 
@@ -78,7 +98,7 @@ export const replyToTicket = asyncHandler(async (req, res) => {
   const ticket = await SupportTicket.findById(req.params.id);
   if (!ticket) throw ApiError.notFound('Ticket not found.');
 
-  const isStaff = ['admin', 'team_member'].includes(req.user.role);
+  const isStaff = isStaffUser(req.user);
   if (!isStaff && String(ticket.user_id) !== String(req.user._id)) {
     throw ApiError.forbidden('You cannot reply to this ticket.');
   }
@@ -89,9 +109,36 @@ export const replyToTicket = asyncHandler(async (req, res) => {
     sender_role: req.user.role,
     message,
   });
-  // A staff reply moves an open ticket to in_progress.
+
   if (isStaff && ticket.status === 'open') ticket.status = 'in_progress';
   await ticket.save();
+
+  if (isStaff) {
+    void safeCreateNotification({
+      recipientId: ticket.user_id,
+      senderId: req.user._id,
+      type: 'support_ticket_reply',
+      title: 'Support replied',
+      message: `A team member replied to your ticket: ${ticket.subject}.`,
+      category: 'support',
+      priority: 'high',
+      actionUrl: '/student-dashboard',
+      metadata: { tab: 'support', ticket_id: ticket._id },
+      eventKey: `support_ticket_reply:${ticket._id}:${ticket.messages.length}`,
+    });
+  } else {
+    void safeNotifyAdmins({
+      senderId: req.user._id,
+      type: 'support_ticket_student_reply',
+      title: 'Student replied to support',
+      message: `${req.user.full_name} replied to ${ticket.subject}.`,
+      category: 'support',
+      priority: 'normal',
+      actionUrl: '/lms-admin',
+      metadata: { tab: 'support', ticket_id: ticket._id, student_id: req.user._id },
+      eventKey: `support_ticket_student_reply:${ticket._id}:${ticket.messages.length}`,
+    });
+  }
 
   return sendOk(res, ticket, 'Reply added');
 });
@@ -103,12 +150,28 @@ export const replyToTicket = asyncHandler(async (req, res) => {
 export const updateTicket = asyncHandler(async (req, res) => {
   const allowed = ['status', 'priority', 'assigned_to'];
   const update = {};
-  for (const k of allowed) if (req.body[k] !== undefined) update[k] = req.body[k];
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) update[key] = req.body[key];
+  }
 
   const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, update, {
     new: true,
     runValidators: true,
   });
   if (!ticket) throw ApiError.notFound('Ticket not found.');
+
+  void safeCreateNotification({
+    recipientId: ticket.user_id,
+    senderId: req.user._id,
+    type: 'support_ticket_updated',
+    title: 'Support ticket updated',
+    message: `Your ticket "${ticket.subject}" is now ${ticket.status}.`,
+    category: 'support',
+    priority: ticket.status === 'resolved' ? 'normal' : 'high',
+    actionUrl: '/student-dashboard',
+    metadata: { tab: 'support', ticket_id: ticket._id, status: ticket.status },
+    eventKey: `support_ticket_updated:${ticket._id}:${ticket.status}`,
+  });
+
   return sendOk(res, ticket, 'Ticket updated');
 });

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import apiClient from "@/api/apiClient";
 import {
   BookOpen, Award, Settings, Play, CheckCircle, LogOut,
-  Home, HelpCircle, Bell, LifeBuoy, ChevronRight, Menu, X, Clock,
+  Home, HelpCircle, LifeBuoy, ChevronRight, Menu, X, Clock,
   TrendingUp, FileText, Megaphone, Video, Target, Calendar, UserCircle, ClipboardList, Gift,
   StickyNote, MessageSquare, Flame, Map, Star, CreditCard, Sparkles, Inbox, Plus
 } from "lucide-react";
@@ -39,13 +39,14 @@ import StudentRequests from "@/components/lms/student/StudentRequests";
 import StudentDocumentUpload from "@/components/lms/student/StudentDocumentUpload";
 import AIToolsStudent from "@/pages/AIToolsStudent";
 import StudentMyCourses from "@/components/lms/student/StudentMyCourses";
+import NotificationCenter from "@/components/lms/NotificationCenter";
 
 
 
 const LEVEL_CONFIG = {
-  level1: { bar: "bg-harvest",         pill: "bg-harvest/10 text-harvest border border-harvest/30",       label: "Level 1 — Foundation" },
-  level2: { bar: "bg-emerald-500",     pill: "bg-emerald-50 text-emerald-700 border border-emerald-200",  label: "Level 2 — Professional" },
-  level3: { bar: "bg-amber-600",       pill: "bg-amber-50 text-amber-700 border border-amber-200",        label: "Level 3 — Advanced" },
+  level1: { bar: "bg-harvest",         pill: "bg-harvest/10 text-harvest border border-harvest/30",       label: "Level 1 â€” Foundation" },
+  level2: { bar: "bg-emerald-500",     pill: "bg-emerald-50 text-emerald-700 border border-emerald-200",  label: "Level 2 â€” Professional" },
+  level3: { bar: "bg-amber-600",       pill: "bg-amber-50 text-amber-700 border border-amber-200",        label: "Level 3 â€” Advanced" },
 };
 
 const NAV_SECTIONS = [
@@ -89,7 +90,7 @@ const NAV_SECTIONS = [
   ]},
 ];
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLogout }) {
   return (
     <aside className={`fixed left-0 top-0 h-full bg-slate-900 z-40 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
@@ -159,7 +160,7 @@ function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLog
   );
 }
 
-/* ── Main ────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function StudentDashboard() {
   const { user, logout }              = useAuth();
   const [enrollments, setEnrollments]     = useState([]);
@@ -257,7 +258,7 @@ export default function StudentDashboard() {
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-harvest border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white font-display font-semibold text-base mb-1">SOL Training Academy</p>
-          <p className="text-white/40 text-sm">Loading your dashboard…</p>
+          <p className="text-white/40 text-sm">Loading your dashboardâ€¦</p>
         </div>
       </div>
     );
@@ -276,7 +277,7 @@ export default function StudentDashboard() {
     return enrollmentDaysLeft(enr) < 0;
   };
 
-  /* ── Course Player ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Course Player â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   if (activeCourse) {
     // Block expired access
     if (isExpired(activeCourse) && activeCourse.status !== "completed") {
@@ -294,7 +295,7 @@ export default function StudentDashboard() {
             </p>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => { setActiveCourse(null); setActiveTopicId(null); setModules([]); setTopics([]); }}
-                className="flex-1 text-white border-white/20 hover:bg-white/10">← Back</Button>
+                className="flex-1 text-white border-white/20 hover:bg-white/10">â† Back</Button>
               <Button onClick={() => { setActiveCourse(null); setActiveTopicId(null); setModules([]); setTopics([]); setActiveTab("support"); }}
                 className="flex-1 bg-harvest text-white">Contact Support</Button>
             </div>
@@ -318,7 +319,7 @@ export default function StudentDashboard() {
     );
   }
 
-  /* ── Dashboard Shell ───────────────────────────────────────────────────── */
+  /* â”€â”€ Dashboard Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const ml = sidebarCollapsed ? "ml-16" : "ml-64";
 
 
@@ -337,14 +338,10 @@ export default function StudentDashboard() {
               <h1 className="font-display font-bold text-xl text-ink">
                 {allNavItems.find(n => n.id === activeTab)?.label}
               </h1>
-              <p className="text-xs text-slate_mist mt-0.5">SOL Training Academy — Student Portal</p>
+              <p className="text-xs text-slate_mist mt-0.5">SOL Training Academy â€” Student Portal</p>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setActiveTab("announcements")}
-                className="relative w-9 h-9 rounded-xl border border-border/50 flex items-center justify-center text-slate_mist hover:bg-slate-50 transition-colors">
-                <Bell className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">5</span>
-              </button>
+              <NotificationCenter onSelectTab={setActiveTab} />
               <Button size="sm" onClick={() => setActiveTab("requests")} className="gap-2 text-xs bg-harvest text-white hover:bg-harvest/90 hidden sm:flex">
                 <Plus className="w-3.5 h-3.5" /> New Request
               </Button>
@@ -425,7 +422,7 @@ export default function StudentDashboard() {
   );
 }
 
-/* ── My Courses tab ────────────────────────────────────────────────────────── */
+/* â”€â”€ My Courses tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, onEnroll, enrollmentDaysLeft }) {
   const enrolledCourseIds = new Set(enrollments.map(e => String(e.course_id)));
   const availableCourses  = courses.filter(c => !enrolledCourseIds.has(String(c._id || c.id)));
@@ -470,7 +467,7 @@ function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, on
                     <h3 className="font-display font-semibold text-ink text-sm leading-snug mb-1">{course.title}</h3>
                     {course.description && <p className="text-xs text-slate_mist mb-3 line-clamp-2">{course.description}</p>}
                     <div className="flex items-center gap-3 text-xs text-slate_mist mb-4">
-                      {course.duration && <span>⏱ {course.duration}</span>}
+                      {course.duration && <span>â± {course.duration}</span>}
                       {course.price > 0 && <span className="font-semibold text-harvest">${course.price}</span>}
                     </div>
                     <div className="mt-auto">

@@ -1,23 +1,24 @@
-import { AssignmentSubmission, Assignment } from '../models/index.js';
+﻿import { AssignmentSubmission, Assignment } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
 import { uploadBuffer, deleteAsset } from '../cloudinary/cloudinary.service.js';
+import { safeCreateNotification, safeNotifyAdmins } from '../services/notification.service.js';
 
 /**
  * POST /api/v1/submissions   (protected; student)
  * multipart/form-data: file (required), assignment_id, submission_notes?
  * Uploads the file to Cloudinary and records the submission.
- * 201 → submission
+ * 201 ? submission
  */
 export const createSubmission = asyncHandler(async (req, res) => {
   const { assignment_id, submission_notes } = req.body;
   if (!assignment_id) throw ApiError.badRequest('assignment_id is required.');
 
   // Two supported flows:
-  //  (a) multipart — a file arrives on req.file and we stream it to Cloudinary here.
-  //  (b) two-step  — the client already uploaded via /uploads/me/assignment and
+  //  (a) multipart ? a file arrives on req.file and we stream it to Cloudinary here.
+  //  (b) two-step  ? the client already uploaded via /uploads/me/assignment and
   //      passes the resulting file_url/file_name in the JSON body.
   const preUploadedUrl = req.body.file_url;
   if (!req.file && !preUploadedUrl) {
@@ -65,12 +66,24 @@ export const createSubmission = asyncHandler(async (req, res) => {
     passing_marks: assignment.passing_marks,
   });
 
+  void safeNotifyAdmins({
+    senderId: req.user._id,
+    type: 'assignment_submitted',
+    title: 'Assignment submitted',
+    message: `${req.user.full_name} submitted ${assignment.title}.`,
+    category: 'assessment',
+    priority: 'high',
+    actionUrl: '/lms-admin',
+    metadata: { tab: 'gradebook', assignment_id, submission_id: submission._id, course_id: assignment.course_id, student_id: req.user._id },
+    eventKey: `assignment_submitted:${submission._id}`,
+  });
+
   return sendCreated(res, submission, 'Assignment submitted');
 });
 
 /**
  * GET /api/v1/submissions   (protected)
- * Students → own; staff → all (filters/pagination).
+ * Students ? own; staff ? all (filters/pagination).
  */
 export const listSubmissions = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'team_member'].includes(req.user.role);
@@ -126,6 +139,19 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
   submission.graded_date = new Date();
   await submission.save();
 
+  void safeCreateNotification({
+    recipientId: submission.user_id,
+    senderId: req.user._id,
+    type: 'assignment_graded',
+    title: 'Assignment graded',
+    message: `Your submission for ${submission.assignment_title} has been graded.`,
+    category: 'assessment',
+    priority: 'high',
+    actionUrl: '/student-dashboard',
+    metadata: { tab: 'assessments', assignment_id: submission.assignment_id, submission_id: submission._id, course_id: submission.course_id },
+    eventKey: `assignment_graded:${submission._id}`,
+  });
+
   return sendOk(res, submission, 'Submission graded');
 });
 
@@ -150,3 +176,4 @@ export const deleteSubmission = asyncHandler(async (req, res) => {
   await submission.deleteOne();
   return sendOk(res, { id: req.params.id }, 'Submission deleted');
 });
+

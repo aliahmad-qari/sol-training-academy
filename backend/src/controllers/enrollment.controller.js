@@ -1,4 +1,4 @@
-import { CourseEnrollment, CourseTopic, User, Course } from '../models/index.js';
+﻿import { CourseEnrollment, CourseTopic, User, Course } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -6,10 +6,11 @@ import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
 import { enrollUserInCourse } from '../services/enrollment.service.js';
 import { issueCertificate } from '../services/certificate.service.js';
 import { logger } from '../utils/logger.js';
+import { safeCreateNotification, safeNotifyAdmins } from '../services/notification.service.js';
 
 /**
  * GET /api/v1/enrollments   (protected)
- * Students → own enrollments; staff → all (filters/pagination).
+ * Students ? own enrollments; staff ? all (filters/pagination).
  */
 export const listEnrollments = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'team_member'].includes(req.user.role);
@@ -45,13 +46,13 @@ export const getEnrollment = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /api/v1/enrollments   (staff)  — manual/free enrollment
+ * POST /api/v1/enrollments   (staff)  ? manual/free enrollment
  * Body: { user_id, course_id }
  */
 export const createEnrollment = asyncHandler(async (req, res) => {
   const { user_id, course_id } = req.body;
   if (!user_id || !course_id) throw ApiError.badRequest('user_id and course_id are required.');
-  const { enrollment, created } = await enrollUserInCourse({ userId: user_id, courseId: course_id });
+  const { enrollment, created } = await enrollUserInCourse({ userId: user_id, courseId: course_id, actorId: req.user._id, source: 'admin' });
   return sendCreated(res, enrollment, created ? 'Enrollment created' : 'Already enrolled');
 });
 
@@ -66,13 +67,13 @@ export const bulkEnroll = asyncHandler(async (req, res) => {
   if (Array.isArray(user_ids) && course_id) {
     for (const uid of user_ids) {
       // eslint-disable-next-line no-await-in-loop
-      const { enrollment, created } = await enrollUserInCourse({ userId: uid, courseId: course_id });
+      const { enrollment, created } = await enrollUserInCourse({ userId: uid, courseId: course_id, actorId: req.user._id, source: 'admin_bulk' });
       results.push({ user_id: uid, enrollment_id: enrollment._id, created });
     }
   } else if (Array.isArray(course_ids) && user_id) {
     for (const cid of course_ids) {
       // eslint-disable-next-line no-await-in-loop
-      const { enrollment, created } = await enrollUserInCourse({ userId: user_id, courseId: cid });
+      const { enrollment, created } = await enrollUserInCourse({ userId: user_id, courseId: cid, actorId: req.user._id, source: 'admin_bulk' });
       results.push({ course_id: cid, enrollment_id: enrollment._id, created });
     }
   } else {
@@ -126,7 +127,7 @@ export const updateProgress = asyncHandler(async (req, res) => {
 
   // Auto-issue certificate on completion (idempotent, best-effort).
   // A certificate/upload failure (e.g. Cloudinary down or unconfigured) must
-  // NOT fail the progress update — the completion is already persisted. We
+  // NOT fail the progress update ? the completion is already persisted. We
   // surface a warning flag so the student can retry via POST /certificates/issue.
   let certificateError = null;
   if (enrollment.status === 'completed' && !enrollment.certificate_issued) {
@@ -135,6 +136,30 @@ export const updateProgress = asyncHandler(async (req, res) => {
         userId: enrollment.user_id,
         courseId: enrollment.course_id,
         enrollmentId: enrollment._id,
+      });
+
+      void safeCreateNotification({
+        recipientId: enrollment.user_id,
+        type: 'certificate_issued',
+        title: 'Certificate ready',
+        message: `Your certificate for ${enrollment.course_title} is ready to download.`,
+        category: 'course',
+        priority: 'high',
+        actionUrl: '/student-dashboard',
+        metadata: { tab: 'certificates', course_id: enrollment.course_id, enrollment_id: enrollment._id, certificate_id: certificate?._id },
+        eventKey: `certificate_issued:${enrollment._id}`,
+      });
+
+      void safeNotifyAdmins({
+        senderId: enrollment.user_id,
+        type: 'course_completed',
+        title: 'Student completed a course',
+        message: `${enrollment.user_name} completed ${enrollment.course_title}.`,
+        category: 'course',
+        priority: 'normal',
+        actionUrl: '/lms-admin',
+        metadata: { tab: 'certificates', course_id: enrollment.course_id, enrollment_id: enrollment._id, certificate_id: certificate?._id },
+        eventKey: `course_completed:${enrollment._id}`,
       });
     } catch (err) {
       logger.error(`[enrollment] Certificate issuance failed for ${enrollment._id}: ${err.message}`);
@@ -147,7 +172,7 @@ export const updateProgress = asyncHandler(async (req, res) => {
 });
 
 /**
- * PATCH /api/v1/enrollments/:id   (staff) — update status / expiry
+ * PATCH /api/v1/enrollments/:id   (staff) ? update status / expiry
  */
 export const updateEnrollment = asyncHandler(async (req, res) => {
   const allowed = ['status', 'expiry_date', 'progress_percent'];
@@ -170,3 +195,4 @@ export const deleteEnrollment = asyncHandler(async (req, res) => {
   if (!enrollment) throw ApiError.notFound('Enrollment not found.');
   return sendOk(res, { id: req.params.id }, 'Enrollment deleted');
 });
+

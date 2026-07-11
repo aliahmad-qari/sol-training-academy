@@ -1,5 +1,6 @@
-import { CourseEnrollment, Course, User } from '../models/index.js';
+﻿import { CourseEnrollment, Course, User } from '../models/index.js';
 import { ApiError } from '../utils/ApiError.js';
+import { safeCreateNotification, safeNotifyAdmins } from './notification.service.js';
 
 /**
  * Create (or return existing) enrollment for a user in a course.
@@ -10,7 +11,7 @@ import { ApiError } from '../utils/ApiError.js';
  * @param {string} params.courseId
  * @returns {Promise<{enrollment: import('mongoose').Document, created: boolean}>}
  */
-export const enrollUserInCourse = async ({ userId, courseId }) => {
+export const enrollUserInCourse = async ({ userId, courseId, actorId = null, source = 'system' }) => {
   const existing = await CourseEnrollment.findOne({ user_id: userId, course_id: courseId });
   if (existing) return { enrollment: existing, created: false };
 
@@ -37,6 +38,32 @@ export const enrollUserInCourse = async ({ userId, courseId }) => {
       progress_percent: 0,
       expiry_date: expiryDate,
     });
+
+    void safeCreateNotification({
+      recipientId: user._id,
+      senderId: actorId,
+      type: 'course_enrolled',
+      title: 'Course enrollment confirmed',
+      message: `You now have access to ${course.title}.`,
+      category: 'course',
+      priority: 'normal',
+      actionUrl: '/student-dashboard',
+      metadata: { tab: 'courses', course_id: course._id, enrollment_id: enrollment._id, source },
+      eventKey: `course_enrolled:${enrollment._id}`,
+    });
+
+    void safeNotifyAdmins({
+      senderId: actorId || user._id,
+      type: 'student_enrolled',
+      title: 'Student enrolled in a course',
+      message: `${user.full_name} enrolled in ${course.title}.`,
+      category: 'course',
+      priority: 'normal',
+      actionUrl: '/lms-admin',
+      metadata: { tab: 'students', course_id: course._id, enrollment_id: enrollment._id, student_id: user._id, source },
+      eventKey: `student_enrolled:${enrollment._id}`,
+    });
+
     return { enrollment, created: true };
   } catch (err) {
     // Race: another request created it between our check and insert.
@@ -49,3 +76,4 @@ export const enrollUserInCourse = async ({ userId, courseId }) => {
 };
 
 export default enrollUserInCourse;
+

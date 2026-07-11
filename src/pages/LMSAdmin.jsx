@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import apiClient from "@/api/apiClient";
@@ -39,6 +39,7 @@ import AdminLeaderboard from "@/components/lms/admin/AdminLeaderboard";
 import AdminDiscussionModeration from "@/components/lms/admin/AdminDiscussionModeration";
 import AdminDocumentVerification from "@/components/lms/admin/AdminDocumentVerification";
 import AdminNDISIntake from "@/components/lms/admin/AdminNDISIntake";
+import NotificationCenter from "@/components/lms/NotificationCenter";
 
 const NAV_SECTIONS = [
   { label: "Overview",  items: [{ id: "dashboard",   label: "Dashboard",            icon: Home }] },
@@ -200,7 +201,7 @@ export default function LMSAdmin() {
       label: "Pass Rate",
       value: quizAttempts.length > 0
         ? `${Math.round((quizAttempts.filter(q => q.passed).length / quizAttempts.length) * 100)}%`
-        : "—",
+        : "â€”",
       icon: TrendingUp,
       color: "text-emerald-600 bg-emerald-50",
     },
@@ -212,7 +213,7 @@ export default function LMSAdmin() {
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-harvest border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white font-display font-semibold text-base mb-1">SOL Training Academy</p>
-          <p className="text-white/40 text-sm">Loading admin panel…</p>
+          <p className="text-white/40 text-sm">Loading admin panelâ€¦</p>
         </div>
       </div>
     );
@@ -232,16 +233,19 @@ export default function LMSAdmin() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display font-bold text-xl text-ink">{activeTabLabel}</h1>
-              <p className="text-xs text-slate_mist mt-0.5">SOL Academy — LMS Admin Panel</p>
+              <p className="text-xs text-slate_mist mt-0.5">SOL Academy â€” LMS Admin Panel</p>
             </div>
-            <Button onClick={() => load()} variant="outline" size="sm" className="gap-2 text-xs">
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <NotificationCenter onSelectTab={setActiveTab} />
+              <Button onClick={() => load()} variant="outline" size="sm" className="gap-2 text-xs">
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </Button>
+            </div>
           </div>
         </div>
 
         <div className="p-6">
-          {/* Stats bar — shown on all tabs except dashboard */}
+          {/* Stats bar â€” shown on all tabs except dashboard */}
           {activeTab !== "dashboard" && (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
               {stats.map(s => (
@@ -313,3 +317,4 @@ export default function LMSAdmin() {
     </div>
   );
 }
+

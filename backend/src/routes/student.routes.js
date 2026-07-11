@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { studentOverview } from '../controllers/dashboard.controller.js';
 import { protect } from '../middleware/auth.js';
 import { enrollUserInCourse } from '../services/enrollment.service.js';
@@ -23,8 +23,12 @@ router.post('/enroll', asyncHandler(async (req, res) => {
   const { enrollment, created } = await enrollUserInCourse({
     userId: req.user._id,
     courseId: course_id,
+    actorId: req.user._id,
+    source: 'student_self_enroll',
   });
   return sendCreated(res, enrollment, created ? 'Enrolled successfully' : 'Already enrolled');
 }));
 
 export default router;
+
+

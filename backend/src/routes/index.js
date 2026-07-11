@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
 import userRoutes from './user.routes.js';
@@ -25,6 +25,7 @@ import studentRequestRoutes from './studentRequest.routes.js';
 import referralRoutes from './referral.routes.js';
 import courseFeedbackRoutes from './courseFeedback.routes.js';
 import announcementRoutes from './announcement.routes.js';
+import notificationRoutes from './notification.routes.js';
 
 /**
  * Central API v1 router. Every feature module is registered here.
@@ -59,5 +60,7 @@ router.use('/requests', studentRequestRoutes);
 router.use('/referrals', referralRoutes);
 router.use('/feedback', courseFeedbackRoutes);
 router.use('/announcements', announcementRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;
+

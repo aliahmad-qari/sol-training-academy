@@ -1,4 +1,4 @@
-import { asyncHandler } from '../utils/asyncHandler.js';
+﻿import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { CoursePayment, Course } from '../models/index.js';
@@ -14,7 +14,7 @@ import { getStripe } from '../stripe/stripe.client.js';
 /**
  * POST /api/v1/payments/checkout   (protected)
  * Body: { course_id, coupon_code? }
- * 200 → { url, sessionId }  |  free enrollment → { free:true, enrollment }
+ * 200 ? { url, sessionId }  |  free enrollment ? { free:true, enrollment }
  */
 export const createCheckout = asyncHandler(async (req, res) => {
   const { course_id, coupon_code } = req.body;
@@ -26,11 +26,13 @@ export const createCheckout = asyncHandler(async (req, res) => {
     couponCode: coupon_code,
   });
 
-  // Fully-discounted course → enroll immediately, no payment.
+  // Fully-discounted course ? enroll immediately, no payment.
   if (result.free) {
     const { enrollment } = await enrollUserInCourse({
       userId: req.user._id,
       courseId: course_id,
+      actorId: req.user._id,
+      source: 'free_checkout',
     });
     return sendCreated(res, { free: true, enrollment }, 'Enrolled (free after discount)');
   }
@@ -42,7 +44,7 @@ export const createCheckout = asyncHandler(async (req, res) => {
  * POST /api/v1/payments/verify   (protected)
  * Body: { session_id }
  * Client-side confirmation after Stripe redirect. Idempotent with webhook.
- * 200 → { payment_status, enrollment_created, payment }
+ * 200 ? { payment_status, enrollment_created, payment }
  */
 export const verifyPayment = asyncHandler(async (req, res) => {
   const { session_id } = req.body;
@@ -84,7 +86,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 /**
  * POST /api/v1/payments/preview-coupon   (protected)
  * Body: { course_id, coupon_code }
- * 200 → { base_price, discount, final_price }
+ * 200 ? { base_price, discount, final_price }
  */
 export const previewCoupon = asyncHandler(async (req, res) => {
   const { course_id, coupon_code } = req.body;
@@ -101,8 +103,8 @@ export const previewCoupon = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/v1/payments   (protected)
- * Students → own payments; staff → all (with filters/pagination).
- * 200 → [payments] + meta
+ * Students ? own payments; staff ? all (with filters/pagination).
+ * 200 ? [payments] + meta
  */
 export const listPayments = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'team_member'].includes(req.user.role);
@@ -136,3 +138,5 @@ export const getPayment = asyncHandler(async (req, res) => {
   }
   return sendOk(res, payment, 'Payment');
 });
+
+

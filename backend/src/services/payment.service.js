@@ -1,10 +1,11 @@
-import { getStripe } from '../stripe/stripe.client.js';
+﻿import { getStripe } from '../stripe/stripe.client.js';
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 import { logger } from '../utils/logger.js';
 import { CoursePayment, Course, Coupon } from '../models/index.js';
 import { enrollUserInCourse } from './enrollment.service.js';
 import { createInvoiceForPayment } from './invoice.service.js';
+import { safeCreateNotification, safeNotifyAdmins } from './notification.service.js';
 
 /**
  * Validate a coupon against a course and return pricing.
@@ -41,7 +42,7 @@ export const createCheckoutSession = async ({ user, courseId, couponCode }) => {
 
   const { finalPrice, discount, coupon } = await priceWithCoupon({ course, couponCode });
 
-  // Free after coupon → no Stripe needed; caller can enroll directly.
+  // Free after coupon ? no Stripe needed; caller can enroll directly.
   if (finalPrice <= 0) {
     return { url: null, sessionId: null, free: true, course, discount, coupon };
   }
@@ -97,7 +98,7 @@ export const createCheckoutSession = async ({ user, courseId, couponCode }) => {
 };
 
 /**
- * Fulfill a successful payment. Idempotent — safe to call from both the
+ * Fulfill a successful payment. Idempotent ? safe to call from both the
  * webhook and the client-side verify endpoint.
  *
  * @param {object} params
@@ -123,6 +124,8 @@ export const fulfillCheckout = async ({ sessionId, paymentIntentId }) => {
   const { enrollment } = await enrollUserInCourse({
     userId: payment.user_id._id || payment.user_id,
     courseId: payment.course_id,
+    actorId: payment.user_id._id || payment.user_id,
+    source: 'payment',
   });
   payment.enrollment_id = enrollment._id;
   payment.enrollment_created = true;
@@ -140,8 +143,34 @@ export const fulfillCheckout = async ({ sessionId, paymentIntentId }) => {
   payment.invoice_id = invoice._id;
   await payment.save();
 
-  logger.info(`[payment] Fulfilled ${payment._id} → enrollment ${enrollment._id}, invoice ${invoice.invoice_number}`);
+  void safeCreateNotification({
+    recipientId: user._id,
+    type: 'payment_completed',
+    title: 'Payment confirmed',
+    message: `Your payment for ${payment.course_title} has been confirmed.`,
+    category: 'payment',
+    priority: 'high',
+    actionUrl: '/student-dashboard',
+    metadata: { tab: 'payments', payment_id: payment._id, enrollment_id: enrollment._id, invoice_id: invoice._id },
+    eventKey: `payment_completed:${payment._id}`,
+  });
+
+  void safeNotifyAdmins({
+    senderId: user._id,
+    type: 'payment_received',
+    title: 'Payment received',
+    message: `${payment.user_name || user.full_name} paid ${payment.amount_paid} ${payment.currency} for ${payment.course_title}.`,
+    category: 'payment',
+    priority: 'high',
+    actionUrl: '/lms-admin',
+    metadata: { tab: 'payments', payment_id: payment._id, enrollment_id: enrollment._id, invoice_id: invoice._id },
+    eventKey: `payment_received:${payment._id}`,
+  });
+
+  logger.info(`[payment] Fulfilled ${payment._id} -> enrollment ${enrollment._id}, invoice ${invoice.invoice_number}`);
   return payment;
 };
 
 export default createCheckoutSession;
+
+
