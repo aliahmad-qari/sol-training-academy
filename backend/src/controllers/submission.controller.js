@@ -1,38 +1,83 @@
-﻿import { AssignmentSubmission, Assignment } from '../models/index.js';
+﻿import { AssignmentSubmission, Assignment, CourseTopic, CourseEnrollment } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
 import { uploadBuffer, deleteAsset } from '../cloudinary/cloudinary.service.js';
 import { safeCreateNotification, safeNotifyAdmins } from '../services/notification.service.js';
+import { applyTopicProgress } from '../services/enrollmentProgress.service.js';
+
+const ensureActiveEnrollment = async ({ userId, courseId }) => {
+  const enrollment = await CourseEnrollment.findOne({
+    user_id: userId,
+    course_id: courseId,
+    status: { $ne: 'expired' },
+    $or: [{ expiry_date: null }, { expiry_date: { $exists: false } }, { expiry_date: { $gt: new Date() } }],
+  }).lean();
+
+  if (!enrollment) {
+    throw ApiError.forbidden('You are not enrolled in this course, or your access has expired.');
+  }
+
+  return enrollment;
+};
+
+const resolveSubmissionTarget = async (assignmentId) => {
+  const assignment = await Assignment.findById(assignmentId).lean();
+  if (assignment) {
+    return {
+      kind: 'assignment',
+      assignment_id: assignment._id,
+      topic_id: undefined,
+      title: assignment.title,
+      course_id: assignment.course_id,
+      course_title: assignment.course_title,
+      max_marks: assignment.max_marks,
+      passing_marks: assignment.passing_marks,
+      allowed_file_types: assignment.allowed_file_types || [],
+    };
+  }
+
+  const topic = await CourseTopic.findById(assignmentId).lean();
+  if (topic && topic.type === 'assessment') {
+    return {
+      kind: 'assessment_topic',
+      assignment_id: undefined,
+      topic_id: topic._id,
+      title: topic.title,
+      course_id: topic.course_id,
+      course_title: undefined,
+      max_marks: topic.assessment_max_marks || 100,
+      passing_marks: undefined,
+      allowed_file_types: [],
+    };
+  }
+
+  throw ApiError.notFound('Assignment not found.');
+};
 
 /**
  * POST /api/v1/submissions   (protected; student)
  * multipart/form-data: file (required), assignment_id, submission_notes?
- * Uploads the file to Cloudinary and records the submission.
- * 201 ? submission
+ * Also accepts CourseTopic assessment IDs for course-player assessments.
  */
 export const createSubmission = asyncHandler(async (req, res) => {
   const { assignment_id, submission_notes } = req.body;
   if (!assignment_id) throw ApiError.badRequest('assignment_id is required.');
 
-  // Two supported flows:
-  //  (a) multipart ? a file arrives on req.file and we stream it to Cloudinary here.
-  //  (b) two-step  ? the client already uploaded via /uploads/me/assignment and
-  //      passes the resulting file_url/file_name in the JSON body.
   const preUploadedUrl = req.body.file_url;
   if (!req.file && !preUploadedUrl) {
     throw ApiError.badRequest('A file is required: send multipart "file" or a JSON "file_url".');
   }
 
-  const assignment = await Assignment.findById(assignment_id).lean();
-  if (!assignment) throw ApiError.notFound('Assignment not found.');
+  const target = await resolveSubmissionTarget(assignment_id);
+  await ensureActiveEnrollment({ userId: req.user._id, courseId: target.course_id });
 
   const originalName = req.file ? req.file.originalname : req.body.file_name || 'submission';
   const ext = (originalName.split('.').pop() || '').toLowerCase();
-  if (assignment.allowed_file_types?.length && !assignment.allowed_file_types.includes(ext)) {
+  if (target.allowed_file_types.length && !target.allowed_file_types.includes(ext)) {
     throw ApiError.badRequest(
-      `File type ".${ext}" not allowed. Allowed: ${assignment.allowed_file_types.join(', ')}`
+      `File type ".${ext}" not allowed. Allowed: ${target.allowed_file_types.join(', ')}`
     );
   }
 
@@ -49,10 +94,11 @@ export const createSubmission = asyncHandler(async (req, res) => {
   }
 
   const submission = await AssignmentSubmission.create({
-    assignment_id,
-    assignment_title: assignment.title,
-    course_id: assignment.course_id,
-    course_title: assignment.course_title,
+    assignment_id: target.assignment_id,
+    topic_id: target.topic_id,
+    assignment_title: target.title,
+    course_id: target.course_id,
+    course_title: target.course_title || req.body.course_title || '',
     user_id: req.user._id,
     user_name: req.user.full_name,
     user_email: req.user.email,
@@ -62,19 +108,37 @@ export const createSubmission = asyncHandler(async (req, res) => {
     file_public_id: filePublicId,
     submission_notes,
     status: 'submitted',
-    max_marks: assignment.max_marks,
-    passing_marks: assignment.passing_marks,
+    max_marks: target.max_marks,
+    passing_marks: target.passing_marks,
   });
+
+  if (target.topic_id) {
+    await applyTopicProgress({
+      userId: req.user._id,
+      courseId: target.course_id,
+      actor: req.user,
+      topicId: target.topic_id,
+      completed: true,
+    });
+  }
 
   void safeNotifyAdmins({
     senderId: req.user._id,
     type: 'assignment_submitted',
     title: 'Assignment submitted',
-    message: `${req.user.full_name} submitted ${assignment.title}.`,
+    message: `${req.user.full_name} submitted ${target.title}.`,
     category: 'assessment',
     priority: 'high',
     actionUrl: '/lms-admin',
-    metadata: { tab: 'gradebook', assignment_id, submission_id: submission._id, course_id: assignment.course_id, student_id: req.user._id },
+    metadata: {
+      tab: 'gradebook',
+      assignment_id: target.assignment_id,
+      topic_id: target.topic_id,
+      submission_id: submission._id,
+      course_id: target.course_id,
+      student_id: req.user._id,
+      kind: target.kind,
+    },
     eventKey: `assignment_submitted:${submission._id}`,
   });
 
@@ -83,14 +147,14 @@ export const createSubmission = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/v1/submissions   (protected)
- * Students ? own; staff ? all (filters/pagination).
+ * Students -> own; staff -> all (filters/pagination).
  */
 export const listSubmissions = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'team_member'].includes(req.user.role);
   const baseFilter = isStaff ? {} : { user_id: req.user._id };
 
   const { filter, sort, skip, limit, page } = buildQuery(req.query, {
-    allowedFilters: ['assignment_id', 'course_id', 'status', 'user_id', 'passed'],
+    allowedFilters: ['assignment_id', 'topic_id', 'course_id', 'status', 'user_id', 'passed'],
     searchFields: ['user_name', 'user_email', 'assignment_title', 'course_title'],
     defaultSort: '-createdAt',
   });
@@ -119,7 +183,6 @@ export const getSubmission = asyncHandler(async (req, res) => {
 /**
  * PATCH /api/v1/submissions/:id/grade   (staff)
  * Body: { marks_awarded, feedback?, status? }
- * Computes pass/fail against the submission's passing_marks.
  */
 export const gradeSubmission = asyncHandler(async (req, res) => {
   const { marks_awarded, feedback, status } = req.body;
@@ -139,6 +202,16 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
   submission.graded_date = new Date();
   await submission.save();
 
+  if (submission.passed && submission.topic_id) {
+    await applyTopicProgress({
+      userId: submission.user_id,
+      courseId: submission.course_id,
+      actor: req.user,
+      topicId: submission.topic_id,
+      completed: true,
+    });
+  }
+
   void safeCreateNotification({
     recipientId: submission.user_id,
     senderId: req.user._id,
@@ -148,7 +221,13 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
     category: 'assessment',
     priority: 'high',
     actionUrl: '/student-dashboard',
-    metadata: { tab: 'assessments', assignment_id: submission.assignment_id, submission_id: submission._id, course_id: submission.course_id },
+    metadata: {
+      tab: 'assessments',
+      assignment_id: submission.assignment_id,
+      topic_id: submission.topic_id,
+      submission_id: submission._id,
+      course_id: submission.course_id,
+    },
     eventKey: `assignment_graded:${submission._id}`,
   });
 
@@ -176,4 +255,3 @@ export const deleteSubmission = asyncHandler(async (req, res) => {
   await submission.deleteOne();
   return sendOk(res, { id: req.params.id }, 'Submission deleted');
 });
-

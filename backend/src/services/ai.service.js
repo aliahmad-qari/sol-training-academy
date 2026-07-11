@@ -1,4 +1,4 @@
-import Groq from 'groq-sdk';
+﻿import Groq from 'groq-sdk';
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 import { logger } from '../utils/logger.js';
@@ -82,7 +82,7 @@ export const generateJSON = async ({ prompt, systemInstruction, schema }) => {
     const text = await chat(prompt + schemaHint, systemInstruction, {
       json: true,
       temperature: 0.1,
-      maxTokens: 4096,
+      maxTokens: 8192,
     });
     const jsonStr = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     try {
@@ -130,10 +130,10 @@ export const chatConversation = async ({ history = [], systemInstruction }) => {
  *
  * Groq's llama models are text-only (no multimodal file input), so we extract
  * the text server-side and hand THAT to the AI tools:
- *   - PDF  → pdf-parse (PDFParse class)
- *   - DOCX → mammoth (raw text)
- *   - TXT  → decoded inline
- * Legacy .doc (binary Word) and images are not supported — callers should
+ *   - PDF  â†’ pdf-parse (PDFParse class)
+ *   - DOCX â†’ mammoth (raw text)
+ *   - TXT  â†’ decoded inline
+ * Legacy .doc (binary Word) and images are not supported â€” callers should
  * paste the text instead.
  */
 const guessKind = (mimeType, fileName = '') => {
@@ -185,7 +185,7 @@ export const extractText = async ({ buffer, mimeType, fileName = '' }) => {
   } catch (err) {
     logger.error(`[ai.service] extractText (${kind}) failed: ${err?.message}`);
     throw ApiError.badRequest(
-      'We could not read text from this file. It may be scanned, image-based, or corrupted — please paste the text instead.'
+      'We could not read text from this file. It may be scanned, image-based, or corrupted â€” please paste the text instead.'
     );
   }
 
@@ -199,3 +199,4 @@ export const extractText = async ({ buffer, mimeType, fileName = '' }) => {
 };
 
 export default { generateText, generateJSON, extractText, chatConversation };
+

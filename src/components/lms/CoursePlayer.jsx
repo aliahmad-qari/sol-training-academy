@@ -119,7 +119,7 @@ function CourseSidebar({ modules, topics, enrollment, activeTopicId, setActiveTo
 }
 
 // ── Topic Content ─────────────────────────────────────────────────────────────
-function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext, onPrev, hasPrev, hasNext, topics, modules }) {
+function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext, onPrev, hasPrev, hasNext, topics, modules, onSaveTopicProgress }) {
   const tc = TOPIC_TYPE[topic.type] || TOPIC_TYPE.video;
   const tid = (t) => t._id || t.id;
   const mid = (m) => m._id || m.id;
@@ -156,7 +156,13 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
             exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
 
             {(topic.type === "video" || !topic.type) && (
-              <VideoPlayer topic={topic} isCompleted={isCompleted} onComplete={onComplete} />
+              <VideoPlayer
+                topic={topic}
+                isCompleted={isCompleted}
+                topicProgress={(enrollment.topic_progress || []).find(p => String(p.topic_id) === String(tid(topic)))}
+                onProgressSave={(payload) => onSaveTopicProgress?.({ topicId: tid(topic), ...payload })}
+                onComplete={onComplete}
+              />
             )}
             {topic.type === "reading" && (
               <ReadingTopicView topic={topic} isCompleted={isCompleted} onComplete={onComplete} />
@@ -204,7 +210,7 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
 }
 
 // ── Main CoursePlayer ─────────────────────────────────────────────────────────
-export default function CoursePlayer({ enrollment, course, modules, topics, user, activeTopicId, setActiveTopicId, onMarkComplete, onBack }) {
+export default function CoursePlayer({ enrollment, course, modules, topics, user, activeTopicId, setActiveTopicId, onMarkComplete, onSaveTopicProgress, onBack }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOverview, setShowOverview] = useState(!activeTopicId);
 
@@ -318,6 +324,7 @@ export default function CoursePlayer({ enrollment, course, modules, topics, user
               onNext={goNext} onPrev={goPrev}
               hasPrev={topicIndex > 0} hasNext={topicIndex < topics.length - 1}
               topics={topics} modules={modules}
+              onSaveTopicProgress={onSaveTopicProgress}
             />
           )}
         </div>

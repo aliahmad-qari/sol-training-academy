@@ -1,16 +1,14 @@
-﻿import { CourseEnrollment, CourseTopic, User, Course } from '../models/index.js';
+﻿import { CourseEnrollment } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
 import { enrollUserInCourse } from '../services/enrollment.service.js';
-import { issueCertificate } from '../services/certificate.service.js';
-import { logger } from '../utils/logger.js';
-import { safeCreateNotification, safeNotifyAdmins } from '../services/notification.service.js';
+import { applyTopicProgress } from '../services/enrollmentProgress.service.js';
 
 /**
  * GET /api/v1/enrollments   (protected)
- * Students ? own enrollments; staff ? all (filters/pagination).
+ * Students -> own enrollments; staff -> all (filters/pagination).
  */
 export const listEnrollments = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'team_member'].includes(req.user.role);
@@ -46,7 +44,7 @@ export const getEnrollment = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /api/v1/enrollments   (staff)  ? manual/free enrollment
+ * POST /api/v1/enrollments   (staff) -> manual/free enrollment
  * Body: { user_id, course_id }
  */
 export const createEnrollment = asyncHandler(async (req, res) => {
@@ -58,7 +56,7 @@ export const createEnrollment = asyncHandler(async (req, res) => {
 
 /**
  * POST /api/v1/enrollments/bulk   (staff)
- * Body: { user_ids: [], course_id }  OR  { user_id, course_ids: [] }
+ * Body: { user_ids: [], course_id } OR { user_id, course_ids: [] }
  */
 export const bulkEnroll = asyncHandler(async (req, res) => {
   const { user_ids, course_ids, course_id, user_id } = req.body;
@@ -85,94 +83,33 @@ export const bulkEnroll = asyncHandler(async (req, res) => {
 
 /**
  * PATCH /api/v1/enrollments/:id/progress   (protected; owner)
- * Body: { topic_id, completed: true }
- * Marks a topic complete, recomputes progress %, and auto-issues a
- * certificate + completion when all topics are done.
+ * Body: { topic_id, completed, watch_progress_percent, last_position_seconds, duration_seconds }
  */
 export const updateProgress = asyncHandler(async (req, res) => {
-  const { topic_id, completed = true } = req.body;
-  if (!topic_id) throw ApiError.badRequest('topic_id is required.');
+  const {
+    topic_id,
+    completed,
+    watch_progress_percent,
+    last_position_seconds,
+    duration_seconds,
+  } = req.body;
 
-  const enrollment = await CourseEnrollment.findById(req.params.id);
-  if (!enrollment) throw ApiError.notFound('Enrollment not found.');
+  const result = await applyTopicProgress({
+    enrollmentId: req.params.id,
+    actor: req.user,
+    topicId: topic_id,
+    completed,
+    watchProgressPercent: watch_progress_percent,
+    lastPositionSeconds: last_position_seconds,
+    durationSeconds: duration_seconds,
+    enforceOwnership: true,
+  });
 
-  const isStaff = ['admin', 'team_member'].includes(req.user.role);
-  if (!isStaff && String(enrollment.user_id) !== String(req.user._id)) {
-    throw ApiError.forbidden('You cannot update this enrollment.');
-  }
-
-  // Verify the topic belongs to this course.
-  const topic = await CourseTopic.findById(topic_id).lean();
-  if (!topic || String(topic.course_id) !== String(enrollment.course_id)) {
-    throw ApiError.badRequest('Topic does not belong to this course.');
-  }
-
-  const set = new Set((enrollment.completed_topic_ids || []).map(String));
-  if (completed) set.add(String(topic_id));
-  else set.delete(String(topic_id));
-  enrollment.completed_topic_ids = [...set];
-  enrollment.last_topic_id = topic_id;
-
-  // Recompute progress against the course's total topics.
-  const totalTopics = await CourseTopic.countDocuments({ course_id: enrollment.course_id });
-  const done = enrollment.completed_topic_ids.length;
-  enrollment.progress_percent = totalTopics > 0 ? Math.min(100, Math.round((done / totalTopics) * 100)) : 0;
-
-  let certificate = null;
-  if (totalTopics > 0 && done >= totalTopics && enrollment.status !== 'completed') {
-    enrollment.status = 'completed';
-    enrollment.completed_date = new Date();
-  }
-  await enrollment.save();
-
-  // Auto-issue certificate on completion (idempotent, best-effort).
-  // A certificate/upload failure (e.g. Cloudinary down or unconfigured) must
-  // NOT fail the progress update ? the completion is already persisted. We
-  // surface a warning flag so the student can retry via POST /certificates/issue.
-  let certificateError = null;
-  if (enrollment.status === 'completed' && !enrollment.certificate_issued) {
-    try {
-      certificate = await issueCertificate({
-        userId: enrollment.user_id,
-        courseId: enrollment.course_id,
-        enrollmentId: enrollment._id,
-      });
-
-      void safeCreateNotification({
-        recipientId: enrollment.user_id,
-        type: 'certificate_issued',
-        title: 'Certificate ready',
-        message: `Your certificate for ${enrollment.course_title} is ready to download.`,
-        category: 'course',
-        priority: 'high',
-        actionUrl: '/student-dashboard',
-        metadata: { tab: 'certificates', course_id: enrollment.course_id, enrollment_id: enrollment._id, certificate_id: certificate?._id },
-        eventKey: `certificate_issued:${enrollment._id}`,
-      });
-
-      void safeNotifyAdmins({
-        senderId: enrollment.user_id,
-        type: 'course_completed',
-        title: 'Student completed a course',
-        message: `${enrollment.user_name} completed ${enrollment.course_title}.`,
-        category: 'course',
-        priority: 'normal',
-        actionUrl: '/lms-admin',
-        metadata: { tab: 'certificates', course_id: enrollment.course_id, enrollment_id: enrollment._id, certificate_id: certificate?._id },
-        eventKey: `course_completed:${enrollment._id}`,
-      });
-    } catch (err) {
-      logger.error(`[enrollment] Certificate issuance failed for ${enrollment._id}: ${err.message}`);
-      certificateError = 'Certificate could not be generated yet. Please try again later.';
-    }
-  }
-
-  const fresh = await CourseEnrollment.findById(enrollment._id).lean();
-  return sendOk(res, { enrollment: fresh, certificate, certificate_error: certificateError }, 'Progress updated');
+  return sendOk(res, result, 'Progress updated');
 });
 
 /**
- * PATCH /api/v1/enrollments/:id   (staff) ? update status / expiry
+ * PATCH /api/v1/enrollments/:id   (staff) -> update status / expiry
  */
 export const updateEnrollment = asyncHandler(async (req, res) => {
   const allowed = ['status', 'expiry_date', 'progress_percent'];
@@ -195,4 +132,3 @@ export const deleteEnrollment = asyncHandler(async (req, res) => {
   if (!enrollment) throw ApiError.notFound('Enrollment not found.');
   return sendOk(res, { id: req.params.id }, 'Enrollment deleted');
 });
-

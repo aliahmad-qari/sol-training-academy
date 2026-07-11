@@ -19,7 +19,7 @@ function getEmbedUrl(url) {
 }
 
 /* ── Native video player ─────────────────────────────────────────────────── */
-function NativePlayer({ topic, watched, onWatched, isCompleted }) {
+function NativePlayer({ topic, watched, onWatched, isCompleted, initialProgress, onProgressSave }) {
   const videoRef = useRef(null);
   const [playing, setPlaying]   = useState(false);
   const [muted, setMuted]       = useState(false);
@@ -28,6 +28,8 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const hideTimer = useRef(null);
+  const lastSavedRef = useRef({ pct: initialProgress?.progress_percent || 0, ts: 0 });
+  const resumedRef = useRef(false);
 
   const revealControls = useCallback(() => {
     setShowControls(true);
@@ -52,13 +54,32 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
     }
   }, [playing]);
 
+  const saveProgress = useCallback((pct, currentTime, durationValue, force = false) => {
+    if (!onProgressSave || !Number.isFinite(pct)) return;
+    const now = Date.now();
+    const last = lastSavedRef.current;
+    if (!force && Math.abs(pct - last.pct) < 5 && now - last.ts < 10000) return;
+    lastSavedRef.current = { pct, ts: now };
+    onProgressSave({
+      progressPercent: Math.max(0, Math.min(100, Math.round(pct))),
+      currentTime: Math.max(0, Math.round(currentTime || 0)),
+      duration: Math.max(0, Math.round(durationValue || 0)),
+    });
+  }, [onProgressSave]);
+
   const handleTimeUpdate = useCallback(() => {
-    if (!videoRef.current) return;
-    const pct = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+    if (!videoRef.current || !Number.isFinite(videoRef.current.duration) || videoRef.current.duration <= 0) return;
+    const durationValue = videoRef.current.duration;
+    const currentTime = videoRef.current.currentTime;
+    const pct = (currentTime / durationValue) * 100;
     setProgress(pct);
-    setCurrent(videoRef.current.currentTime);
-    if (pct >= 80 && !watched) onWatched();
-  }, [watched, onWatched]);
+    setCurrent(currentTime);
+    saveProgress(pct, currentTime, durationValue);
+    if (pct >= 80 && !watched) {
+      saveProgress(pct, currentTime, durationValue, true);
+      onWatched();
+    }
+  }, [watched, onWatched, saveProgress]);
 
   const handleSeek = useCallback((e) => {
     if (!videoRef.current || !duration) return;
@@ -71,16 +92,34 @@ function NativePlayer({ topic, watched, onWatched, isCompleted }) {
   const handleEnded = useCallback(() => {
     setPlaying(false);
     setShowControls(true);
+    const durationValue = videoRef.current?.duration || duration;
+    saveProgress(100, durationValue, durationValue, true);
     onWatched();
-  }, [onWatched]);
+  }, [duration, onWatched, saveProgress]);
 
   const toggleMute = useCallback(() => setMuted(m => !m), []);
   const handleFullscreen = useCallback(() => videoRef.current?.requestFullscreen?.(), []);
   const handleReplay = useCallback(() => { if (videoRef.current) videoRef.current.currentTime = 0; }, []);
   const handleMouseLeave = useCallback(() => { if (playing) setShowControls(false); }, [playing]);
-  const handleLoadedMetadata = useCallback(() => setDuration(videoRef.current?.duration || 0), []);
+  const handleLoadedMetadata = useCallback(() => {
+    const durationValue = videoRef.current?.duration || 0;
+    setDuration(durationValue);
+    const savedPosition = Number(initialProgress?.last_position_seconds || 0);
+    if (!resumedRef.current && savedPosition > 5 && durationValue > savedPosition + 5) {
+      videoRef.current.currentTime = savedPosition;
+      setCurrent(savedPosition);
+      setProgress((savedPosition / durationValue) * 100);
+    }
+    resumedRef.current = true;
+  }, [initialProgress?.last_position_seconds]);
   const handlePlay = useCallback(() => setPlaying(true), []);
-  const handlePause = useCallback(() => setPlaying(false), []);
+  const handlePause = useCallback(() => {
+    setPlaying(false);
+    if (videoRef.current && Number.isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+      const pct = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      saveProgress(pct, videoRef.current.currentTime, videoRef.current.duration, true);
+    }
+  }, [saveProgress]);
   const stopPropagation = useCallback((e) => e.stopPropagation(), []);
 
   return (
@@ -173,8 +212,17 @@ function EmbedPlayer({ embedUrl, title }) {
 }
 
 /* ── Main VideoPlayer export ─────────────────────────────────────────────── */
-export default function VideoPlayer({ topic, isCompleted, onComplete }) {
-  const [watched, setWatched] = useState(isCompleted);
+export default function VideoPlayer({ topic, isCompleted, topicProgress, onProgressSave, onComplete }) {
+  const [watched, setWatched] = useState(isCompleted || topicProgress?.completed || false);
+
+  useEffect(() => {
+    setWatched(isCompleted || topicProgress?.completed || false);
+  }, [isCompleted, topicProgress?.completed, topic?._id, topic?.id]);
+
+  const handleWatched = useCallback(() => {
+    setWatched(true);
+    if (!isCompleted) onComplete?.();
+  }, [isCompleted, onComplete]);
 
   const embedUrl = getEmbedUrl(topic.video_url);
   // For non-embed URLs: treat as direct video (uploaded files, etc.)
@@ -197,8 +245,10 @@ export default function VideoPlayer({ topic, isCompleted, onComplete }) {
         <NativePlayer
           topic={topic}
           watched={watched}
-          onWatched={() => setWatched(true)}
+          onWatched={handleWatched}
           isCompleted={isCompleted}
+          initialProgress={topicProgress}
+          onProgressSave={onProgressSave}
         />
       ) : (
         <div className="rounded-2xl overflow-hidden aspect-video bg-slate-900 flex flex-col items-center justify-center gap-3 border border-white/10">

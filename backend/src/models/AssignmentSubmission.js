@@ -1,16 +1,21 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
 /**
- * A student's submission for an Assignment. File is stored on Cloudinary.
+ * A student's submission for a standalone Assignment or a course assessment topic.
+ * File assets are stored on Cloudinary.
  */
 const assignmentSubmissionSchema = new Schema(
   {
     assignment_id: {
       type: Schema.Types.ObjectId,
       ref: 'Assignment',
-      required: [true, 'assignment_id is required'],
+      index: true,
+    },
+    topic_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'CourseTopic',
       index: true,
     },
     assignment_title: { type: String, trim: true },
@@ -29,7 +34,6 @@ const assignmentSubmissionSchema = new Schema(
     file_url: { type: String, required: [true, 'file_url is required'], trim: true },
     file_name: { type: String, trim: true },
     file_type: { type: String, trim: true },
-    // Cloudinary public_id, retained for deletion/replacement.
     file_public_id: { type: String, trim: true },
     submission_notes: { type: String },
 
@@ -55,6 +59,7 @@ const assignmentSubmissionSchema = new Schema(
 );
 
 assignmentSubmissionSchema.index({ assignment_id: 1, user_id: 1 });
+assignmentSubmissionSchema.index({ topic_id: 1, user_id: 1 });
 assignmentSubmissionSchema.index({ status: 1, createdAt: -1 });
 
 assignmentSubmissionSchema.virtual('id').get(function idVirtual() {

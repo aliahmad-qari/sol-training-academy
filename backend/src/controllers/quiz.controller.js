@@ -1,16 +1,37 @@
-import { Quiz, QuizAttempt, CourseTopic, CourseEnrollment } from '../models/index.js';
+﻿import { Quiz, QuizAttempt, CourseTopic, CourseEnrollment } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
+import { applyTopicProgress } from '../services/enrollmentProgress.service.js';
 
 /**
  * Remove answer keys before returning a quiz to a student.
  */
 const stripAnswers = (quiz) => ({
   ...quiz,
-  questions: (quiz.questions || []).map(({ correct_index, explanation, ...q }) => q),
+  questions: (quiz.questions || []).map(({ correct_index, correct_indices, model_answer, explanation, ...q }) => q),
 });
+
+const normalizePassingMarks = (passingMarks, totalMarks) => {
+  const n = Number(passingMarks);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+
+  // Backward compatibility: older admin screens stored a percentage in
+  // passing_marks. If the value cannot fit inside totalMarks but looks like a
+  // percentage, convert it to absolute marks for grading.
+  if (totalMarks > 0 && n > totalMarks && n <= 100) {
+    return Math.ceil((n / 100) * totalMarks);
+  }
+
+  return n;
+};
+
+const sameNumberSet = (left = [], right = []) => {
+  const a = [...new Set(left.map(Number))].sort((x, y) => x - y);
+  const b = [...new Set(right.map(Number))].sort((x, y) => x - y);
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+};
 
 /**
  * GET /api/v1/quizzes?course_id=...   (protected)
@@ -59,7 +80,7 @@ export const updateQuiz = asyncHandler(async (req, res) => {
   const quiz = await Quiz.findById(req.params.id);
   if (!quiz) throw ApiError.notFound('Quiz not found.');
   Object.assign(quiz, req.body);
-  await quiz.save(); // triggers total_marks recompute hook
+  await quiz.save();
   return sendOk(res, quiz, 'Quiz updated');
 });
 
@@ -74,30 +95,42 @@ export const deleteQuiz = asyncHandler(async (req, res) => {
 
 /**
  * Grade a set of answers against a question array.
- * `answers` = { "<index>": selectedOptionIndex }
- * Returns { score, totalMarks, totalQuestions, correctCount }.
+ * `answers` = { "<index>": selectedOptionIndex | selectedOptionIndexes[] }
  */
 const gradeAnswers = (questions, answers) => {
   let score = 0;
   let totalMarks = 0;
   let correctCount = 0;
+
   questions.forEach((q, i) => {
-    const marks = q.marks || 1;
-    totalMarks += marks;
+    const marks = Number(q.marks ?? 1);
+    totalMarks += Number.isFinite(marks) ? marks : 1;
     const given = answers?.[i] ?? answers?.[String(i)];
-    if (given !== undefined && Number(given) === Number(q.correct_index)) {
-      score += marks;
+    let correct = false;
+
+    if (q.type === 'multi_select') {
+      const correctIndices = Array.isArray(q.correct_indices) && q.correct_indices.length > 0
+        ? q.correct_indices
+        : [q.correct_index];
+      correct = Array.isArray(given) && sameNumberSet(given, correctIndices);
+    } else if (q.type === 'short_answer') {
+      correct = false;
+    } else {
+      correct = given !== undefined && Number(given) === Number(q.correct_index);
+    }
+
+    if (correct) {
+      score += Number.isFinite(marks) ? marks : 1;
       correctCount += 1;
     }
   });
+
   return { score, totalMarks, totalQuestions: questions.length, correctCount };
 };
 
 /**
  * POST /api/v1/quizzes/attempts   (protected; student)
  * Body: { topic_id?, quiz_id?, course_id, answers }
- * Grades server-side and records a QuizAttempt. Marks the topic complete on pass.
- * 201 → { attempt, passed, score, total_marks }
  */
 export const submitAttempt = asyncHandler(async (req, res) => {
   const { topic_id, quiz_id, course_id, answers = {} } = req.body;
@@ -105,26 +138,46 @@ export const submitAttempt = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('course_id and (topic_id or quiz_id) are required.');
   }
 
-  // Load the question source (topic-embedded or standalone quiz).
+  const enrollment = await CourseEnrollment.findOne({
+    user_id: req.user._id,
+    course_id,
+    status: { $ne: 'expired' },
+    $or: [{ expiry_date: null }, { expiry_date: { $exists: false } }, { expiry_date: { $gt: new Date() } }],
+  }).lean();
+
+  if (!enrollment) {
+    throw ApiError.forbidden('You are not enrolled in this course, or your access has expired.');
+  }
+
   let questions;
-  let passingMarks = 0;
+  let passingMarksInput = 0;
+  let completionTopicId = topic_id;
+
   if (topic_id) {
     const topic = await CourseTopic.findById(topic_id).lean();
     if (!topic || topic.type !== 'quiz') throw ApiError.badRequest('Invalid quiz topic.');
+    if (String(topic.course_id) !== String(course_id)) {
+      throw ApiError.badRequest('Quiz topic does not belong to this course.');
+    }
     questions = topic.quiz_questions || [];
-    passingMarks = topic.passing_marks || 0;
+    passingMarksInput = topic.passing_marks || 0;
   } else {
     const quiz = await Quiz.findById(quiz_id).lean();
     if (!quiz) throw ApiError.notFound('Quiz not found.');
+    if (String(quiz.course_id) !== String(course_id)) {
+      throw ApiError.badRequest('Quiz does not belong to this course.');
+    }
     questions = quiz.questions || [];
-    passingMarks = quiz.passing_marks || 0;
+    passingMarksInput = quiz.passing_marks || 0;
+    completionTopicId = quiz.topic_id;
   }
+
   if (questions.length === 0) throw ApiError.badRequest('This quiz has no questions.');
 
-  const { score, totalMarks, totalQuestions } = gradeAnswers(questions, answers);
+  const { score, totalMarks, totalQuestions, correctCount } = gradeAnswers(questions, answers);
+  const passingMarks = normalizePassingMarks(passingMarksInput, totalMarks);
   const passed = score >= passingMarks;
 
-  // Attempt number = existing attempts + 1.
   const prior = await QuizAttempt.countDocuments({
     user_id: req.user._id,
     ...(topic_id ? { topic_id } : { quiz_id }),
@@ -143,17 +196,31 @@ export const submitAttempt = asyncHandler(async (req, res) => {
     attempt_number: prior + 1,
   });
 
-  // On pass, mark the topic complete on the enrollment (best-effort).
-  if (passed && topic_id) {
-    await CourseEnrollment.findOneAndUpdate(
-      { user_id: req.user._id, course_id },
-      { $addToSet: { completed_topic_ids: topic_id } }
-    );
+  let progress = null;
+  if (passed && completionTopicId) {
+    progress = await applyTopicProgress({
+      userId: req.user._id,
+      courseId: course_id,
+      actor: req.user,
+      topicId: completionTopicId,
+      completed: true,
+    });
   }
 
   return sendCreated(
     res,
-    { attempt, passed, score, total_marks: totalMarks, total_questions: totalQuestions },
+    {
+      attempt,
+      passed,
+      score,
+      total_marks: totalMarks,
+      total_questions: totalQuestions,
+      correct_count: correctCount,
+      passing_marks: passingMarks,
+      enrollment: progress?.enrollment || null,
+      certificate: progress?.certificate || null,
+      certificate_error: progress?.certificate_error || null,
+    },
     passed ? 'Quiz passed' : 'Quiz submitted'
   );
 });
@@ -171,7 +238,7 @@ export const listMyAttempts = asyncHandler(async (req, res) => {
 });
 
 /**
- * GET /api/v1/quizzes/attempts   (staff) — all attempts with filters
+ * GET /api/v1/quizzes/attempts   (staff) - all attempts with filters
  */
 export const listAllAttempts = asyncHandler(async (req, res) => {
   const { filter, sort, skip, limit, page } = buildQuery(req.query, {

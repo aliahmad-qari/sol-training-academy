@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { runAdminTool } from "@/api/aiClient";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
@@ -33,7 +33,7 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
   const generate = async () => {
     if (!content.trim()) { toast.error("Please paste some content first."); return; }
     if (!courseId) { toast.error("Please select a course."); return; }
-    if (!moduleId) { toast.error("Please select a module — quizzes must belong to a module."); return; }
+    if (!moduleId) { toast.error("Please select a module - quizzes must belong to a module."); return; }
     if (!quizTitle.trim()) { toast.error("Please enter a quiz title."); return; }
 
     setGenerating(true);
@@ -50,6 +50,9 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
         }
         return { type: "mcq", question: q.question, options: q.options || ["", "", "", ""], correct_index: q.correct_index ?? 0, marks: 1, explanation: q.explanation || "" };
       });
+      if (questions.length !== numQuestions) {
+        toast.warning(`AI returned ${questions.length} of ${numQuestions} requested questions. Add more source content or regenerate for a full set.`);
+      }
       setGeneratedQuestions(questions);
       setStep("preview");
     } catch (err) {
@@ -67,7 +70,7 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
       // `passingScore` is a PERCENTAGE from the UI, but the whole system stores
       // `passing_marks` as ABSOLUTE marks (see TopicModal + quiz.controller
       // gradeAnswers: passed = score >= passing_marks). Convert here, otherwise
-      // e.g. 75% on a 5-mark quiz would be saved as "needs 75/5" — impossible to pass.
+      // e.g. 75% on a 5-mark quiz would be saved as "needs 75/5" â€” impossible to pass.
       const passingMarks = Math.max(1, Math.round((passingScore / 100) * totalMarks));
       await base44.entities.CourseTopic.create({
         type: "quiz",
@@ -111,7 +114,7 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
             </div>
             <div>
               <h3 className="font-display font-bold text-lg text-ink">AI Quiz Generator</h3>
-              <p className="text-xs text-slate_mist">Paste content → AI creates questions automatically</p>
+              <p className="text-xs text-slate_mist">Paste content â†’ AI creates questions automatically</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate_mist hover:text-ink transition-colors">
@@ -140,25 +143,25 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
         {/* Body */}
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
 
-          {/* ── CONFIGURE STEP ── */}
+          {/* â”€â”€ CONFIGURE STEP â”€â”€ */}
           {step === "configure" && (
             <>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Course *</Label>
                   <Select value={courseId} onValueChange={v => { setCourseId(v); setModuleId(""); }}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Select course…" /></SelectTrigger>
+                    <SelectTrigger className="h-10"><SelectValue placeholder="Select courseâ€¦" /></SelectTrigger>
                     <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Module *</Label>
                   <Select value={moduleId} onValueChange={setModuleId} disabled={!courseId}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder={courseId ? "Select module…" : "Select a course first"} /></SelectTrigger>
+                    <SelectTrigger className="h-10"><SelectValue placeholder={courseId ? "Select moduleâ€¦" : "Select a course first"} /></SelectTrigger>
                     <SelectContent>{courseMods.map(m => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)}</SelectContent>
                   </Select>
                   {courseId && courseMods.length === 0 && (
-                    <p className="text-[10px] text-amber-600 mt-1">This course has no modules yet — create one before adding a quiz.</p>
+                    <p className="text-[10px] text-amber-600 mt-1">This course has no modules yet â€” create one before adding a quiz.</p>
                   )}
                 </div>
               </div>
@@ -205,7 +208,7 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
 
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">
-                  Passing Score (%) — students need this % to pass
+                  Passing Score (%) â€” students need this % to pass
                 </Label>
                 <Input type="number" min={1} max={100} value={passingScore}
                   onChange={e => setPassingScore(Number(e.target.value))}
@@ -219,18 +222,18 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
                 <Textarea
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  placeholder="Paste your course notes, lecture content, module text, or any learning material here. The AI will generate quiz questions based on this content…"
+                  placeholder="Paste your course notes, lecture content, module text, or any learning material here. The AI will generate quiz questions based on this contentâ€¦"
                   rows={8}
                   className="text-sm resize-none"
                 />
                 <p className="text-[10px] text-slate_mist mt-1">
-                  {content.length} characters · Tip: more content = better, more varied questions
+                  {content.length} characters Â· Tip: more content = better, more varied questions
                 </p>
               </div>
             </>
           )}
 
-          {/* ── PREVIEW STEP ── */}
+          {/* â”€â”€ PREVIEW STEP â”€â”€ */}
           {step === "preview" && (
             <div className="space-y-4">
               <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3">
@@ -324,7 +327,7 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
               <Button onClick={generate} disabled={generating}
                 className="flex-2 bg-purple-600 hover:bg-purple-700 text-white gap-2 flex-1">
                 {generating
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</>
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Generatingâ€¦</>
                   : <><Sparkles className="w-4 h-4" /> Generate {numQuestions} Questions</>
                 }
               </Button>
@@ -337,7 +340,7 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
               <Button onClick={saveQuiz} disabled={saving}
                 className="flex-1 bg-harvest text-white gap-2 font-semibold">
                 {saving
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Savingâ€¦</>
                   : <><Save className="w-4 h-4" /> Save Quiz ({generatedQuestions.length} Questions)</>
                 }
               </Button>
@@ -348,3 +351,4 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
@@ -8,9 +8,16 @@ const { Schema } = mongoose;
  */
 const quizQuestionSchema = new Schema(
   {
+    type: {
+      type: String,
+      enum: ['mcq', 'true_false', 'multi_select', 'short_answer'],
+      default: 'mcq',
+    },
     question: { type: String, required: true, trim: true },
     options: { type: [String], default: [] },
     correct_index: { type: Number, default: 0 },
+    correct_indices: { type: [Number], default: [] },
+    model_answer: { type: String, trim: true },
     marks: { type: Number, default: 1, min: 0 },
     explanation: { type: String, trim: true },
   },
@@ -43,7 +50,6 @@ const quizSchema = new Schema(
   }
 );
 
-// Keep total_marks consistent with the sum of question marks.
 quizSchema.pre('save', function computeTotal(next) {
   if (this.isModified('questions')) {
     this.total_marks = this.questions.reduce((sum, q) => sum + (q.marks || 0), 0);

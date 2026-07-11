@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import { CourseTopic, CourseModule, Course } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
@@ -38,19 +38,19 @@ const sanitizeTopicForStudent = (topic, isStaff) => {
   if (isStaff || topic.type !== 'quiz' || !Array.isArray(topic.quiz_questions)) return topic;
   return {
     ...topic,
-    quiz_questions: topic.quiz_questions.map(({ correct_index, explanation, ...q }) => q),
+    quiz_questions: topic.quiz_questions.map(({ correct_index, correct_indices, model_answer, explanation, ...q }) => q),
   };
 };
 
 /**
  * GET /api/v1/topics   (public for published courses)
  *
- * All query params are OPTIONAL — legacy filters never trigger a 400.
- *   ?module_id=...        → scope to one module (optional)
- *   ?course_id=...        → scope to one course (optional)
- *   ?type=video|quiz|...  → filter by topic type (optional)
- *   ?limit=500            → high limit to emulate "return all" (capped at 500)
- *   ?sort=sort_order      → sort field(s); defaults to sort_order ascending
+ * All query params are OPTIONAL â€” legacy filters never trigger a 400.
+ *   ?module_id=...        â†’ scope to one module (optional)
+ *   ?course_id=...        â†’ scope to one course (optional)
+ *   ?type=video|quiz|...  â†’ filter by topic type (optional)
+ *   ?limit=500            â†’ high limit to emulate "return all" (capped at 500)
+ *   ?sort=sort_order      â†’ sort field(s); defaults to sort_order ascending
  *
  * With no scope the admin UI fetches every topic and groups them client-side,
  * so an empty filter must return the full set rather than reject the request.
@@ -90,8 +90,8 @@ export const getTopic = asyncHandler(async (req, res) => {
  *
  * Flexible payload. The parent module is the source of truth for course_id, so
  * we always derive it from the module (ignoring any client-supplied value).
- * Whatever type-specific fields the admin sends — video_url, content,
- * reading_file_url, quiz_questions, assessment_* — map straight into the
+ * Whatever type-specific fields the admin sends â€” video_url, content,
+ * reading_file_url, quiz_questions, assessment_* â€” map straight into the
  * document; Mongoose only persists fields defined on the schema, so extraneous
  * keys are dropped safely rather than causing a validation error.
  */
@@ -112,7 +112,7 @@ export const createTopic = asyncHandler(async (req, res) => {
   const topic = await CourseTopic.create({
     ...req.body,
     module_id,
-    // Keep course_id consistent with the module — the module owns the mapping.
+    // Keep course_id consistent with the module â€” the module owns the mapping.
     course_id: mod.course_id,
     title: String(title).trim(),
     sort_order: Number(sort_order) || 0,
@@ -153,7 +153,7 @@ export const deleteTopic = asyncHandler(async (req, res) => {
  * Body: { items: [{ id, sort_order, module_id? }, ...] }
  *
  * Persists a new ordering in ONE round-trip via bulkWrite. A topic may also be
- * moved to a different module during a drag — if module_id is supplied and
+ * moved to a different module during a drag â€” if module_id is supplied and
  * valid, it is updated in the same operation and course_id is kept consistent.
  * Returns the affected module's freshly ordered topics so the client can
  * reconcile against the database.
@@ -197,7 +197,7 @@ export const reorderTopics = asyncHandler(async (req, res) => {
         CourseTopic.updateMany({ module_id: m._id }, { $set: { course_id: m.course_id } })
       )
     );
-    // Topic counts per course may have shifted — re-sync every touched course.
+    // Topic counts per course may have shifted â€” re-sync every touched course.
     const courseIds = [...new Set(mods.map((m) => String(m.course_id)))];
     await Promise.all(courseIds.map((cid) => syncTopicCount(cid)));
   }
@@ -220,3 +220,4 @@ export const reorderTopics = asyncHandler(async (req, res) => {
     'Topics reordered'
   );
 });
+

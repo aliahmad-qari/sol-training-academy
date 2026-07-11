@@ -1,16 +1,24 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
 /**
- * Embedded quiz question. `quiz`-type topics carry an array of these.
- * `correct_index` is the index into `options` that is correct.
+ * Embedded quiz question. Quiz topics support single choice, true/false,
+ * multi-select, and short-answer prompts. Answer keys are stripped from
+ * student-facing responses by the topic controller.
  */
 const quizQuestionSchema = new Schema(
   {
+    type: {
+      type: String,
+      enum: ['mcq', 'true_false', 'multi_select', 'short_answer'],
+      default: 'mcq',
+    },
     question: { type: String, required: true, trim: true },
     options: { type: [String], default: [] },
     correct_index: { type: Number, default: 0 },
+    correct_indices: { type: [Number], default: [] },
+    model_answer: { type: String, trim: true },
     marks: { type: Number, default: 1, min: 0 },
     explanation: { type: String, trim: true },
   },
@@ -19,10 +27,10 @@ const quizQuestionSchema = new Schema(
 
 /**
  * A topic within a module. `type` drives which fields are relevant:
- *  - video      → video_url, video_duration_mins, content
- *  - reading    → reading_file_url, content, reading_duration_mins
- *  - quiz       → quiz_questions, passing_marks, total_marks, time_limit_mins
- *  - assessment → assessment_instructions, assessment_* fields
+ *  - video      -> video_url, video_duration_mins, content
+ *  - reading    -> reading_file_url, content, reading_duration_mins
+ *  - quiz       -> quiz_questions, passing_marks, total_marks, time_limit_mins
+ *  - assessment -> assessment_instructions, assessment_* fields
  */
 const courseTopicSchema = new Schema(
   {
@@ -50,8 +58,6 @@ const courseTopicSchema = new Schema(
 
     // Video
     video_url: { type: String, trim: true },
-    // Cloudinary public_id for the uploaded video — retained so the asset can
-    // be reclaimed (cloudinary.uploader.destroy) when the topic/video changes.
     video_public_id: { type: String, trim: true },
     video_duration_mins: { type: Number, min: 0 },
 
