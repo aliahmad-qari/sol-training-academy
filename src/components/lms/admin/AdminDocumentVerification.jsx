@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import { runAdminTool } from "@/api/aiClient";
 import { motion } from "framer-motion";
 import {
@@ -42,39 +42,30 @@ function DocumentRow({ doc, onUpdate }) {
   const cfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.pending;
   const Icon = cfg.icon;
 
-  const sendEmailNotification = (newStatus, msgBody) => {
-    if (!doc.user_email) return;
-    const statusLabel = STATUS_CONFIG[newStatus]?.label || newStatus;
-    base44.integrations.Core.SendEmail({
-      to:      doc.user_email,
-      subject: `Document ${newStatus === "verified" ? "Verified ✓" : "Update"} — ${doc.document_title} | SOL Training Academy`,
-      body:    `Dear ${doc.user_name?.split(" ")[0] || "Student"},\n\nYour document "${doc.document_title}" has been reviewed.\n\nStatus: ${statusLabel}\n\n${msgBody}\n\nYou can log in to your student portal to view the full status of your documents.\n\nIf you have any questions, please contact us via the Support Centre.\n\nWarm regards,\nSOL Training Academy`,
-    }).catch(() => {});
-  };
-
   // ── Quick-action: one-click verify / reject / resubmit ──────────────────
   const quickAction = async (newStatus) => {
     setQuickLoading(newStatus);
-    const me = await base44.auth.me();
-    const defaultMessages = {
-      verified:          `Your ${DOC_TYPE_LABELS[doc.document_type] || "document"} has been reviewed and verified. It is now on record with SOL Training Academy. No further action is required from you at this time.`,
-      rejected:          `Unfortunately your document could not be verified. Please ensure you submit a clear, valid copy of the required document and reupload it through the student portal.`,
-      resubmit_required: `Your document requires some changes before it can be verified. Please review the document requirements and resubmit an updated version through your student portal.`,
-    };
-    const autoMsg = defaultMessages[newStatus] || "";
-    await base44.entities.StudentDocument.update(doc.id, {
-      status:               newStatus,
-      admin_message:        autoMsg,
-      admin_id:             me?.id,
-      admin_name:           me?.full_name || "Admin",
-      reviewed_date:        new Date().toISOString(),
-      ai_generated_message: false,
-    });
-    sendEmailNotification(newStatus, autoMsg);
-    toast.success(`Document marked as ${STATUS_CONFIG[newStatus]?.label || newStatus} & student notified via email.`);
-    setQuickLoading(null);
-    setExpanded(false);
-    onUpdate();
+    try {
+      const defaultMessages = {
+        verified:          `Your ${DOC_TYPE_LABELS[doc.document_type] || "document"} has been reviewed and verified. It is now on record with SOL Training Academy. No further action is required from you at this time.`,
+        rejected:          `Unfortunately your document could not be verified. Please ensure you submit a clear, valid copy of the required document and reupload it through the student portal.`,
+        resubmit_required: `Your document requires some changes before it can be verified. Please review the document requirements and resubmit an updated version through your student portal.`,
+      };
+      const autoMsg = defaultMessages[newStatus] || "";
+      await apiClient.patch(`/student-documents/${doc.id}`, {
+        status: newStatus,
+        admin_message: autoMsg,
+        reviewed_date: new Date().toISOString(),
+        ai_generated_message: false,
+      });
+      toast.success(`Document marked as ${STATUS_CONFIG[newStatus]?.label || newStatus}. Student will be notified.`);
+      setExpanded(false);
+      onUpdate();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update the document.");
+    } finally {
+      setQuickLoading(null);
+    }
   };
 
   const generateAIMessage = async () => {
@@ -100,20 +91,21 @@ function DocumentRow({ doc, onUpdate }) {
 
   const handleSave = async () => {
     setSaving(true);
-    const me = await base44.auth.me();
-    await base44.entities.StudentDocument.update(doc.id, {
-      status,
-      admin_message:        message,
-      admin_id:             me?.id,
-      admin_name:           me?.full_name || "Admin",
-      reviewed_date:        new Date().toISOString(),
-      ai_generated_message: false,
-    });
-    sendEmailNotification(status, message);
-    toast.success("Document updated & student notified by email.");
-    setSaving(false);
-    setExpanded(false);
-    onUpdate();
+    try {
+      await apiClient.patch(`/student-documents/${doc.id}`, {
+        status,
+        admin_message: message,
+        reviewed_date: new Date().toISOString(),
+        ai_generated_message: false,
+      });
+      toast.success("Document updated. Student will be notified.");
+      setExpanded(false);
+      onUpdate();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update the document.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const isActioning = quickLoading !== null;
@@ -253,9 +245,14 @@ export default function AdminDocumentVerification() {
 
   const load = async () => {
     setLoading(true);
-    const docs = await base44.entities.StudentDocument.list("-created_date", 200);
-    setDocuments(docs);
-    setLoading(false);
+    try {
+      const res = await apiClient.get("/student-documents?limit=200");
+      setDocuments(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load student documents.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);

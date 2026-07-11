@@ -23,6 +23,7 @@ export { default as StudentNote } from './StudentNote.js';
 export { default as DiscussionPost } from './DiscussionPost.js';
 export { default as StudentGoal } from './StudentGoal.js';
 export { default as StudentRequest } from './StudentRequest.js';
+export { default as StudentDocument } from './StudentDocument.js';
 export { default as Referral } from './Referral.js';
 export { default as CourseFeedback } from './CourseFeedback.js';
 

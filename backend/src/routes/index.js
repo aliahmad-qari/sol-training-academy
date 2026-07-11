@@ -25,6 +25,7 @@ import studentRequestRoutes from './studentRequest.routes.js';
 import referralRoutes from './referral.routes.js';
 import courseFeedbackRoutes from './courseFeedback.routes.js';
 import announcementRoutes from './announcement.routes.js';
+import studentDocumentRoutes from './studentDocument.routes.js';
 import notificationRoutes from './notification.routes.js';
 
 /**
@@ -61,6 +62,7 @@ router.use('/referrals', referralRoutes);
 router.use('/feedback', courseFeedbackRoutes);
 router.use('/announcements', announcementRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/student-documents', studentDocumentRoutes);
 
 export default router;
 

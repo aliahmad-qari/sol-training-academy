@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
+import { uploadFile } from "@/api/uploadClient";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, CheckCircle, Clock, XCircle, AlertTriangle,
@@ -40,26 +41,34 @@ function UploadModal({ onClose, onUploaded, userId, user }) {
   const fileRef                     = useRef();
 
   const handleSubmit = async () => {
-    if (!docType || !file) { toast.error("Please select a document type and file."); return; }
+    if (!docType || !file) {
+      toast.error("Please select a document type and file.");
+      return;
+    }
+
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const ext = file.name.split(".").pop().toLowerCase();
-    await base44.entities.StudentDocument.create({
-      user_id:        userId,
-      user_name:      user?.full_name || "",
-      user_email:     user?.email || "",
-      document_type:  docType,
-      document_title: docTitle || DOC_TYPES.find(d => d.value === docType)?.label || docType,
-      file_url,
-      file_name:      file.name,
-      file_type:      ext,
-      notes,
-      status:         "pending",
-    });
-    toast.success("Document uploaded successfully!");
-    setUploading(false);
-    onUploaded();
-    onClose();
+    try {
+      const upload = await uploadFile({ file, kind: "document" });
+      const ext = file.name.split(".").pop().toLowerCase();
+
+      await apiClient.post("/student-documents", {
+        document_type: docType,
+        document_title: docTitle || DOC_TYPES.find(d => d.value === docType)?.label || docType,
+        file_url: upload.file_url,
+        file_name: upload.file_name || file.name,
+        file_type: upload.format || ext,
+        file_public_id: upload.publicId,
+        notes,
+      });
+
+      toast.success("Document uploaded successfully!");
+      onUploaded();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Document upload failed.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -147,18 +156,28 @@ export default function StudentDocumentUpload({ user }) {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const docs = await base44.entities.StudentDocument.filter({ user_id: user.id });
-    setDocuments(docs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
-    setLoading(false);
+    try {
+      const res = await apiClient.get("/student-documents/mine");
+      const docs = Array.isArray(res.data?.data) ? res.data.data : [];
+      setDocuments(docs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load documents.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, [user]);
 
   const handleDelete = async (doc) => {
     if (!window.confirm("Delete this document?")) return;
-    await base44.entities.StudentDocument.delete(doc.id);
-    toast.success("Document deleted.");
-    load();
+    try {
+      await apiClient.delete(`/student-documents/${doc.id}`);
+      toast.success("Document deleted.");
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete document.");
+    }
   };
 
   const stats = [
