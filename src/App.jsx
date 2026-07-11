@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -5,6 +7,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
+import Preloader from '@/components/Preloader';
 import Home from '@/pages/Home';
 import NDISRegistration from '@/pages/services/NDISRegistration';
 import WebsiteDevelopment from '@/pages/services/WebsiteDevelopment';
@@ -165,11 +168,36 @@ const AuthenticatedApp = () => {
 };
 
 
+// Session flag: the main-entry loader plays once per browser-tab session.
+// Set on first play; navigating pages or refreshing during that same session
+// reads it back and bypasses the loader. Cleared when the tab/session ends.
+const MAIN_LOADED_KEY = 'app_main_loaded';
+
 function App() {
+  // Lazy init so we read sessionStorage exactly once, before first paint.
+  const [showMainLoader, setShowMainLoader] = useState(
+    () => !sessionStorage.getItem(MAIN_LOADED_KEY)
+  );
+
+  const handleMainLoaderDone = () => {
+    sessionStorage.setItem(MAIN_LOADED_KEY, 'true');
+    setShowMainLoader(false);
+  };
 
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
+        {/* LOADER 1 — Main site entry. First open of the tab only. */}
+        <AnimatePresence>
+          {showMainLoader && (
+            <Preloader
+              key="main-loader"
+              text="SOL ACADEMY"
+              onComplete={handleMainLoaderDone}
+            />
+          )}
+        </AnimatePresence>
+
         <Router>
           <ScrollToTop />
           <AuthenticatedApp />

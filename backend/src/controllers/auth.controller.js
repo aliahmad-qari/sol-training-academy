@@ -177,7 +177,14 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   const accessToken = await issueTokens(user, res);
   await user.save({ validateBeforeSave: false });
 
-  return sendOk(res, { user: user.toJSON(), accessToken }, 'Email verified. Welcome!');
+  // This endpoint only ever succeeds for a first-time verification (already
+  // verified accounts are rejected above), so the client can safely treat
+  // isNewUser=true as "fresh signup" and play the first-time welcome loader.
+  return sendOk(
+    res,
+    { user: user.toJSON(), accessToken, isNewUser: true },
+    'Email verified. Welcome!'
+  );
 });
 
 /**

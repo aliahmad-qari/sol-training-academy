@@ -102,14 +102,35 @@ export const AuthProvider = ({ children }) => {
    * logs the user in (mirrors `login`).
    * Returns { success, role?, error? }
    */
-  const verifyOtp = async (email, otp) => {
+  /**
+   * Commit a verified/authenticated session into context + storage.
+   * Split out so callers (e.g. the OTP page) can play a welcome animation
+   * BEFORE the session goes live and route guards kick in.
+   */
+  const commitSession = ({ user: sessionUser, accessToken }) => {
+    localStorage.setItem('sol_access_token', accessToken);
+    setUser(sessionUser);
+    setIsAuthenticated(true);
+  };
+
+  const verifyOtp = async (email, otp, { defer = false } = {}) => {
     try {
       const { data } = await apiClient.post('/auth/verify-otp', { email, otp });
-      const { user: verifiedUser, accessToken } = data.data;
-      localStorage.setItem('sol_access_token', accessToken);
-      setUser(verifiedUser);
-      setIsAuthenticated(true);
-      return { success: true, role: verifiedUser.role };
+      const { user: verifiedUser, accessToken, isNewUser } = data.data;
+
+      // isNewUser is emitted by the verify-otp endpoint for fresh signups only.
+      // When `defer` is set, we hand the session back to the caller instead of
+      // committing it, so a one-time welcome preloader can play before the
+      // route guards redirect. Otherwise commit immediately (default behaviour).
+      if (!defer) {
+        commitSession({ user: verifiedUser, accessToken });
+      }
+      return {
+        success: true,
+        role: verifiedUser.role,
+        isNewUser: !!isNewUser,
+        session: { user: verifiedUser, accessToken },
+      };
     } catch (error) {
       const msg =
         error.response?.data?.message || 'Invalid or expired code. Please try again.';
@@ -155,6 +176,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         verifyOtp,
+        commitSession,
         resendOtp,
         logout,
         checkUserAuth,

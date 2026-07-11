@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,11 +10,12 @@ import {
 } from "@/components/ui/input-otp";
 import { MailCheck, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
+import Preloader from "@/components/Preloader";
 
 const RESEND_SECONDS = 60;
 
 export default function VerifyOtp() {
-  const { verifyOtp, resendOtp } = useAuth();
+  const { verifyOtp, commitSession, resendOtp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,6 +29,10 @@ export default function VerifyOtp() {
   const [loading, setLoading] = useState(false);
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
 
+  // Holds the deferred session while the first-time welcome loader plays.
+  // Non-null ⇒ LOADER 2 is on screen for a brand-new user.
+  const [welcome, setWelcome] = useState(null);
+
   useEffect(() => {
     if (!email) navigate("/register", { replace: true });
   }, [email, navigate]);
@@ -38,26 +44,45 @@ export default function VerifyOtp() {
     return () => clearInterval(id);
   }, [seconds]);
 
+  // Where a verified user should land, by role.
+  const destinationFor = (role) =>
+    role === "admin" || role === "team_member"
+      ? "/lms-admin"
+      : "/student-dashboard";
+
   const submit = useCallback(
     async (code) => {
       setError("");
       setInfo("");
       setLoading(true);
-      const result = await verifyOtp(email, code);
-      setLoading(false);
 
-      if (result.success) {
-        if (result.role === "admin" || result.role === "team_member") {
-          navigate("/lms-admin", { replace: true });
-        } else {
-          navigate("/student-dashboard", { replace: true });
-        }
-      } else {
+      // `defer: true` → don't commit the auth session yet; we may want to play
+      // the welcome animation first. `result.session` carries the pending auth.
+      const result = await verifyOtp(email, code, { defer: true });
+
+      if (!result.success) {
+        setLoading(false);
         setError(result.error || "Invalid or expired code. Please try again.");
         setOtp("");
+        return;
+      }
+
+      const dest = destinationFor(result.role);
+
+      if (result.isNewUser) {
+        // ── FRESH SIGNUP ──────────────────────────────────────────────
+        // Play LOADER 2 exactly once. The session is committed and the
+        // redirect happens only after the animation finishes (see onComplete).
+        setWelcome({ session: result.session, dest });
+      } else {
+        // ── RETURNING USER ────────────────────────────────────────────
+        // No animation — commit immediately and go straight to the LMS.
+        commitSession(result.session);
+        setLoading(false);
+        navigate(dest, { replace: true });
       }
     },
-    [email, verifyOtp, navigate]
+    [email, verifyOtp, commitSession, navigate]
   );
 
   // Auto-submit once all 6 digits are entered.
@@ -85,8 +110,24 @@ export default function VerifyOtp() {
   };
 
   return (
-    <AuthLayout
-      title="Verify your email"
+    <>
+      {/* LOADER 2 — First-time registration welcome. New users only, once.
+          Session is committed + user redirected only after it finishes. */}
+      <AnimatePresence>
+        {welcome && (
+          <Preloader
+            key="welcome-loader"
+            text="SOL BUSINESS TRAINING ACADEMY"
+            onComplete={() => {
+              commitSession(welcome.session);
+              navigate(welcome.dest, { replace: true });
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AuthLayout
+        title="Verify your email"
       subtitle={email ? `Enter the 6-digit code we sent to ${email}` : "Enter your 6-digit code"}
       footer={
         <>
@@ -164,6 +205,7 @@ export default function VerifyOtp() {
           </button>
         )}
       </div>
-    </AuthLayout>
+      </AuthLayout>
+    </>
   );
 }
