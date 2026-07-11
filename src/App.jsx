@@ -173,6 +173,10 @@ const AuthenticatedApp = () => {
 // reads it back and bypasses the loader. Cleared when the tab/session ends.
 const MAIN_LOADED_KEY = 'app_main_loaded';
 
+// How long the main-entry splash stays on screen. Flip this single value to
+// tune it (e.g. 60000 = 60s, 8000 = 8s) without touching any logic.
+const MAIN_LOADER_MS = 8000;
+
 function App() {
   // Lazy init so we read sessionStorage exactly once, before first paint.
   const [showMainLoader, setShowMainLoader] = useState(
@@ -192,7 +196,14 @@ function App() {
           {showMainLoader && (
             <Preloader
               key="main-loader"
-              text="SOL ACADEMY"
+              text="Sol Business Consultant"
+              durationMs={MAIN_LOADER_MS}
+              statuses={[
+                "Welcome to Sol Business Consultant",
+                "Setting up your workspace",
+                "Loading services",
+                "Almost ready",
+              ]}
               onComplete={handleMainLoaderDone}
             />
           )}

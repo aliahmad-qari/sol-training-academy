@@ -14,6 +14,10 @@ import Preloader from "@/components/Preloader";
 
 const RESEND_SECONDS = 60;
 
+// How long the first-time-signup welcome splash stays on screen (new users
+// only, once). Flip this single value to tune it without touching any logic.
+const WELCOME_LOADER_MS = 8000;
+
 export default function VerifyOtp() {
   const { verifyOtp, commitSession, resendOtp } = useAuth();
   const navigate = useNavigate();
@@ -117,7 +121,14 @@ export default function VerifyOtp() {
         {welcome && (
           <Preloader
             key="welcome-loader"
-            text="SOL BUSINESS TRAINING ACADEMY"
+            text="Sol Business Training Academy"
+            durationMs={WELCOME_LOADER_MS}
+            statuses={[
+              "Creating your account",
+              "Preparing your learning portal",
+              "Enrolling you in the academy",
+              "Welcome aboard",
+            ]}
             onComplete={() => {
               commitSession(welcome.session);
               navigate(welcome.dest, { replace: true });
