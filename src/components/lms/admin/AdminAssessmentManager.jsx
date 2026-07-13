@@ -1126,6 +1126,13 @@ export default function AdminAssessmentManager({ courses }) {
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${a.is_published ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate_mist"}`}>
                             {a.is_published ? "Published" : "Draft"}
                           </span>
+                          {a.brief_file_url && (
+                            <a href={a.brief_file_url} target="_blank" rel="noreferrer">
+                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-blue-600 border-blue-200 hover:bg-blue-50">
+                                <Eye className="w-3 h-3" /> Brief
+                              </Button>
+                            </a>
+                          )}
                           <Button size="sm" variant="outline" onClick={() => setModal(a)} className="h-7 w-7 p-0">
                             <Edit2 className="w-3.5 h-3.5" />
                           </Button>

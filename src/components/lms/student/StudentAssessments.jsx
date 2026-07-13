@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import {
   HelpCircle, FileText, Upload, CheckCircle, XCircle, Clock,
   Award, BarChart2, AlertCircle, X, Timer, Lock,
-  MessageSquare, Send
+  MessageSquare, Send, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -182,6 +182,27 @@ function AssignmentSubmitModal({ assignment, userId, user, onClose, onSubmitted 
             </div>
           )}
 
+          {/* Assignment brief file — view in browser */}
+          {assignment.brief_file_url && (
+            <a
+              href={assignment.brief_file_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 bg-white border border-blue-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-4.5 h-4.5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-ink truncate">
+                  {assignment.brief_file_name || "Assignment Brief"}
+                </p>
+                <p className="text-xs text-blue-600 group-hover:underline">Click to open / view</p>
+              </div>
+              <Eye className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            </a>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 rounded-xl p-3 text-center">
               <p className="text-xs text-slate_mist">Max Marks</p>
@@ -320,6 +341,21 @@ function AssignmentCard({ assignment, submission: initialSubmission, userId, onS
               </div>
               {assignment.instructions && (
                 <p className="text-xs text-slate_mist line-clamp-2">{assignment.instructions}</p>
+              )}
+              {/* Assignment brief file — view only, no forced download */}
+              {assignment.brief_file_url && (
+                <div className="mt-2">
+                  <a
+                    href={assignment.brief_file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-100 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                    {assignment.brief_file_name || "View Assignment Brief"}
+                    <Eye className="w-3 h-3 opacity-60" />
+                  </a>
+                </div>
               )}
             </div>
           </div>
