@@ -4,6 +4,7 @@ import {
   listSubmissions,
   getSubmission,
   gradeSubmission,
+  replyToSubmission,
   deleteSubmission,
 } from '../controllers/submission.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
@@ -17,6 +18,7 @@ router.get('/', listSubmissions);
 router.post('/', withMulter(uploadSingleFile), createSubmission);
 router.get('/:id', getSubmission);
 router.patch('/:id/grade', authorize('admin', 'team_member'), gradeSubmission);
+router.post('/:id/reply', replyToSubmission);
 router.delete('/:id', deleteSubmission);
 
 export default router;

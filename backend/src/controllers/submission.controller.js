@@ -235,6 +235,75 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
 });
 
 /**
+ * POST /api/v1/submissions/:id/reply   (protected; owner or staff)
+ * Body: { message }
+ * Allows student and teacher to exchange messages on a submission.
+ */
+export const replyToSubmission = asyncHandler(async (req, res) => {
+  const { message } = req.body;
+  if (!message || !message.trim()) throw ApiError.badRequest('message is required.');
+
+  const submission = await AssignmentSubmission.findById(req.params.id);
+  if (!submission) throw ApiError.notFound('Submission not found.');
+
+  const isStaff = ['admin', 'team_member'].includes(req.user.role);
+  const isOwner = String(submission.user_id) === String(req.user._id);
+  if (!isStaff && !isOwner) {
+    throw ApiError.forbidden('You cannot reply to this submission.');
+  }
+
+  submission.messages = submission.messages || [];
+  submission.messages.push({
+    sender_id: req.user._id,
+    sender_name: req.user.full_name,
+    sender_role: req.user.role,
+    message: message.trim(),
+    sent_at: new Date(),
+  });
+  await submission.save();
+
+  // Notify the other party
+  if (isStaff) {
+    void safeCreateNotification({
+      recipientId: submission.user_id,
+      senderId: req.user._id,
+      type: 'assignment_message',
+      title: 'New message on your submission',
+      message: `${req.user.full_name} sent a message about: ${submission.assignment_title}.`,
+      category: 'assessment',
+      priority: 'high',
+      actionUrl: '/student-dashboard',
+      metadata: {
+        tab: 'assessments',
+        submission_id: submission._id,
+        assignment_id: submission.assignment_id,
+        course_id: submission.course_id,
+      },
+      eventKey: `submission_reply:${submission._id}:${submission.messages.length}`,
+    });
+  } else {
+    void safeNotifyAdmins({
+      senderId: req.user._id,
+      type: 'assignment_student_message',
+      title: 'Student replied on submission',
+      message: `${req.user.full_name} sent a message on: ${submission.assignment_title}.`,
+      category: 'assessment',
+      priority: 'normal',
+      actionUrl: '/lms-admin',
+      metadata: {
+        tab: 'submissions',
+        submission_id: submission._id,
+        assignment_id: submission.assignment_id,
+        student_id: req.user._id,
+      },
+      eventKey: `submission_student_reply:${submission._id}:${submission.messages.length}`,
+    });
+  }
+
+  return sendOk(res, submission, 'Reply added');
+});
+
+/**
  * DELETE /api/v1/submissions/:id   (owner before grading, or staff)
  * Removes the Cloudinary asset too.
  */

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import {
   Plus, Edit2, Trash2, Save, X, FileText, HelpCircle, ChevronDown, ChevronUp,
-  Eye, CheckCircle, Clock, Search, BookOpen, Layers, Upload, Download, User, Calendar, MessageSquare
+  Eye, CheckCircle, Clock, Search, Upload, Download, User, Calendar, MessageSquare,
+  Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,43 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
-// ── Quiz Builder ──────────────────────────────────────────────────────────────
+// Convert ISO string or any date string → "YYYY-MM-DDTHH:mm" for datetime-local inputs
+function toDatetimeLocal(val) {
+  if (!val) return "";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "";
+    // Pad to local time datetime-local format
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return "";
+  }
+}
+
+// Format date safely for display
+function fmtDate(val, opts = { day: "numeric", month: "short", year: "numeric" }) {
+  if (!val) return "—";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-AU", opts);
+  } catch {
+    return "—";
+  }
+}
+
+// Format datetime safely for display
+function fmtDatetime(val) {
+  if (!val) return "—";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "—";
+  }
+}
 function QuestionEditor({ question, index, onChange, onDelete }) {
   const TYPES = ["mcq", "true_false", "multi_select", "short_answer"];
   const q = question;
@@ -149,10 +186,18 @@ const DURATION_OPTIONS = [
 ];
 
 function QuizModal({ topic, courses, modules, onClose, onSave }) {
-  const [form, setForm] = useState(topic || {
-    title: "", type: "quiz", course_id: "", module_id: "", sort_order: 0,
-    passing_marks: 75, total_marks: 0, quiz_questions: [],
-    time_limit_mins: 0, available_from: "", available_until: "",
+  const [form, setForm] = useState(() => {
+    if (!topic) return {
+      title: "", type: "quiz", course_id: "", module_id: "", sort_order: 0,
+      passing_marks: 75, total_marks: 0, quiz_questions: [],
+      time_limit_mins: 0, available_from: "", available_until: "",
+    };
+    return {
+      ...topic,
+      // Ensure datetime-local inputs get properly formatted values
+      available_from: toDatetimeLocal(topic.available_from),
+      available_until: toDatetimeLocal(topic.available_until),
+    };
   });
   const [saving, setSaving] = useState(false);
 
@@ -181,12 +226,23 @@ function QuizModal({ topic, courses, modules, onClose, onSave }) {
     if (!form.title) { toast.error("Title required."); return; }
     if (!form.course_id) { toast.error("Select a course."); return; }
     setSaving(true);
-    const data = { ...form, total_marks: totalMarks };
-    if (topic?.id) await base44.entities.CourseTopic.update(topic.id, data);
-    else await base44.entities.CourseTopic.create(data);
-    toast.success("Quiz saved.");
-    setSaving(false);
-    onSave(); onClose();
+    const data = {
+      ...form,
+      total_marks: totalMarks,
+      // Convert datetime-local strings → ISO (or clear if empty)
+      available_from: form.available_from ? new Date(form.available_from).toISOString() : "",
+      available_until: form.available_until ? new Date(form.available_until).toISOString() : "",
+    };
+    try {
+      if (topic?.id) await base44.entities.CourseTopic.update(topic.id, data);
+      else await base44.entities.CourseTopic.create(data);
+      toast.success("Quiz saved.");
+      onSave(); onClose();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to save quiz.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -493,44 +549,78 @@ function AssignmentModal({ assignment, courses, modules, onClose, onSave }) {
 }
 
 // ── Grading Panel ─────────────────────────────────────────────────────────────
-function GradingPanel({ submission, onClose, onGraded }) {
-  const [marks, setMarks] = useState(submission.marks_awarded ?? "");
-  const [feedback, setFeedback] = useState(submission.feedback || "");
-  const [status, setStatus] = useState(submission.status || "submitted");
+function GradingPanel({ submission: initialSubmission, onClose, onGraded }) {
+  const [submission, setSubmission] = useState(initialSubmission);
+  const [marks, setMarks] = useState(initialSubmission.marks_awarded ?? "");
+  const [feedback, setFeedback] = useState(initialSubmission.feedback || "");
   const [saving, setSaving] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const messagesEndRef = useRef(null);
 
   const passThreshold = submission.passing_marks || 50;
   const isPassing = marks !== "" && Number(marks) >= passThreshold;
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => { scrollToBottom(); }, [submission.messages]);
+
   const save = async () => {
     if (marks === "" || Number(marks) < 0) { toast.error("Enter valid marks."); return; }
     setSaving(true);
-    await base44.entities.AssignmentSubmission.update(submission.id, {
-      marks_awarded: Number(marks),
-      feedback,
-      status: "graded",
-      passed: isPassing,
-      graded_date: new Date().toISOString(),
-    });
-    // Send grade notification email to student
-    base44.functions.invoke("sendGradeFeedbackEmail", { submission_id: submission.id, action: "graded" });
-    toast.success("Submission graded & student notified by email.");
-    setSaving(false);
-    onGraded(); onClose();
+    try {
+      await base44.entities.AssignmentSubmission.update(submission.id, {
+        marks_awarded: Number(marks),
+        feedback,
+        status: "graded",
+        passed: isPassing,
+      });
+      // Send grade notification email to student
+      base44.functions?.invoke?.("sendGradeFeedbackEmail", { submission_id: submission.id, action: "graded" });
+      toast.success("Submission graded & student notified.");
+      onGraded(); onClose();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to save grade.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const markForResubmit = async () => {
     setSaving(true);
-    await base44.entities.AssignmentSubmission.update(submission.id, {
-      status: "resubmit_requested",
-      feedback,
-    });
-    // Send resubmission request email to student
-    base44.functions.invoke("sendGradeFeedbackEmail", { submission_id: submission.id, action: "resubmit" });
-    toast.success("Student notified to resubmit by email.");
-    setSaving(false);
-    onGraded(); onClose();
+    try {
+      await base44.entities.AssignmentSubmission.update(submission.id, {
+        status: "resubmit_requested",
+        feedback,
+      });
+      base44.functions?.invoke?.("sendGradeFeedbackEmail", { submission_id: submission.id, action: "resubmit" });
+      toast.success("Student notified to resubmit.");
+      onGraded(); onClose();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to request resubmission.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const sendReply = async () => {
+    if (!replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      const updated = await base44.entities.AssignmentSubmission.reply(submission.id, replyText.trim());
+      setSubmission(updated);
+      setReplyText("");
+      toast.success("Message sent.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to send message.");
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const messages = submission.messages || [];
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -565,7 +655,7 @@ function GradingPanel({ submission, onClose, onGraded }) {
               </div>
               <div className="flex items-center gap-1.5 text-xs text-slate_mist">
                 <Calendar className="w-3.5 h-3.5" />
-                Submitted: {new Date(submission.created_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                Submitted: {fmtDate(submission.created_date || submission.createdAt)}
               </div>
             </div>
 
@@ -655,7 +745,70 @@ function GradingPanel({ submission, onClose, onGraded }) {
                 <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1.5 block font-semibold">Written Feedback for Student</Label>
                 <Textarea value={feedback} onChange={e => setFeedback(e.target.value)}
                   placeholder="Provide constructive feedback — what was done well, what needs improvement…"
-                  rows={4} className="resize-none" />
+                  rows={3} className="resize-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Message Thread */}
+          <div className="border border-border/50 rounded-xl overflow-hidden">
+            <div className="bg-blue-50 border-b border-blue-100 px-4 py-3 flex items-center gap-2">
+              <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                Messages ({messages.length})
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              {messages.length === 0 ? (
+                <p className="text-xs text-slate_mist text-center py-3">No messages yet. Send a message to the student below.</p>
+              ) : (
+                <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                  {messages.map((msg, i) => {
+                    const isAdmin = msg.sender_role === "admin" || msg.sender_role === "team_member";
+                    return (
+                      <div key={i} className={`flex gap-2 ${isAdmin ? "flex-row-reverse" : "flex-row"}`}>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold ${
+                          isAdmin ? "bg-harvest/20 text-harvest" : "bg-blue-100 text-blue-700"
+                        }`}>
+                          {(msg.sender_name || "?")[0].toUpperCase()}
+                        </div>
+                        <div className={`flex-1 ${isAdmin ? "items-end" : "items-start"} flex flex-col`}>
+                          <div className={`rounded-xl px-3 py-2 max-w-[85%] ${
+                            isAdmin
+                              ? "bg-harvest/10 border border-harvest/20 text-ink"
+                              : "bg-slate-100 border border-slate-200 text-ink"
+                          }`}>
+                            <p className="text-xs">{msg.message}</p>
+                          </div>
+                          <p className="text-[10px] text-slate_mist mt-0.5 px-1">
+                            {msg.sender_name} · {fmtDatetime(msg.sent_at)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+
+              {/* Reply input */}
+              <div className="flex gap-2 pt-2 border-t border-border/30">
+                <Input
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  placeholder="Type a message to the student…"
+                  className="flex-1 h-9 text-sm"
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                />
+                <Button
+                  size="sm"
+                  onClick={sendReply}
+                  disabled={sendingReply || !replyText.trim()}
+                  className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-1.5 px-3">
+                  {sendingReply
+                    ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <Send className="w-3.5 h-3.5" />}
+                </Button>
               </div>
             </div>
           </div>
@@ -694,6 +847,7 @@ export default function AdminAssessmentManager({ courses }) {
   const [courseFilter, setCourseFilter] = useState("all");
   const [modal, setModal] = useState(null);
   const [gradingModal, setGradingModal] = useState(null);
+  const [expandedAssignment, setExpandedAssignment] = useState(null); // for inline submission view
 
   const load = async () => {
     setLoading(true);
@@ -890,72 +1044,132 @@ export default function AdminAssessmentManager({ courses }) {
                 </Button>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-border/50 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-border/30">
-                      {["Assignment", "Course / Module", "Max Marks", "Due Date", "Status", "Actions"].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate_mist uppercase tracking-wider whitespace-nowrap">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAssignments.map(a => {
-                      const course = getCourse(a.course_id);
-                      const module = getModule(a.module_id);
-                      const subCount = submissions.filter(s => s.assignment_id === a.id).length;
-                      return (
-                        <tr key={a.id} className="border-b border-border/20 hover:bg-slate-50">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                <FileText className="w-3.5 h-3.5 text-blue-600" />
-                              </div>
-                              <div>
-                                <span className="font-medium text-ink block">{a.title}</span>
-                                <span className="text-[10px] text-slate_mist">{subCount} submission{subCount !== 1 ? "s" : ""}</span>
+              <div className="space-y-3">
+                {filteredAssignments.map(a => {
+                  const course = getCourse(a.course_id);
+                  const module = getModule(a.module_id);
+                  const assignmentSubs = submissions.filter(s => s.assignment_id === a.id);
+                  const pendingSubs = assignmentSubs.filter(s => s.status === "submitted" || s.status === "under_review");
+                  const isExpanded = expandedAssignment === a.id;
+
+                  return (
+                    <div key={a.id} className="bg-white rounded-xl border border-border/50 overflow-hidden shadow-sm">
+                      {/* Assignment Row */}
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-3.5 h-3.5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-ink text-sm">{a.title}</span>
+                            {pendingSubs.length > 0 && (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                {pendingSubs.length} pending
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                            <span className="text-[10px] text-slate_mist">{course?.title || "—"}</span>
+                            {module && <span className="text-[10px] text-slate_mist">· {module.title}</span>}
+                            <span className="text-[10px] text-slate_mist">· {a.max_marks} marks</span>
+                            <span className="text-[10px] text-slate_mist">· {assignmentSubs.length} submission{assignmentSubs.length !== 1 ? "s" : ""}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${a.is_published ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate_mist"}`}>
+                            {a.is_published ? "Published" : "Draft"}
+                          </span>
+                          <Button size="sm" variant="outline" onClick={() => setModal(a)} className="h-7 w-7 p-0">
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={async () => {
+                            if (!confirm(`Delete "${a.title}"?`)) return;
+                            await base44.entities.Assignment.delete(a.id);
+                            toast.success("Deleted."); load();
+                          }} className="h-7 w-7 p-0 text-destructive border-destructive/30">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                          {assignmentSubs.length > 0 && (
+                            <button
+                              onClick={() => setExpandedAssignment(isExpanded ? null : a.id)}
+                              className="h-7 w-7 flex items-center justify-center rounded-lg border border-border/50 hover:bg-slate-50 transition-all">
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-slate_mist" /> : <ChevronDown className="w-3.5 h-3.5 text-slate_mist" />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Inline Submissions List */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}>
+                            <div className="border-t border-border/30 bg-slate-50 px-4 py-3">
+                              <p className="text-xs font-semibold text-slate_mist uppercase tracking-wider mb-3">
+                                Submissions ({assignmentSubs.length})
+                              </p>
+                              <div className="space-y-2">
+                                {assignmentSubs.map(sub => (
+                                  <div key={sub.id} className="bg-white rounded-xl border border-border/40 px-4 py-3 flex items-center gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-ink">{sub.user_name || "—"}</p>
+                                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                        <p className="text-[10px] text-slate_mist">{sub.user_email}</p>
+                                        <span className="text-[10px] text-slate_mist">· Submitted {fmtDate(sub.created_date || sub.createdAt)}</span>
+                                        {(sub.messages || []).length > 0 && (
+                                          <span className="text-[10px] text-blue-600">
+                                            · {(sub.messages || []).length} message{(sub.messages || []).length !== 1 ? "s" : ""}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {sub.marks_awarded !== undefined && sub.marks_awarded !== null ? (
+                                        <span className={`font-bold text-sm ${sub.passed ? "text-emerald-600" : "text-red-500"}`}>
+                                          {sub.marks_awarded}/{sub.max_marks}
+                                        </span>
+                                      ) : null}
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[sub.status] || "bg-slate-100 text-slate_mist"}`}>
+                                        {sub.status?.replace("_", " ")}
+                                      </span>
+                                      {sub.file_url && (
+                                        <a href={sub.file_url} target="_blank" rel="noreferrer">
+                                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                                            <Eye className="w-3 h-3" /> View
+                                          </Button>
+                                        </a>
+                                      )}
+                                      <Button size="sm" onClick={() => setGradingModal(sub)}
+                                        className="h-7 text-xs bg-harvest text-white gap-1">
+                                        <CheckCircle className="w-3 h-3" /> Grade
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="text-xs text-ink truncate max-w-[140px]">{course?.title || "—"}</p>
-                            <p className="text-[10px] text-slate_mist">{module?.title || "—"}</p>
-                          </td>
-                          <td className="px-4 py-3 font-bold text-ink">{a.max_marks}</td>
-                          <td className="px-4 py-3 text-xs text-slate_mist">
-                            {a.due_date ? new Date(a.due_date).toLocaleDateString("en-AU") : "No due date"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${a.is_published ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate_mist"}`}>
-                              {a.is_published ? "Published" : "Draft"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="outline" onClick={() => setModal(a)} className="h-7 w-7 p-0">
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={async () => {
-                                if (!confirm(`Delete "${a.title}"?`)) return;
-                                await base44.entities.Assignment.delete(a.id);
-                                toast.success("Deleted."); load();
-                              }} className="h-7 w-7 p-0 text-destructive border-destructive/30">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
               </div>
             )
           )}
 
           {/* Submissions Tab */}
-          {tab === "submissions" && (
-            submissions.length === 0 ? (
+          {tab === "submissions" && (() => {
+            const filteredSubs = submissions.filter(s =>
+              (courseFilter === "all" || s.course_id === courseFilter) &&
+              (!search || (s.user_name || "").toLowerCase().includes(search.toLowerCase()) ||
+                (s.user_email || "").toLowerCase().includes(search.toLowerCase()) ||
+                (s.assignment_title || "").toLowerCase().includes(search.toLowerCase()))
+            );
+            return filteredSubs.length === 0 ? (
               <div className="bg-white rounded-2xl border-2 border-dashed border-border p-16 text-center">
                 <Eye className="w-10 h-10 mx-auto mb-3 text-slate-300" />
                 <p className="text-sm text-slate_mist">No submissions yet.</p>
@@ -971,7 +1185,7 @@ export default function AdminAssessmentManager({ courses }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {submissions.map(sub => (
+                    {filteredSubs.map(sub => (
                       <tr key={sub.id} className="border-b border-border/20 hover:bg-slate-50">
                         <td className="px-4 py-3">
                           <p className="font-medium text-ink text-xs">{sub.user_name || "—"}</p>
@@ -979,9 +1193,14 @@ export default function AdminAssessmentManager({ courses }) {
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-xs text-ink font-medium truncate max-w-[160px]">{sub.assignment_title}</p>
+                          {(sub.messages || []).length > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 mt-0.5">
+                              <MessageSquare className="w-2.5 h-2.5" /> {(sub.messages || []).length} msg
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-xs text-slate_mist">
-                          {new Date(sub.created_date).toLocaleDateString("en-AU")}
+                          {fmtDate(sub.created_date || sub.createdAt)}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[sub.status] || "bg-slate-100 text-slate_mist"}`}>
@@ -1016,8 +1235,8 @@ export default function AdminAssessmentManager({ courses }) {
                   </tbody>
                 </table>
               </div>
-            )
-          )}
+            );
+          })()}
         </>
       )}
 

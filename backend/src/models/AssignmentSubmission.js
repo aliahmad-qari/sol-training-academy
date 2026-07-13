@@ -50,6 +50,17 @@ const assignmentSubmissionSchema = new Schema(
     graded_by: { type: Schema.Types.ObjectId, ref: 'User' },
     graded_date: { type: Date },
     passed: { type: Boolean },
+
+    // Threaded messages between student and staff after submission
+    messages: [
+      {
+        sender_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        sender_name: { type: String, trim: true },
+        sender_role: { type: String, enum: ['student', 'admin', 'team_member'], default: 'student' },
+        message: { type: String, trim: true },
+        sent_at: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,

@@ -261,6 +261,10 @@ const entities = {
         const res = await apiClient.patch(`/submissions/${id}/grade`, data);
         return normalize(unwrap(res));
       },
+      async reply(id, message) {
+        const res = await apiClient.post(`/submissions/${id}/reply`, { message });
+        return normalize(unwrap(res));
+      },
     },
   }),
 };
