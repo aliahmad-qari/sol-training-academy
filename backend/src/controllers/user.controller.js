@@ -135,11 +135,6 @@ export const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) throw ApiError.notFound('User not found.');
 
-  // Protect admin accounts from deletion via this endpoint.
-  if (user.role === 'admin') {
-    throw ApiError.badRequest('Admin accounts cannot be deleted here.');
-  }
-
   const userId = user._id;
 
   // Remove all records that belong to this user. Each collection keys off the

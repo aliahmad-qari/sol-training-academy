@@ -34,6 +34,7 @@ import AdminGradebook from "@/components/lms/admin/AdminGradebook";
 import AdminEnrollmentExpiry from "@/components/lms/admin/AdminEnrollmentExpiry";
 import AdminRequestsManager from "@/components/lms/admin/AdminRequestsManager";
 import AdminTeamManager from "@/components/lms/admin/AdminTeamManager";
+import AdminAdminsManager from "@/components/lms/admin/AdminAdminsManager";
 import AIToolsAdmin from "@/pages/AIToolsAdmin";
 import AdminLeaderboard from "@/components/lms/admin/AdminLeaderboard";
 import AdminDiscussionModeration from "@/components/lms/admin/AdminDiscussionModeration";
@@ -57,7 +58,10 @@ const NAV_SECTIONS = [
     { id: "certificates",  label: "Certificates",       icon: Award },
   ]},
   { label: "AI Tools",  items: [{ id: "aitools",   label: "AI Admin Tools",    icon: Sparkles }] },
-  { label: "Team",      items: [{ id: "team",       label: "Team & Files",      icon: Shield }] },
+  { label: "Team",      items: [
+    { id: "admins",     label: "Admin Accounts",    icon: Shield },
+    { id: "team",       label: "Team & Files",      icon: Users2 },
+  ]},
   { label: "Platform",  items: [
     { id: "resources",     label: "Training Resources", icon: FileText },
     { id: "announcements", label: "Announcements",      icon: Megaphone },
@@ -304,6 +308,7 @@ export default function LMSAdmin() {
                   {activeTab === "settings"     && <AdminSettings />}
                   {activeTab === "aitools"      && <AIToolsAdmin enrollments={enrollments} quizAttempts={quizAttempts} courses={courses} />}
                   {activeTab === "team"         && <AdminTeamManager />}
+                  {activeTab === "admins"       && <AdminAdminsManager />}
                   {activeTab === "leaderboard"  && <AdminLeaderboard courses={courses} />}
                   {activeTab === "discussions"  && <AdminDiscussionModeration courses={courses} />}
                   {activeTab === "documents"    && <AdminDocumentVerification />}
