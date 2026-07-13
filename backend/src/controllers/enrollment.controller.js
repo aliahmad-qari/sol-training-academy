@@ -1,4 +1,4 @@
-﻿import { CourseEnrollment } from '../models/index.js';
+﻿import { CourseEnrollment, User } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -25,6 +25,21 @@ export const listEnrollments = asyncHandler(async (req, res) => {
     CourseEnrollment.find(finalFilter).sort(sort).skip(skip).limit(limit).lean(),
     CourseEnrollment.countDocuments(finalFilter),
   ]);
+
+  // Attach each user's live account status + last login so staff UIs can show
+  // the correct Suspend/Activate action and when the student last signed in.
+  // Enrollments don't store these themselves — they live on the User — so a
+  // suspended student would otherwise still look active.
+  if (isStaff && items.length) {
+    const userIds = [...new Set(items.map((e) => String(e.user_id)))];
+    const users = await User.find({ _id: { $in: userIds } }, 'is_active last_login_at').lean();
+    const byId = new Map(users.map((u) => [String(u._id), u]));
+    for (const e of items) {
+      const u = byId.get(String(e.user_id));
+      e.is_active = u ? u.is_active !== false : true;
+      e.last_login_at = u?.last_login_at ?? null;
+    }
+  }
 
   return sendOk(res, items, 'Enrollments', paginationMeta(total, page, limit));
 });

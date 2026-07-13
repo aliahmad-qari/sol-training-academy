@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users, Search, CheckCircle, Award, Clock, Plus, X, Save, Upload, UserX, UserCheck } from "lucide-react";
+import { Users, Search, CheckCircle, Award, Clock, Plus, X, Save, Upload, UserX, UserCheck, Trash2 } from "lucide-react";
 import AdminBulkEnroll from "@/components/lms/admin/AdminBulkEnroll";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -112,6 +112,28 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkEnroll, setShowBulkEnroll] = useState(false);
   const [togglingId, setTogglingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const deleteStudent = async (enrollment) => {
+    const userId = enrollment.user_id;
+    if (!userId) { toast.error("No user ID on this enrollment."); return; }
+    const name = enrollment.user_name || enrollment.user_email || "this student";
+    if (!confirm(
+      `Permanently DELETE ${name}?\n\n` +
+      `This removes their account and ALL related data — enrollments, submissions, ` +
+      `quiz attempts, certificates, notes and more. This cannot be undone.`
+    )) return;
+    setDeletingId(userId);
+    try {
+      await apiClient.delete(`/users/${userId}`);
+      toast.success("Student permanently deleted.");
+      onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete student.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const toggleUserStatus = async (enrollment, action) => {
     // action: "suspend" | "activate"
@@ -205,7 +227,7 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-border/30">
-                  {["Student", "Course", "Level", "Progress", "Status", "Enrolled", "Certificate", "Actions"].map(h => (
+                  {["Student", "Course", "Level", "Progress", "Status", "Enrolled", "Last Login", "Certificate", "Actions"].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate_mist uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -251,6 +273,18 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                         {e.createdAt ? new Date(e.createdAt).toLocaleDateString("en-AU") : "—"}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      {e.last_login_at ? (
+                        <span className="text-slate_mist" title={new Date(e.last_login_at).toLocaleString("en-AU")}>
+                          {new Date(e.last_login_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                          <span className="text-slate_mist/60 ml-1">
+                            {new Date(e.last_login_at).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-slate_mist/40">Never</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       {e.certificate_issued
                         ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
@@ -273,6 +307,13 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                             <UserX className="w-3 h-3" /> Suspend
                           </Button>
                         )}
+                        <Button size="sm" variant="outline"
+                          onClick={() => deleteStudent(e)}
+                          disabled={deletingId === e.user_id}
+                          title="Permanently delete student and all their data"
+                          className="h-7 w-7 p-0 text-destructive border-destructive/30 hover:bg-destructive/5">
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     </td>
                   </tr>

@@ -12,6 +12,8 @@ import {
   Megaphone,
   ShieldCheck,
   Sparkles,
+  Trash2,
+  Mail,
 } from "lucide-react";
 import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
@@ -90,6 +92,23 @@ export default function NotificationCenter({ onSelectTab, className }) {
     await apiClient.patch("/notifications/read-all");
   };
 
+  const deleteOne = async (event, notification) => {
+    // Don't let the click bubble to the card (which would navigate).
+    event.stopPropagation();
+    const id = notification.id || notification._id;
+    const wasUnread = !notification.isRead;
+    setNotifications((prev) => prev.filter((item) => (item.id || item._id) !== id));
+    if (wasUnread) setUnreadCount((count) => Math.max(0, count - 1));
+    try {
+      await apiClient.delete(`/notifications/${id}`);
+    } catch (err) {
+      console.error("Failed to delete notification:", err);
+      // Re-sync from server so the UI doesn't silently drop a record that
+      // failed to delete.
+      loadNotifications();
+    }
+  };
+
   const handleNotificationClick = async (notification) => {
     await markOneRead(notification);
     setOpen(false);
@@ -160,12 +179,19 @@ export default function NotificationCenter({ onSelectTab, className }) {
                 const Icon = TYPE_ICONS[notification.type] || Bell;
                 const tone = priorityTone[notification.priority] || priorityTone.normal;
                 return (
-                  <button
+                  <div
                     key={notification.id || notification._id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleNotificationClick(notification)}
+                    onKeyDown={(e) => {
+                      // Only the card itself should navigate — ignore keys that
+                      // bubbled up from the nested delete button.
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleNotificationClick(notification); }
+                    }}
                     className={cn(
-                      "w-full text-left rounded-lg border p-3 transition-colors hover:bg-white/10",
+                      "group relative w-full text-left rounded-lg border p-3 transition-colors hover:bg-white/10 cursor-pointer",
                       tone,
                       notification.isRead ? "opacity-70" : "opacity-100"
                     )}
@@ -176,10 +202,22 @@ export default function NotificationCenter({ onSelectTab, className }) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start gap-2">
-                          <p className="text-sm font-semibold leading-snug text-white">{notification.title}</p>
+                          <p className="text-sm font-semibold leading-snug text-white pr-6">{notification.title}</p>
                           {!notification.isRead && <span className="mt-1 w-1.5 h-1.5 rounded-full bg-harvest flex-shrink-0" />}
                         </div>
                         <p className="text-xs text-white/55 mt-1 leading-relaxed line-clamp-2">{notification.message}</p>
+
+                        {/* Sender (who triggered this — e.g. the student who submitted) */}
+                        {notification.sender_name && (
+                          <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-white/45">
+                            <Mail className="w-2.5 h-2.5 flex-shrink-0" />
+                            <span className="font-medium text-white/60">{notification.sender_name}</span>
+                            {notification.sender_email && (
+                              <span className="truncate">· {notification.sender_email}</span>
+                            )}
+                          </div>
+                        )}
+
                         <p className="text-[10px] text-white/35 mt-2">
                           {notification.createdAt
                             ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })
@@ -187,7 +225,17 @@ export default function NotificationCenter({ onSelectTab, className }) {
                         </p>
                       </div>
                     </div>
-                  </button>
+
+                    {/* Delete button — appears on hover / focus */}
+                    <button
+                      type="button"
+                      aria-label="Delete notification"
+                      onClick={(e) => deleteOne(e, notification)}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-md flex items-center justify-center text-white/40 hover:text-red-300 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 );
               })}
             </div>

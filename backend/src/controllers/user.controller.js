@@ -1,4 +1,20 @@
-import { User } from '../models/index.js';
+import {
+  User,
+  CourseEnrollment,
+  AssignmentSubmission,
+  QuizAttempt,
+  Certificate,
+  CoursePayment,
+  Invoice,
+  SupportTicket,
+  StudentNote,
+  StudentGoal,
+  StudentDocument,
+  CourseFeedback,
+  Referral,
+  DiscussionPost,
+  Notification,
+} from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -94,7 +110,8 @@ export const updateUser = asyncHandler(async (req, res) => {
 });
 
 /**
- * DELETE /api/v1/users/:id   (admin) — soft delete (deactivate)
+ * PATCH /api/v1/users/:id/deactivate   (admin) — soft delete (deactivate)
+ * Kept as an explicit, reversible action separate from hard delete.
  */
 export const deactivateUser = asyncHandler(async (req, res) => {
   if (String(req.params.id) === String(req.user._id)) {
@@ -103,4 +120,49 @@ export const deactivateUser = asyncHandler(async (req, res) => {
   const user = await User.findByIdAndUpdate(req.params.id, { is_active: false }, { new: true });
   if (!user) throw ApiError.notFound('User not found.');
   return sendOk(res, { id: req.params.id }, 'User deactivated');
+});
+
+/**
+ * DELETE /api/v1/users/:id   (admin) — HARD delete + related-data cleanup.
+ * Permanently removes the user and everything they own so no orphaned records
+ * are left behind. This cannot be undone; use deactivate for a reversible block.
+ */
+export const deleteUser = asyncHandler(async (req, res) => {
+  if (String(req.params.id) === String(req.user._id)) {
+    throw ApiError.badRequest('You cannot delete your own account.');
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) throw ApiError.notFound('User not found.');
+
+  // Protect admin accounts from deletion via this endpoint.
+  if (user.role === 'admin') {
+    throw ApiError.badRequest('Admin accounts cannot be deleted here.');
+  }
+
+  const userId = user._id;
+
+  // Remove all records that belong to this user. Each collection keys off the
+  // user via `user_id`, except Referral (referrer_id) and Notification
+  // (recipient_id / sender_id).
+  await Promise.all([
+    CourseEnrollment.deleteMany({ user_id: userId }),
+    AssignmentSubmission.deleteMany({ user_id: userId }),
+    QuizAttempt.deleteMany({ user_id: userId }),
+    Certificate.deleteMany({ user_id: userId }),
+    CoursePayment.deleteMany({ user_id: userId }),
+    Invoice.deleteMany({ user_id: userId }),
+    SupportTicket.deleteMany({ user_id: userId }),
+    StudentNote.deleteMany({ user_id: userId }),
+    StudentGoal.deleteMany({ user_id: userId }),
+    StudentDocument.deleteMany({ user_id: userId }),
+    CourseFeedback.deleteMany({ user_id: userId }),
+    DiscussionPost.deleteMany({ user_id: userId }),
+    Referral.deleteMany({ referrer_id: userId }),
+    Notification.deleteMany({ $or: [{ recipient_id: userId }, { sender_id: userId }] }),
+  ]);
+
+  await user.deleteOne();
+
+  return sendOk(res, { id: req.params.id }, 'User and related data permanently deleted');
 });

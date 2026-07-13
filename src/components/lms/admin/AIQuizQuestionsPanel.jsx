@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 
 /**
- * Inline AI question generator panel â€” generates questions and lets you
+ * Inline AI question generator panel — generates questions and lets you
  * append selected ones to the current quiz being edited.
  *
  * Props:
- *   onAddQuestions(questions[]) â€” called with the questions to append
- *   onClose() â€” called to close the panel
+ *   onAddQuestions(questions[]) — called with the questions to append
+ *   onClose() — called to close the panel
  */
 export default function AIQuizQuestionsPanel({ onAddQuestions, onClose }) {
   const [content, setContent] = useState("");
@@ -97,7 +97,7 @@ export default function AIQuizQuestionsPanel({ onAddQuestions, onClose }) {
           </div>
           <div>
             <p className="font-display font-bold text-sm text-ink">AI Question Generator</p>
-            <p className="text-[10px] text-slate-500">Paste content â†’ AI creates questions â†’ add to this quiz</p>
+            <p className="text-[10px] text-slate-500">Paste content → AI creates questions → add to this quiz</p>
           </div>
         </div>
         <button onClick={onClose} className="text-slate-400 hover:text-ink transition-colors">
@@ -149,7 +149,7 @@ export default function AIQuizQuestionsPanel({ onAddQuestions, onClose }) {
           <Textarea
             value={content}
             onChange={e => setContent(e.target.value)}
-            placeholder="Paste your course notes, module text, or any learning material hereâ€¦"
+            placeholder="Paste your course notes, module text, or any learning material here…"
             rows={4}
             className="text-sm resize-none bg-white"
           />
@@ -159,7 +159,7 @@ export default function AIQuizQuestionsPanel({ onAddQuestions, onClose }) {
         <Button onClick={generate} disabled={generating || !content.trim()}
           className="w-full bg-purple-600 hover:bg-purple-700 text-white gap-2 h-9">
           {generating
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating questionsâ€¦</>
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating questions…</>
             : <><Sparkles className="w-4 h-4" /> Generate {numQuestions} Questions</>
           }
         </Button>
@@ -169,7 +169,7 @@ export default function AIQuizQuestionsPanel({ onAddQuestions, onClose }) {
           {generated.length > 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-ink">{generated.length} questions generated â€” select which to add:</p>
+                <p className="text-xs font-semibold text-ink">{generated.length} questions generated — select which to add:</p>
                 <div className="flex gap-2">
                   <button onClick={() => setSelected(new Set(generated.map((_, i) => i)))}
                     className="text-[10px] text-purple-600 hover:underline font-semibold">Select all</button>

@@ -53,10 +53,26 @@ export const getUserNotifications = asyncHandler(async (req, res) => {
   if (req.query.unreadOnly === 'true') finalFilter.isRead = false;
 
   const [items, total, unreadCount] = await Promise.all([
-    Notification.find(finalFilter).sort(sort).skip(skip).limit(limit).lean(),
+    Notification.find(finalFilter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate('sender_id', 'full_name email role')
+      .lean(),
     Notification.countDocuments(finalFilter),
     Notification.countDocuments({ recipient_id: req.user._id, isRead: false }),
   ]);
+
+  // Flatten the populated sender into simple fields the UI can read directly,
+  // then drop the nested object. `sender_id` may be null (system notifications).
+  for (const n of items) {
+    if (n.sender_id && typeof n.sender_id === 'object') {
+      n.sender_name = n.sender_id.full_name || '';
+      n.sender_email = n.sender_id.email || '';
+      n.sender_role = n.sender_id.role || '';
+      n.sender_id = n.sender_id._id;
+    }
+  }
 
   return sendOk(
     res,
@@ -84,4 +100,18 @@ export const markAllAsRead = asyncHandler(async (req, res) => {
   );
 
   return sendOk(res, { modifiedCount: result.modifiedCount }, 'Notifications marked as read');
+});
+
+/**
+ * DELETE /api/v1/notifications/:id   (protected)
+ * A user may delete only notifications addressed to them.
+ */
+export const deleteNotification = asyncHandler(async (req, res) => {
+  const notification = await Notification.findOneAndDelete({
+    _id: req.params.id,
+    recipient_id: req.user._id,
+  });
+
+  if (!notification) throw ApiError.notFound('Notification not found.');
+  return sendOk(res, { id: req.params.id }, 'Notification deleted');
 });

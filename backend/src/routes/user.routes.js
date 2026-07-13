@@ -6,6 +6,7 @@ import {
   updateMe,
   updateUser,
   deactivateUser,
+  deleteUser,
 } from '../controllers/user.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 
@@ -20,6 +21,7 @@ router.get('/', authorize('admin', 'team_member'), listUsers);
 router.post('/', authorize('admin'), createUser);
 router.get('/:id', getUser);
 router.patch('/:id', authorize('admin'), updateUser);
-router.delete('/:id', authorize('admin'), deactivateUser);
+router.patch('/:id/deactivate', authorize('admin'), deactivateUser);
+router.delete('/:id', authorize('admin'), deleteUser);
 
 export default router;
