@@ -229,9 +229,9 @@ function QuizModal({ topic, courses, modules, onClose, onSave }) {
     const data = {
       ...form,
       total_marks: totalMarks,
-      // Convert datetime-local strings → ISO (or clear if empty)
-      available_from: form.available_from ? new Date(form.available_from).toISOString() : "",
-      available_until: form.available_until ? new Date(form.available_until).toISOString() : "",
+      // Convert datetime-local strings → ISO or null (never send empty string for Date fields)
+      available_from: form.available_from ? new Date(form.available_from).toISOString() : null,
+      available_until: form.available_until ? new Date(form.available_until).toISOString() : null,
     };
     try {
       if (topic?.id) await base44.entities.CourseTopic.update(topic.id, data);
@@ -551,15 +551,23 @@ function AssignmentModal({ assignment, courses, modules, onClose, onSave }) {
 // ── Grading Panel ─────────────────────────────────────────────────────────────
 function GradingPanel({ submission: initialSubmission, onClose, onGraded }) {
   const [submission, setSubmission] = useState(initialSubmission);
-  const [marks, setMarks] = useState(initialSubmission.marks_awarded ?? "");
+  const [marks, setMarks] = useState(
+    initialSubmission.marks_awarded !== undefined && initialSubmission.marks_awarded !== null
+      ? String(initialSubmission.marks_awarded)
+      : ""
+  );
   const [feedback, setFeedback] = useState(initialSubmission.feedback || "");
   const [saving, setSaving] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const passThreshold = submission.passing_marks || 50;
-  const isPassing = marks !== "" && Number(marks) >= passThreshold;
+  const passThreshold = submission.passing_marks ?? 50;
+  const maxMarks = submission.max_marks ?? 100;
+  const marksNum = marks !== "" ? Number(marks) : null;
+  const isPassing = marksNum !== null && marksNum >= passThreshold;
+  const scorePct = marksNum !== null && maxMarks > 0 ? Math.round((marksNum / maxMarks) * 100) : null;
+  const isHighScore = scorePct !== null && scorePct >= 90;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -567,18 +575,22 @@ function GradingPanel({ submission: initialSubmission, onClose, onGraded }) {
 
   useEffect(() => { scrollToBottom(); }, [submission.messages]);
 
+  // Auto-fill a congratulatory feedback when score is very high and feedback is empty
+  useEffect(() => {
+    if (isHighScore && !feedback.trim()) {
+      setFeedback(`Excellent work! You scored ${scorePct}% — outstanding performance. Keep it up!`);
+    }
+  }, [isHighScore]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const save = async () => {
     if (marks === "" || Number(marks) < 0) { toast.error("Enter valid marks."); return; }
     setSaving(true);
     try {
       await base44.entities.AssignmentSubmission.update(submission.id, {
         marks_awarded: Number(marks),
-        feedback,
+        feedback: feedback.trim(),
         status: "graded",
-        passed: isPassing,
       });
-      // Send grade notification email to student
-      base44.functions?.invoke?.("sendGradeFeedbackEmail", { submission_id: submission.id, action: "graded" });
       toast.success("Submission graded & student notified.");
       onGraded(); onClose();
     } catch (err) {
@@ -593,9 +605,8 @@ function GradingPanel({ submission: initialSubmission, onClose, onGraded }) {
     try {
       await base44.entities.AssignmentSubmission.update(submission.id, {
         status: "resubmit_requested",
-        feedback,
+        feedback: feedback.trim(),
       });
-      base44.functions?.invoke?.("sendGradeFeedbackEmail", { submission_id: submission.id, action: "resubmit" });
       toast.success("Student notified to resubmit.");
       onGraded(); onClose();
     } catch (err) {
@@ -713,36 +724,50 @@ function GradingPanel({ submission: initialSubmission, onClose, onGraded }) {
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1.5 block font-semibold">Result</Label>
                   <div className={`h-10 flex items-center justify-center rounded-lg text-sm font-bold ${
-                    marks !== ""
+                    marksNum !== null
                       ? isPassing ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-red-100 text-red-700 border border-red-200"
                       : "bg-slate-100 text-slate_mist border border-border/50"
                   }`}>
-                    {marks !== "" ? (isPassing ? "✓ PASS" : "✗ FAIL") : "—"}
+                    {marksNum !== null ? (isPassing ? "✓ PASS" : "✗ FAIL") : "—"}
                   </div>
                 </div>
               </div>
 
-              {marks !== "" && (
+              {marksNum !== null && (
                 <div className="bg-slate-50 rounded-lg p-3">
                   <div className="flex justify-between text-xs text-slate_mist mb-1.5">
-                    <span>Score: {marks}/{submission.max_marks}</span>
+                    <span>Score: {marks}/{maxMarks}</span>
                     <span>Pass threshold: {passThreshold} marks</span>
                   </div>
                   <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div
                       className={`h-2 rounded-full transition-all ${isPassing ? "bg-emerald-500" : "bg-red-400"}`}
-                      style={{ width: `${Math.min(100, (Number(marks) / submission.max_marks) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (marksNum / maxMarks) * 100)}%` }}
                     />
                   </div>
                   <p className={`text-xs font-semibold mt-1.5 ${isPassing ? "text-emerald-600" : "text-red-500"}`}>
-                    {Math.round((Number(marks) / submission.max_marks) * 100)}%
-                    {isPassing ? " — Passes the assignment" : ` — Needs ${passThreshold - Number(marks)} more marks to pass`}
+                    {scorePct}%
+                    {isPassing ? " — Passes the assignment" : ` — Needs ${passThreshold - marksNum} more marks to pass`}
                   </p>
                 </div>
               )}
 
+              {/* High-score celebration banner */}
+              {isHighScore && (
+                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                  <span className="text-2xl">🏆</span>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-700">Outstanding Score — {scorePct}%!</p>
+                    <p className="text-xs text-emerald-600">A personalised congratulatory message has been added to the feedback below. You can edit it before saving.</p>
+                  </div>
+                </div>
+              )}
+
               <div>
-                <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1.5 block font-semibold">Written Feedback for Student</Label>
+                <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1.5 block font-semibold flex items-center gap-2">
+                  Written Feedback for Student
+                  {isHighScore && <span className="normal-case font-normal text-emerald-600 text-[10px] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">⭐ High score — feedback auto-filled</span>}
+                </Label>
                 <Textarea value={feedback} onChange={e => setFeedback(e.target.value)}
                   placeholder="Provide constructive feedback — what was done well, what needs improvement…"
                   rows={3} className="resize-none" />
@@ -975,10 +1000,11 @@ export default function AdminAssessmentManager({ courses }) {
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-border/50 overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-slate-50 border-b border-border/30">
-                      {["Quiz Title", "Course / Module", "Questions", "Total Marks", "Pass %", "Actions"].map(h => (
+                      {["Quiz Title", "Course / Module", "Questions", "Total Marks", "Pass %", "Available From", "Available Until", "Actions"].map(h => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate_mist uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -989,6 +1015,9 @@ export default function AdminAssessmentManager({ courses }) {
                       const module = getModule(topic.module_id);
                       const qCount = topic.quiz_questions?.length || 0;
                       const totalMarks = (topic.quiz_questions || []).reduce((s, q) => s + (q.marks || 1), 0);
+                      const now = new Date();
+                      const fromDate = topic.available_from ? new Date(topic.available_from) : null;
+                      const untilDate = topic.available_until ? new Date(topic.available_until) : null;
                       return (
                         <tr key={topic.id} className="border-b border-border/20 hover:bg-slate-50">
                           <td className="px-4 py-3">
@@ -1010,6 +1039,24 @@ export default function AdminAssessmentManager({ courses }) {
                               {topic.passing_marks || 75}%
                             </span>
                           </td>
+                          <td className="px-4 py-3 text-xs whitespace-nowrap">
+                            {fromDate ? (
+                              <span className={fromDate > now ? "text-amber-600 font-semibold" : "text-ink"}>
+                                {fmtDatetime(topic.available_from)}
+                              </span>
+                            ) : (
+                              <span className="text-slate_mist/50 italic">Always open</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-xs whitespace-nowrap">
+                            {untilDate ? (
+                              <span className={untilDate < now ? "text-red-500 font-semibold" : "text-ink"}>
+                                {fmtDatetime(topic.available_until)}
+                              </span>
+                            ) : (
+                              <span className="text-slate_mist/50 italic">No end date</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1">
                               <Button size="sm" variant="outline" onClick={() => setModal(topic)} className="h-7 w-7 p-0">
@@ -1029,10 +1076,10 @@ export default function AdminAssessmentManager({ courses }) {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
             )
           )}
-
           {/* Assignments Tab */}
           {tab === "assignments" && (
             filteredAssignments.length === 0 ? (

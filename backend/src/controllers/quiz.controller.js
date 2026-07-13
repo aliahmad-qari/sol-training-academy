@@ -101,10 +101,12 @@ const gradeAnswers = (questions, answers) => {
   let score = 0;
   let totalMarks = 0;
   let correctCount = 0;
+  const review = [];
 
   questions.forEach((q, i) => {
     const marks = Number(q.marks ?? 1);
-    totalMarks += Number.isFinite(marks) ? marks : 1;
+    const qMarks = Number.isFinite(marks) ? marks : 1;
+    totalMarks += qMarks;
     const given = answers?.[i] ?? answers?.[String(i)];
     let correct = false;
 
@@ -120,12 +122,25 @@ const gradeAnswers = (questions, answers) => {
     }
 
     if (correct) {
-      score += Number.isFinite(marks) ? marks : 1;
+      score += qMarks;
       correctCount += 1;
     }
+
+    // Per-question review so the student can see the right answer + explanation
+    // after submitting. Safe to expose now — the attempt is already graded.
+    review.push({
+      index: i,
+      type: q.type || 'mcq',
+      given: given ?? null,
+      correct,
+      correct_index: q.correct_index ?? null,
+      correct_indices: Array.isArray(q.correct_indices) ? q.correct_indices : null,
+      model_answer: q.model_answer ?? null,
+      explanation: q.explanation ?? '',
+    });
   });
 
-  return { score, totalMarks, totalQuestions: questions.length, correctCount };
+  return { score, totalMarks, totalQuestions: questions.length, correctCount, review };
 };
 
 /**
@@ -174,7 +189,7 @@ export const submitAttempt = asyncHandler(async (req, res) => {
 
   if (questions.length === 0) throw ApiError.badRequest('This quiz has no questions.');
 
-  const { score, totalMarks, totalQuestions, correctCount } = gradeAnswers(questions, answers);
+  const { score, totalMarks, totalQuestions, correctCount, review } = gradeAnswers(questions, answers);
   const passingMarks = normalizePassingMarks(passingMarksInput, totalMarks);
   const passed = score >= passingMarks;
 
@@ -217,6 +232,7 @@ export const submitAttempt = asyncHandler(async (req, res) => {
       total_questions: totalQuestions,
       correct_count: correctCount,
       passing_marks: passingMarks,
+      review,
       enrollment: progress?.enrollment || null,
       certificate: progress?.certificate || null,
       certificate_error: progress?.certificate_error || null,

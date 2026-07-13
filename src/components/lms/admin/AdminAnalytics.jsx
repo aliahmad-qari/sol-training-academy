@@ -18,6 +18,7 @@ const TABS = [
   { id: "overview",   label: "Overview",         icon: TrendingUp },
   { id: "progress",   label: "Student Progress",  icon: Users },
   { id: "completion", label: "Completion Rates",  icon: Award },
+  { id: "quizattempts", label: "Quiz Attempts",   icon: HelpCircle },
   { id: "modules",    label: "Module Time",        icon: Clock },
 ];
 
@@ -539,6 +540,159 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
           )}
         </div>
       )}
+
+      {/* ── QUIZ ATTEMPTS ────────────────────────────────────────── */}
+      {tab === "quizattempts" && (() => {
+        // Build per-student quiz summary
+        const attemptsByStudent = {};
+        quizAttempts.forEach(a => {
+          const key = a.user_id;
+          if (!attemptsByStudent[key]) {
+            // Get name/email from enrollments
+            const enr = enrollments.find(e => e.user_id === key || String(e.user_id) === String(key));
+            attemptsByStudent[key] = {
+              user_id: key,
+              name: enr?.user_name || a.user_name || "Unknown",
+              email: enr?.user_email || a.user_email || "",
+              attempts: [],
+            };
+          }
+          attemptsByStudent[key].attempts.push(a);
+        });
+
+        let quizStudentRows = Object.values(attemptsByStudent).map(s => {
+          const attempts = s.attempts;
+          const totalAtts = attempts.length;
+          const passed = attempts.filter(a => a.passed).length;
+          const passRatePct = totalAtts > 0 ? Math.round((passed / totalAtts) * 100) : 0;
+          // score from QuizAttempt is percentage (0-100) based on how it's stored
+          // total_marks and score are stored; percentage = score/total_marks*100 if score is raw
+          const scores = attempts.map(a => {
+            if (a.total_marks && a.total_marks > 0) return Math.round((a.score / a.total_marks) * 100);
+            return a.score || 0; // fallback: assume score is already %
+          });
+          const avgPct = scores.length > 0 ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
+          const highestPct = scores.length > 0 ? Math.max(...scores) : 0;
+          const courseIds = [...new Set(attempts.map(a => a.course_id))];
+          return {
+            ...s,
+            totalAttempts: totalAtts,
+            passed,
+            passRatePct,
+            avgPct,
+            highestPct,
+            courseIds,
+            latestAttempt: attempts.sort((a, b) => new Date(b.createdAt || b.created_date) - new Date(a.createdAt || a.created_date))[0],
+          };
+        });
+
+        // Filter by course
+        if (courseFilter !== "all") {
+          quizStudentRows = quizStudentRows.filter(s => s.courseIds.includes(courseFilter));
+        }
+        if (studentSearch) {
+          const q = studentSearch.toLowerCase();
+          quizStudentRows = quizStudentRows.filter(s =>
+            s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
+          );
+        }
+        quizStudentRows.sort((a, b) => b.avgPct - a.avgPct);
+
+        return (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input placeholder="Search students…" value={studentSearch}
+                onChange={e => setStudentSearch(e.target.value)} className="h-9 text-sm max-w-xs" />
+              <Select value={courseFilter} onValueChange={setCourseFilter}>
+                <SelectTrigger className="w-52 h-9 text-sm"><SelectValue placeholder="All Courses" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Courses</SelectItem>
+                  {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {quizStudentRows.length === 0 ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-border p-12 text-center">
+                <HelpCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate_mist text-sm">No quiz attempts recorded yet.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-border/50 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-border/30">
+                        {["Student", "Total Attempts", "Passed", "Pass Rate", "Avg Score %", "Highest Score %", "Last Attempt"].map(h => (
+                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate_mist uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quizStudentRows.map((s, i) => (
+                        <tr key={s.user_id} className="border-b border-border/20 hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-harvest/10 flex items-center justify-center text-harvest text-xs font-bold flex-shrink-0">
+                                {(s.name || "?")[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-medium text-ink text-sm">{s.name}</p>
+                                <p className="text-[10px] text-slate_mist">{s.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-bold text-ink">{s.totalAttempts}</td>
+                          <td className="px-4 py-3">
+                            <span className="font-bold text-emerald-600">{s.passed}</span>
+                            <span className="text-slate_mist text-xs"> / {s.totalAttempts}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-1.5 rounded-full ${s.passRatePct >= 70 ? "bg-emerald-500" : s.passRatePct >= 40 ? "bg-harvest" : "bg-red-400"}`}
+                                  style={{ width: `${s.passRatePct}%` }} />
+                              </div>
+                              <span className={`text-xs font-bold ${s.passRatePct >= 70 ? "text-emerald-600" : s.passRatePct >= 40 ? "text-harvest" : "text-red-500"}`}>
+                                {s.passRatePct}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-1.5 rounded-full ${s.avgPct >= 70 ? "bg-emerald-500" : s.avgPct >= 40 ? "bg-harvest" : "bg-red-400"}`}
+                                  style={{ width: `${s.avgPct}%` }} />
+                              </div>
+                              <span className={`text-xs font-bold ${s.avgPct >= 70 ? "text-emerald-600" : s.avgPct >= 40 ? "text-harvest" : "text-red-500"}`}>
+                                {s.avgPct}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-sm font-bold ${s.highestPct >= 90 ? "text-emerald-600" : s.highestPct >= 70 ? "text-ink" : "text-slate_mist"}`}>
+                              {s.highestPct}%
+                              {s.highestPct >= 90 && <span className="text-[10px] ml-1 text-emerald-600">⭐ Excellent</span>}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate_mist whitespace-nowrap">
+                            {s.latestAttempt ? (
+                              new Date(s.latestAttempt.createdAt || s.latestAttempt.created_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
+                            ) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="px-4 py-2.5 border-t border-border/20 text-xs text-slate_mist">
+                  {quizStudentRows.length} student{quizStudentRows.length !== 1 ? "s" : ""} · {quizAttempts.length} total attempts
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

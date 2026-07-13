@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from "react";
-import { CheckCircle, XCircle, RotateCcw, Trophy, Star, Clock, AlertTriangle, ChevronRight, Play, Calendar } from "lucide-react";
+import { CheckCircle, XCircle, RotateCcw, Trophy, Clock, AlertTriangle, ChevronRight, Play, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import apiClient from "@/api/apiClient";
 
@@ -33,6 +33,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
   const [earnedMarks, setEarnedMarks] = useState(0);
   const [totalMarks, setTotalMarks] = useState(grandTotal);
   const [serverPassed, setServerPassed] = useState(false);
+  const [review, setReview] = useState([]); // per-question results from server
   const [submitError, setSubmitError] = useState("");
   const [attempt, setAttempt] = useState(1);
   const [timedOut, setTimedOut] = useState(false);
@@ -74,6 +75,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
       setTotalMarks(resultTotal);
       setScore(resultPercent);
       setServerPassed(Boolean(result.passed));
+      if (Array.isArray(result.review)) setReview(result.review);
       setSubmitted(true);
 
       if (result.passed) onPass?.(result);
@@ -321,16 +323,47 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
         {questions.map((q, qIdx) => {
           const userAns = answers[qIdx];
           const qMarks = questionMarks(q);
+          // Review data from server (available after submission)
+          const rv = review[qIdx];
+          const isCorrect = rv?.correct;
+          const correctIdx = rv?.correct_index ?? null;
+          const correctIdxs = rv?.correct_indices || [];
+          const explanation = rv?.explanation || "";
+          const modelAnswer = rv?.model_answer || "";
+
+          // Option styling helper
+          const optionCls = (oIdx, isSelected) => {
+            if (!submitted) {
+              return isSelected
+                ? "border border-harvest bg-harvest/20 text-white"
+                : "border border-white/10 text-white/70 hover:border-harvest/60 hover:text-white";
+            }
+            // After submit: show correct in green, wrong selection in red
+            const isCorrectOpt = (q.type === "multi_select")
+              ? correctIdxs.includes(oIdx)
+              : oIdx === correctIdx;
+            if (isCorrectOpt) return "border-2 border-emerald-400 bg-emerald-400/15 text-emerald-300";
+            if (isSelected && !isCorrectOpt) return "border-2 border-red-400 bg-red-400/15 text-red-300";
+            return "border border-white/10 text-white/40";
+          };
 
           return (
-            <div key={qIdx} className="bg-white/5 rounded-2xl p-5">
+            <div key={qIdx} className={`rounded-2xl p-5 transition-all ${
+              submitted
+                ? (isCorrect ? "bg-emerald-500/10 border border-emerald-400/30" : (rv ? "bg-red-500/10 border border-red-400/30" : "bg-white/5"))
+                : "bg-white/5"
+            }`}>
               <div className="flex items-start justify-between gap-3 mb-4">
                 <p className="text-white font-medium flex-1">
                   <span className="text-white/40 mr-2">{qIdx + 1}.</span>
                   {q.question}
                 </p>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <Star className="w-3.5 h-3.5 text-harvest" />
+                  {submitted && rv && (
+                    isCorrect
+                      ? <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      : <XCircle className="w-4 h-4 text-red-400" />
+                  )}
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full text-harvest bg-harvest/20">
                     {qMarks} mark{qMarks !== 1 ? "s" : ""}
                   </span>
@@ -341,12 +374,11 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
                 <div className="flex gap-3">
                   {["True", "False"].map((opt, oIdx) => {
                     const selected = userAns === oIdx;
-                    const cls = selected ? "border border-harvest bg-harvest/20 text-white" : "border border-white/10 text-white/70 hover:border-harvest/60 hover:text-white";
                     return (
                       <div key={opt} onClick={() => handleAnswer(qIdx, oIdx)}
-                        className={`flex-1 rounded-xl px-4 py-3 text-sm text-center font-medium transition-all ${submitted ? "cursor-default" : "cursor-pointer"} ${cls}`}>
+                        className={`flex-1 rounded-xl px-4 py-3 text-sm text-center font-medium transition-all flex items-center justify-center gap-2 ${submitted ? "cursor-default" : "cursor-pointer"} ${optionCls(oIdx, selected)}`}>
                         {opt}
-                        {submitted && selected && <CheckCircle className="w-4 h-4 text-harvest inline ml-2" />}
+                        {submitted && oIdx === correctIdx && <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />}
                       </div>
                     );
                   })}
@@ -357,13 +389,15 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
                 <div className="space-y-2">
                   {(q.options || []).map((opt, oIdx) => {
                     const selected = userAns === oIdx;
-                    const cls = selected ? "border border-harvest bg-harvest/20 text-white" : "border border-white/10 text-white/70 hover:border-harvest/60 hover:text-white";
                     return (
                       <div key={oIdx} onClick={() => handleAnswer(qIdx, oIdx)}
-                        className={`rounded-xl px-4 py-3 text-sm transition-all ${submitted ? "cursor-default" : "cursor-pointer"} ${cls}`}>
-                        <span className="text-white/30 mr-2">{String.fromCharCode(65 + oIdx)}.</span>
-                        {opt}
-                        {submitted && selected && <CheckCircle className="w-4 h-4 text-harvest inline ml-2" />}
+                        className={`rounded-xl px-4 py-3 text-sm transition-all flex items-center justify-between gap-2 ${submitted ? "cursor-default" : "cursor-pointer"} ${optionCls(oIdx, selected)}`}>
+                        <span>
+                          <span className="opacity-50 mr-2">{String.fromCharCode(65 + oIdx)}.</span>
+                          {opt}
+                        </span>
+                        {submitted && oIdx === correctIdx && <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
+                        {submitted && selected && oIdx !== correctIdx && <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
                       </div>
                     );
                   })}
@@ -375,17 +409,18 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
                   <p className="text-white/40 text-xs mb-2">Select all correct answers</p>
                   {(q.options || []).map((opt, oIdx) => {
                     const selected = (userAns || []).includes(oIdx);
-                    const cls = selected ? "border border-harvest bg-harvest/20 text-white" : "border border-white/10 text-white/70 hover:border-harvest/60 hover:text-white";
+                    const isCorrectOpt = correctIdxs.includes(oIdx);
                     return (
                       <div key={oIdx} onClick={() => handleMultiToggle(qIdx, oIdx)}
-                        className={`rounded-xl px-4 py-3 text-sm transition-all flex items-center gap-2 ${submitted ? "cursor-default" : "cursor-pointer"} ${cls}`}>
+                        className={`rounded-xl px-4 py-3 text-sm transition-all flex items-center gap-2 ${submitted ? "cursor-default" : "cursor-pointer"} ${optionCls(oIdx, selected)}`}>
                         <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                          selected ? "border-harvest bg-harvest" : "border-current"
+                          selected ? "border-current bg-current/30" : "border-current"
                         }`}>
                           {selected && <CheckCircle className="w-3 h-3" />}
                         </div>
-                        <span className="text-white/30 mr-1">{String.fromCharCode(65 + oIdx)}.</span>
+                        <span className="opacity-50 mr-1">{String.fromCharCode(65 + oIdx)}.</span>
                         {opt}
+                        {submitted && isCorrectOpt && <CheckCircle className="w-3.5 h-3.5 text-emerald-400 ml-auto" />}
                       </div>
                     );
                   })}
@@ -393,14 +428,35 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
               )}
 
               {q.type === "short_answer" && (
-                <textarea
-                  disabled={submitted}
-                  value={answers[qIdx] || ""}
-                  onChange={e => handleAnswer(qIdx, e.target.value)}
-                  placeholder="Type your answer here..."
-                  rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 resize-none focus:outline-none focus:border-harvest/60 disabled:opacity-50"
-                />
+                <div>
+                  <textarea
+                    disabled={submitted}
+                    value={answers[qIdx] || ""}
+                    onChange={e => handleAnswer(qIdx, e.target.value)}
+                    placeholder="Type your answer here..."
+                    rows={3}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 resize-none focus:outline-none focus:border-harvest/60 disabled:opacity-50"
+                  />
+                  {submitted && modelAnswer && (
+                    <div className="mt-2 bg-emerald-400/10 border border-emerald-400/30 rounded-xl px-4 py-3">
+                      <p className="text-xs font-bold text-emerald-400 mb-1">Model Answer</p>
+                      <p className="text-sm text-white/80">{modelAnswer}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Explanation shown after submit */}
+              {submitted && explanation && (
+                <div className="mt-3 bg-blue-400/10 border border-blue-400/30 rounded-xl px-4 py-3">
+                  <p className="text-xs font-bold text-blue-300 mb-1 flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    Explanation
+                  </p>
+                  <p className="text-sm text-white/80">{explanation}</p>
+                </div>
               )}
             </div>
           );

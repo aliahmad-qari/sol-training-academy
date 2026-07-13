@@ -156,12 +156,33 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
   const completed = enrollments.filter(e => e.status === "completed").length;
   const certs = enrollments.filter(e => e.certificate_issued).length;
 
+  // Build a map of userId → is_active so ALL enrollment rows for the same
+  // suspended user consistently show the Activate button. The backend enriches
+  // is_active on the enrollment list; if ANY row for a user has is_active===false,
+  // treat the entire user as suspended across all their rows.
+  const userActiveMap = {};
+  enrollments.forEach(e => {
+    const uid = String(e.user_id);
+    if (userActiveMap[uid] === undefined) {
+      userActiveMap[uid] = e.is_active !== false; // default active unless explicitly false
+    } else if (e.is_active === false) {
+      userActiveMap[uid] = false; // one suspended row → mark whole user suspended
+    }
+  });
+
+  const isUserActive = (enrollment) => userActiveMap[String(enrollment.user_id)] !== false;
+
+  const suspendedCount = enrollments.filter(e => !isUserActive(e)).length;
+
   const filtered = enrollments.filter(e => {
     const matchSearch = !search || 
       (e.user_name || "").toLowerCase().includes(search.toLowerCase()) ||
       (e.user_email || "").toLowerCase().includes(search.toLowerCase()) ||
       (e.course_title || "").toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || e.status === statusFilter;
+    let matchStatus;
+    if (statusFilter === "all") matchStatus = true;
+    else if (statusFilter === "suspended") matchStatus = !isUserActive(e);
+    else matchStatus = e.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
@@ -184,7 +205,7 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
           { label: "Total Students", value: uniqueStudents.length, icon: Users, color: "text-blue-600 bg-blue-50" },
           { label: "Total Enrollments", value: enrollments.length, icon: CheckCircle, color: "text-purple-600 bg-purple-50" },
           { label: "Completions", value: completed, icon: Award, color: "text-green-600 bg-green-50" },
-          { label: "Certificates Issued", value: certs, icon: Award, color: "text-amber-600 bg-amber-50" },
+          { label: "Suspended", value: [...new Set(enrollments.filter(e => !isUserActive(e)).map(e => e.user_id))].length, icon: UserX, color: "text-red-600 bg-red-50" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.color}`}>
@@ -205,11 +226,21 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
           <Input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by name, email or course…" className="pl-9 h-9 text-sm" />
         </div>
-        <div className="flex gap-1 bg-white rounded-xl border border-border/50 p-1">
-          {["all", "active", "completed", "paused"].map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${statusFilter === s ? "bg-ink text-white" : "text-slate_mist hover:text-ink"}`}>
-              {s}
+        <div className="flex gap-1 bg-white rounded-xl border border-border/50 p-1 flex-wrap">
+          {[
+            { key: "all", label: "All" },
+            { key: "active", label: "Active" },
+            { key: "completed", label: "Completed" },
+            { key: "paused", label: "Paused" },
+            { key: "suspended", label: `Suspended${suspendedCount > 0 ? ` (${suspendedCount})` : ""}` },
+          ].map(s => (
+            <button key={s.key} onClick={() => setStatusFilter(s.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                statusFilter === s.key
+                  ? s.key === "suspended" ? "bg-red-600 text-white" : "bg-ink text-white"
+                  : "text-slate_mist hover:text-ink"
+              }`}>
+              {s.label}
             </button>
           ))}
         </div>
@@ -263,9 +294,16 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_COLORS[e.status] || "bg-gray-100 text-gray-600"}`}>
-                        {e.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize w-fit ${STATUS_COLORS[e.status] || "bg-gray-100 text-gray-600"}`}>
+                          {e.status}
+                        </span>
+                        {!isUserActive(e) && (
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 w-fit flex items-center gap-1">
+                            <UserX className="w-2.5 h-2.5" /> Suspended
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-slate_mist whitespace-nowrap">
                       <span className="flex items-center gap-1">
@@ -292,19 +330,25 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        {(e.is_active === false || e.status === 'suspended') ? (
+                        {!isUserActive(e) ? (
                           <Button size="sm" variant="outline"
                             onClick={() => toggleUserStatus(e, "activate")}
                             disabled={togglingId === e.user_id}
-                            className="h-7 px-2 text-[10px] text-emerald-700 border-emerald-300 hover:bg-emerald-50 gap-1">
-                            <UserCheck className="w-3 h-3" /> Activate
+                            className="h-7 px-2 text-[10px] text-emerald-700 border-emerald-300 hover:bg-emerald-50 gap-1 whitespace-nowrap">
+                            {togglingId === e.user_id
+                              ? <div className="w-3 h-3 border-2 border-emerald-600/30 border-t-emerald-600 rounded-full animate-spin" />
+                              : <UserCheck className="w-3 h-3" />}
+                            Enable
                           </Button>
                         ) : (
                           <Button size="sm" variant="outline"
                             onClick={() => toggleUserStatus(e, "suspend")}
                             disabled={togglingId === e.user_id}
-                            className="h-7 px-2 text-[10px] text-red-600 border-red-300 hover:bg-red-50 gap-1">
-                            <UserX className="w-3 h-3" /> Suspend
+                            className="h-7 px-2 text-[10px] text-red-600 border-red-300 hover:bg-red-50 gap-1 whitespace-nowrap">
+                            {togglingId === e.user_id
+                              ? <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                              : <UserX className="w-3 h-3" />}
+                            Suspend
                           </Button>
                         )}
                         <Button size="sm" variant="outline"
@@ -312,7 +356,9 @@ export default function AdminStudentManager({ enrollments, courses, onRefresh })
                           disabled={deletingId === e.user_id}
                           title="Permanently delete student and all their data"
                           className="h-7 w-7 p-0 text-destructive border-destructive/30 hover:bg-destructive/5">
-                          <Trash2 className="w-3 h-3" />
+                          {deletingId === e.user_id
+                            ? <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                            : <Trash2 className="w-3 h-3" />}
                         </Button>
                       </div>
                     </td>
