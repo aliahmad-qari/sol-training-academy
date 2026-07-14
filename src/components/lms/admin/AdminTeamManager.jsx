@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, FolderOpen, Activity, UserPlus, Upload, RefreshCw,
-  Loader2, Search, Shield, TrendingUp, FileText
+  Users, FolderOpen, Activity, UserPlus, RefreshCw,
+  Loader2, Search, Shield, TrendingUp
 } from "lucide-react";
 import InviteMemberModal from "./team/InviteMemberModal";
-import FileUploadModal from "./team/FileUploadModal";
 import TeamMemberCard from "./team/TeamMemberCard";
-import TeamFileRow from "./team/TeamFileRow";
-import TeamActivityPanel from "./team/TeamActivityPanel";
 import MemberPermissionsPanel from "./team/MemberPermissionsPanel";
 
 const TABS = [
@@ -21,78 +19,77 @@ const TABS = [
   { id: "activity", label: "Audit Log",     icon: Activity },
 ];
 
+const JOB_ROLES = ["Compliance Officer","Consultant","Support Coordinator","Trainer","Course Developer","Finance Officer","HR Officer","IT Administrator","Operations Manager","Marketing Coordinator","Student Support Officer","Other"];
+
+/**
+ * Normalize a real User record (role: 'team_member') into the shape the team UI
+ * components (TeamMemberCard / MemberPermissionsPanel) expect. Chiefly: derive a
+ * display `status` from is_active, and guarantee `id` + a `page_permissions` array.
+ */
+const toMember = (u) => ({
+  ...u,
+  id: u.id || u._id,
+  status: u.is_active === false ? "suspended" : "active",
+  page_permissions: u.page_permissions || [],
+});
+
 export default function AdminTeamManager() {
+  const { user: admin } = useAuth();
   const [tab, setTab] = useState("members");
   const [members, setMembers] = useState([]);
-  const [files, setFiles] = useState([]);
-  const [logs, setLogs] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [admin, setAdmin] = useState(null);
   const [showInvite, setShowInvite] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [jobRoleFilter, setJobRoleFilter] = useState("all");
-  const [catFilter, setCatFilter] = useState("all");
-  const [permissionsMember, setPermissionsMember] = useState(null); // member whose permissions are being viewed
+  const [permissionsMember, setPermissionsMember] = useState(null);
 
   const load = async () => {
     setLoading(true);
-    const [mems, fs, ls, me, envs] = await Promise.all([
-      base44.entities.TeamMember.list("-created_date", 200),
-      base44.entities.TeamFile.filter({ is_active: true }),
-      base44.entities.TeamActivityLog.list("-created_date", 100),
-      base44.auth.me(),
-      base44.entities.CourseEnrollment.list("-created_date", 500),
-    ]);
-    setMembers(mems);
-    setFiles(fs);
-    setLogs(ls);
-    setAdmin(me);
-    setEnrollments(envs);
-    setLoading(false);
+    try {
+      const [usersRes, envsRes] = await Promise.all([
+        apiClient.get("/users", { params: { role: "team_member", limit: 200 } }),
+        apiClient.get("/enrollments", { params: { limit: 500 } }),
+      ]);
+      const mems = (Array.isArray(usersRes.data?.data) ? usersRes.data.data : []).map(toMember);
+      setMembers(mems);
+      setEnrollments(Array.isArray(envsRes.data?.data) ? envsRes.data.data : []);
 
-    // If viewing a member's permissions, refresh their data too
-    if (permissionsMember) {
-      const updated = mems.find(m => m.id === permissionsMember.id);
-      if (updated) setPermissionsMember(updated);
+      // Keep the open permissions panel in sync with fresh data.
+      if (permissionsMember) {
+        const updated = mems.find(m => m.id === permissionsMember.id);
+        if (updated) setPermissionsMember(updated);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load team members.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => { load(); }, []);
 
   const stats = [
-    { label: "Total Members",   value: members.length,                                              icon: Users,      color: "text-blue-600 bg-blue-50" },
-    { label: "Active",          value: members.filter(m => m.status === "active").length,            icon: Shield,     color: "text-emerald-600 bg-emerald-50" },
-    { label: "Files Shared",    value: files.length,                                                 icon: FileText,   color: "text-amber-600 bg-amber-50" },
-    { label: "Enrolled Courses",value: [...new Set(enrollments.map(e => e.user_id))].length,         icon: TrendingUp, color: "text-purple-600 bg-purple-50" },
+    { label: "Total Members",    value: members.length,                                         icon: Users,      color: "text-blue-600 bg-blue-50" },
+    { label: "Active",           value: members.filter(m => m.status === "active").length,       icon: Shield,     color: "text-emerald-600 bg-emerald-50" },
+    { label: "Suspended",        value: members.filter(m => m.status !== "active").length,       icon: Shield,     color: "text-amber-600 bg-amber-50" },
+    { label: "Enrolled Students",value: [...new Set(enrollments.map(e => e.user_id))].length,     icon: TrendingUp, color: "text-purple-600 bg-purple-50" },
   ];
 
   const filteredMembers = members.filter(m => {
     const q = search.toLowerCase();
-    const matchSearch = !search || m.full_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q) || (m.job_role || "").toLowerCase().includes(q);
-    const matchRole    = roleFilter === "all" || m.role === roleFilter;
+    const matchSearch = !search || (m.full_name || "").toLowerCase().includes(q) || (m.email || "").toLowerCase().includes(q) || (m.job_role || "").toLowerCase().includes(q);
     const matchStatus  = statusFilter === "all" || m.status === statusFilter;
     const matchJobRole = jobRoleFilter === "all" || m.job_role === jobRoleFilter;
-    return matchSearch && matchRole && matchStatus && matchJobRole;
+    return matchSearch && matchStatus && matchJobRole;
   });
 
-  const JOB_ROLES = ["Compliance Officer","Consultant","Support Coordinator","Trainer","Course Developer","Finance Officer","HR Officer","IT Administrator","Operations Manager","Marketing Coordinator","Student Support Officer","Other"];
-
-  const filteredFiles = files.filter(f => {
-    const matchSearch = !search || f.file_name.toLowerCase().includes(search.toLowerCase());
-    const matchCat    = catFilter === "all" || f.category === catFilter;
-    return matchSearch && matchCat;
-  });
-
-  // If viewing member permissions, render that panel instead
+  // If viewing member permissions, render that panel instead.
   if (permissionsMember) {
     return (
       <MemberPermissionsPanel
         member={permissionsMember}
-        files={files}
         onBack={() => setPermissionsMember(null)}
         onRefresh={load}
       />
@@ -105,12 +102,9 @@ export default function AdminTeamManager() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-display font-bold text-ink text-lg">Team Management</h2>
-          <p className="text-xs text-slate-500">Manage team members, file access permissions, and activity</p>
+          <p className="text-xs text-slate-500">Invite team members and control which admin modules they can access</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setShowUpload(true)} variant="outline" className="gap-2 text-xs">
-            <Upload className="w-3.5 h-3.5" /> Upload File
-          </Button>
           <Button onClick={() => setShowInvite(true)} className="bg-harvest text-white hover:bg-harvest/90 gap-2 text-xs">
             <UserPlus className="w-3.5 h-3.5" /> Invite Team Member
           </Button>
@@ -161,26 +155,12 @@ export default function AdminTeamManager() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members…" className="pl-9 h-9 text-sm" />
                 </div>
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-36 h-9 text-sm"><SelectValue placeholder="All Roles" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="owner">Owner</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="team_member">Team Member</SelectItem>
-                  </SelectContent>
-                </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-36 h-9 text-sm"><SelectValue placeholder="All Statuses" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="invited">Invited</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="suspended">Suspended</SelectItem>
-                    <SelectItem value="blocked">Blocked</SelectItem>
-                    <SelectItem value="dismissed">Dismissed</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={jobRoleFilter} onValueChange={setJobRoleFilter}>
@@ -207,6 +187,7 @@ export default function AdminTeamManager() {
                     <TeamMemberCard
                       key={m.id}
                       member={m}
+                      currentAdminId={admin?.id || admin?._id}
                       onRefresh={load}
                       onViewPermissions={(member) => setPermissionsMember(member)}
                     />
@@ -216,61 +197,23 @@ export default function AdminTeamManager() {
             </div>
           )}
 
-          {/* File Library Tab */}
-          {tab === "files" && (
-            <div className="space-y-4">
-              <div className="flex gap-3 flex-wrap">
-                <div className="relative flex-1 min-w-48">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                  <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files…" className="pl-9 h-9 text-sm" />
-                </div>
-                <Select value={catFilter} onValueChange={setCatFilter}>
-                  <SelectTrigger className="w-40 h-9 text-sm"><SelectValue placeholder="All Categories" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {["policy","procedure","training","compliance","template","report","other"].map(c => (
-                      <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button onClick={() => setShowUpload(true)} className="bg-harvest text-white hover:bg-harvest/90 gap-2 text-xs h-9">
-                  <Upload className="w-3.5 h-3.5" /> Upload File
-                </Button>
-              </div>
-
-              {filteredFiles.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-border/50 p-14 text-center">
-                  <FolderOpen className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                  <p className="text-slate-500 font-semibold text-sm">No files uploaded yet</p>
-                  <Button onClick={() => setShowUpload(true)} className="mt-4 bg-harvest text-white hover:bg-harvest/90 gap-2 text-sm">
-                    <Upload className="w-4 h-4" /> Upload First File
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredFiles.map(f => (
-                    <TeamFileRow key={f.id} file={f} teamMembers={members} onRefresh={load} currentMemberRole="owner" />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Activity / Audit Log Tab */}
-          {tab === "activity" && (
-            <div className="bg-white rounded-2xl border border-border/50 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-bold text-ink text-sm">Audit Log</h3>
-                <span className="text-xs text-slate-400">{logs.length} entries</span>
-              </div>
-              <TeamActivityPanel logs={logs} />
+          {/* File Library + Audit Log tabs — not backed by an API yet. */}
+          {(tab === "files" || tab === "activity") && (
+            <div className="bg-white rounded-2xl border border-border/50 p-14 text-center">
+              {tab === "files" ? <FolderOpen className="w-10 h-10 text-slate-200 mx-auto mb-3" /> : <Activity className="w-10 h-10 text-slate-200 mx-auto mb-3" />}
+              <p className="text-slate-500 font-semibold text-sm">
+                {tab === "files" ? "Shared file library" : "Team audit log"} is not available yet
+              </p>
+              <p className="text-slate-400 text-xs mt-1 max-w-md mx-auto">
+                This feature needs a dedicated backend endpoint. Team member management and
+                module-access permissions are fully available on the Team Members tab.
+              </p>
             </div>
           )}
         </>
       )}
 
-      <InviteMemberModal open={showInvite} onClose={() => setShowInvite(false)} onInvited={load} admin={admin} />
-      <FileUploadModal open={showUpload} onClose={() => setShowUpload(false)} onUploaded={load} admin={admin} teamMembers={members} />
+      <InviteMemberModal open={showInvite} onClose={() => setShowInvite(false)} onInvited={load} />
     </div>
   );
 }

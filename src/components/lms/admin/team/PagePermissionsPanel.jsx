@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -8,7 +8,7 @@ import {
   Users, Clock, Award, Sparkles, Shield, FileText, Megaphone,
   BarChart3, DollarSign, CreditCard, Tag, Gift, Download,
   Inbox, LifeBuoy, Settings, Loader2, CheckCircle2, XCircle,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, Trophy, MessageSquare
 } from "lucide-react";
 
 // Must match the NAV_SECTIONS ids in LMSAdmin
@@ -76,6 +76,10 @@ export const PAGE_PERMISSION_GROUPS = [
       { id: "export",        label: "Export CSV",         icon: Download,   description: "Data exports" },
       { id: "requests",      label: "Student Requests",   icon: Inbox,      description: "Student-submitted requests" },
       { id: "support",       label: "Support Tickets",    icon: LifeBuoy,   description: "Help desk tickets" },
+      { id: "leaderboard",   label: "Leaderboard",        icon: Trophy,     description: "Student leaderboard" },
+      { id: "discussions",   label: "Discussion Moderation", icon: MessageSquare, description: "Moderate course discussions" },
+      { id: "documents",     label: "Document Verification", icon: FileText, description: "Verify student documents" },
+      { id: "ndis_intake",   label: "NDIS Intake Review", icon: ClipboardList, description: "Review NDIS intake forms" },
       { id: "settings",      label: "Settings",           icon: Settings,   description: "Platform settings" },
     ]
   }
@@ -89,39 +93,37 @@ export default function PagePermissionsPanel({ member, onRefresh }) {
   const granted = member.page_permissions || [];
   const grantedCount = granted.length;
   const totalCount = ALL_PAGE_IDS.length;
+  const memberId = member.id || member._id;
 
   const hasPage = (id) => granted.includes(id);
+
+  // Persist a new page_permissions array on the real User record.
+  const persist = async (newPerms, successMsg) => {
+    try {
+      await apiClient.patch(`/users/${memberId}`, { page_permissions: newPerms });
+      toast.success(successMsg);
+      onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update permissions.");
+    }
+  };
 
   const togglePage = async (id) => {
     setSaving(id);
     const newPerms = hasPage(id) ? granted.filter(x => x !== id) : [...granted, id];
-    await base44.entities.TeamMember.update(member.id, { page_permissions: newPerms });
-    await base44.entities.TeamActivityLog.create({
-      member_id: member.id,
-      member_name: member.full_name,
-      action: "permission_changed",
-      resource_name: id,
-      resource_type: "page",
-      details: `${hasPage(id) ? "Revoked" : "Granted"} page access to "${id}" for ${member.full_name}`,
-    });
-    toast.success(hasPage(id) ? "Page access revoked" : "Page access granted");
-    onRefresh();
+    await persist(newPerms, hasPage(id) ? "Page access revoked" : "Page access granted");
     setSaving(false);
   };
 
   const grantAll = async () => {
     setSaving("bulk");
-    await base44.entities.TeamMember.update(member.id, { page_permissions: [...ALL_PAGE_IDS] });
-    toast.success("All pages granted");
-    onRefresh();
+    await persist([...ALL_PAGE_IDS], "All pages granted");
     setSaving(false);
   };
 
   const revokeAll = async () => {
     setSaving("bulk");
-    await base44.entities.TeamMember.update(member.id, { page_permissions: [] });
-    toast.success("All page access revoked");
-    onRefresh();
+    await persist([], "All page access revoked");
     setSaving(false);
   };
 
@@ -132,9 +134,7 @@ export default function PagePermissionsPanel({ member, onRefresh }) {
     const newPerms = allGranted
       ? granted.filter(id => !groupIds.includes(id))
       : [...new Set([...granted, ...groupIds])];
-    await base44.entities.TeamMember.update(member.id, { page_permissions: newPerms });
-    toast.success(allGranted ? `"${group.label}" section revoked` : `"${group.label}" section granted`);
-    onRefresh();
+    await persist(newPerms, allGranted ? `"${group.label}" section revoked` : `"${group.label}" section granted`);
     setSaving(false);
   };
 

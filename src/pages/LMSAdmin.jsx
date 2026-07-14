@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { allowedPageIdsFor } from "@/lib/permissions";
 import AdminCourseManager from "@/components/lms/admin/AdminCourseManager";
 import AdminStudentManager from "@/components/lms/admin/AdminStudentManager";
 import AdminAnalytics from "@/components/lms/admin/AdminAnalytics";
@@ -170,18 +171,20 @@ export default function LMSAdmin() {
       setEnrollments(Array.isArray(envsRes.data?.data) ? envsRes.data.data : []);
       setQuizAttempts(Array.isArray(attemptsRes.data?.data) ? attemptsRes.data.data : []);
 
-      // Apply page-permission restrictions for team_member role
+      // Apply page-permission restrictions for team_member role.
+      // `allowedPageIdsFor` returns null for admins (unrestricted) and, for team
+      // members, the baseline pages + their granted page_permissions — so a
+      // member with ZERO permissions is correctly restricted to the dashboard
+      // (previously an empty list left allowedPageIds=null, i.e. full access).
       if (user && user.role === 'team_member') {
-        const perms = user.page_permissions || [];
-        if (perms.length > 0) {
-          setAllowedPageIds(perms);
-          setActiveTab(prev => perms.includes(prev) ? prev : (perms[0] || 'dashboard'));
-        }
-        // If is_active is false, log out
+        // Suspended team members shouldn't reach the panel at all.
         if (user.is_active === false) {
           logout();
           return;
         }
+        const allowed = allowedPageIdsFor(user); // string[] for team_member
+        setAllowedPageIds(allowed);
+        setActiveTab(prev => allowed.includes(prev) ? prev : (allowed[0] || 'dashboard'));
       }
     } catch (err) {
       console.error('Failed to load LMS Admin data:', err);
@@ -240,7 +243,7 @@ export default function LMSAdmin() {
               <p className="text-xs text-slate_mist mt-0.5">SOL Academy — LMS Admin Panel</p>
             </div>
             <div className="flex items-center gap-2">
-              <NotificationCenter onSelectTab={setActiveTab} />
+              <NotificationCenter onSelectTab={setActiveTab} className="" />
               <Button onClick={() => load()} variant="outline" size="sm" className="gap-2 text-xs">
                 <RefreshCw className="w-3.5 h-3.5" /> Refresh
               </Button>

@@ -47,10 +47,23 @@ const userSchema = new Schema(
     avatar_url: { type: String, trim: true },
 
     // For team_member accounts: which admin pages they may access.
+    // This is the single source of truth for module-level RBAC. Each string is
+    // a page id from the frontend NAV_SECTIONS (e.g. 'students', 'courses').
+    // The invite UI groups these into coarse buckets (see src/lib/permissions.js)
+    // but always persists the expanded page-id array here.
     page_permissions: {
       type: [String],
       default: [],
     },
+
+    // --- Team-member profile (only meaningful when role === 'team_member') ----
+    // Optional descriptive fields shown in the Team management UI. They carry no
+    // authorization weight — access is governed solely by role + page_permissions.
+    job_title: { type: String, trim: true, maxlength: 120 },
+    department: { type: String, trim: true, maxlength: 120 },
+    job_role: { type: String, trim: true, maxlength: 120 },
+    // full_name / _id of the admin who provisioned this team member (audit trail).
+    invited_by: { type: String, trim: true },
 
     is_active: { type: Boolean, default: true },
     status: {
