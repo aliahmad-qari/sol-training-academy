@@ -7,7 +7,7 @@ import {
   HelpCircle, LogOut, TrendingUp, Eye, RefreshCw, Home,
   Layers, FileText, Megaphone, CreditCard, ChevronRight, ClipboardList, LifeBuoy,
   Gift, DollarSign, Tag, Clock, Download, Users2, Sparkles, Inbox, Shield, Lock,
-  Trophy, MessageSquare
+  Trophy, MessageSquare, CheckCircle2, ShieldCheck, Briefcase, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -82,6 +82,123 @@ const NAV_SECTIONS = [
     { id: "settings",      label: "Settings",           icon: Settings },
   ]},
 ];
+
+// Flat id → label lookup used by the welcome popup
+const ALL_PAGE_LABELS = Object.fromEntries(
+  NAV_SECTIONS.flatMap(s => s.items).map(item => [item.id, { label: item.label, icon: item.icon }])
+);
+
+// ── Team Member Welcome Popup ─────────────────────────────────────────────────
+function TeamWelcomePopup({ user, allowedPageIds, onDismiss }) {
+  // Don't count baseline-only (dashboard) as a "real" permission
+  const grantedPages = (allowedPageIds || []).filter(id => id !== "dashboard");
+  const firstName = (user?.full_name || "there").split(" ")[0];
+  const jobRole = user?.job_role || user?.job_title || "Team Member";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ type: "spring", duration: 0.4, bounce: 0.2 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+      >
+        {/* Header band */}
+        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-6 relative overflow-hidden">
+          {/* Decorative ring */}
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-harvest/10 border border-harvest/20" />
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/5 border border-white/10" />
+
+          <div className="relative flex items-center gap-4">
+            {/* Avatar */}
+            <div className="w-14 h-14 rounded-2xl bg-harvest flex items-center justify-center flex-shrink-0 shadow-lg">
+              <span className="text-white font-display font-bold text-xl">
+                {firstName[0].toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-white/60 text-xs font-medium tracking-wider uppercase mb-0.5">Welcome back</p>
+              <h2 className="text-white font-display font-bold text-xl leading-tight">{firstName}</h2>
+              <div className="flex items-center gap-1.5 mt-1">
+                <Briefcase className="w-3 h-3 text-harvest" />
+                <span className="text-harvest text-xs font-semibold">{jobRole}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+          {/* Organisation badge */}
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-display font-bold text-sm">S</span>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 leading-none">You are a team member of</p>
+              <p className="text-sm font-bold text-ink mt-0.5">SOL Training Academy</p>
+            </div>
+            <ShieldCheck className="w-4 h-4 text-emerald-500 ml-auto flex-shrink-0" />
+          </div>
+
+          {/* Notifications reminder */}
+          <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            <Bell className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Your notifications are <span className="font-semibold">live</span> — check the bell icon in the top bar to stay up to date on student activity and platform events.
+            </p>
+          </div>
+
+          {/* Granted modules */}
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              {grantedPages.length > 0
+                ? `You have access to ${grantedPages.length} module${grantedPages.length !== 1 ? "s" : ""}`
+                : "Dashboard access only"}
+            </p>
+
+            {grantedPages.length > 0 ? (
+              <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-0.5">
+                {grantedPages.map(id => {
+                  const meta = ALL_PAGE_LABELS[id];
+                  if (!meta) return null;
+                  const Icon = meta.icon;
+                  return (
+                    <div key={id} className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-2">
+                      <Icon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span className="text-xs font-medium text-emerald-800 leading-tight truncate">{meta.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+                Your administrator hasn't granted any module access yet. Contact them to request permissions.
+              </p>
+            )}
+          </div>
+
+          {/* Restriction note */}
+          <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+            Modules not listed above are hidden from your sidebar. Contact your administrator to update your access.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-5">
+          <button
+            onClick={onDismiss}
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl py-3 transition-colors"
+          >
+            Got it — Take me to the dashboard
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 function AdminSidebar({ activeTab, setActiveTab, collapsed, setCollapsed, allowedPageIds, onLogout }) {
   const isAllowed = (id) => allowedPageIds === null || allowedPageIds.includes(id);
@@ -158,6 +275,8 @@ export default function LMSAdmin() {
   const [collapsed,      setCollapsed]      = useState(false);
   // null = full admin access, array = restricted to these page IDs
   const [allowedPageIds, setAllowedPageIds] = useState(null);
+  // Show the team-member welcome popup once per session
+  const [showWelcome,    setShowWelcome]    = useState(false);
 
   const load = async (showLoader = false) => {
     if (showLoader) setLoading(true);
@@ -185,6 +304,12 @@ export default function LMSAdmin() {
         const allowed = allowedPageIdsFor(user); // string[] for team_member
         setAllowedPageIds(allowed);
         setActiveTab(prev => allowed.includes(prev) ? prev : (allowed[0] || 'dashboard'));
+
+        // Show the welcome popup once per browser session
+        const sessionKey = `team_welcome_shown_${user._id || user.id}`;
+        if (!sessionStorage.getItem(sessionKey)) {
+          setShowWelcome(true);
+        }
       }
     } catch (err) {
       console.error('Failed to load LMS Admin data:', err);
@@ -228,6 +353,21 @@ export default function LMSAdmin() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Team member welcome popup — shown once per session */}
+      <AnimatePresence>
+        {showWelcome && user?.role === 'team_member' && (
+          <TeamWelcomePopup
+            user={user}
+            allowedPageIds={allowedPageIds}
+            onDismiss={() => {
+              const sessionKey = `team_welcome_shown_${user._id || user.id}`;
+              sessionStorage.setItem(sessionKey, "1");
+              setShowWelcome(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <AdminSidebar
         activeTab={activeTab} setActiveTab={setActiveTab}
         collapsed={collapsed} setCollapsed={setCollapsed}

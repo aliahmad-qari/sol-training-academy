@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Users, Award, HelpCircle, TrendingUp, Video, Layers, CheckCircle, Activity, Clock, FileText, BarChart3, AlertCircle, ShieldCheck, ChevronRight, Building2, Mail } from "lucide-react";
+import { BookOpen, Users, Award, HelpCircle, TrendingUp, Video, Layers, CheckCircle, Activity, Clock, FileText, BarChart3, AlertCircle, ShieldCheck, ChevronRight, Building2, Mail, Users2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import apiClient from "@/api/apiClient";
 import { format } from "date-fns";
@@ -11,19 +11,25 @@ const PIE_COLORS = ["#D97706", "#3B82F6", "#10B981", "#8B5CF6"];
 export default function AdminOverview({ courses, enrollments, quizAttempts, setActiveTab }) {
   const [pendingAssignments, setPendingAssignments] = useState(0);
   const [pendingDocs, setPendingDocs] = useState([]);
+  const [teamCount, setTeamCount] = useState(null); // null = loading
 
   useEffect(() => {
-    // GET /api/v1/submissions?status=submitted  (admin sees all)
+    // Pending assignment submissions
     apiClient.get('/submissions?status=submitted&limit=200')
       .then(res => setPendingAssignments((res.data?.data ?? []).length))
       .catch(() => {});
-    // GET /api/v1/admin/overview returns pending doc count — or fall back to 0
+    // Admin overview (pending docs — not yet exposed)
     apiClient.get('/admin/overview')
-      .then(res => {
-        // If backend exposes pending docs count in overview use it, otherwise skip
-        setPendingDocs([]); // Document verification list not yet exposed via API
-      })
+      .then(() => setPendingDocs([]))
       .catch(() => {});
+    // Team member count
+    apiClient.get('/users?role=team_member&limit=1')
+      .then(res => {
+        // Use pagination total if available, otherwise count the returned array
+        const total = res.data?.meta?.total ?? res.data?.meta?.count ?? (Array.isArray(res.data?.data) ? res.data.data.length : 0);
+        setTeamCount(total);
+      })
+      .catch(() => setTeamCount(0));
   }, []);
 
   const uniqueStudents  = [...new Set(enrollments.map(e => e.user_id))].length;
@@ -39,14 +45,15 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
   }).length;
 
   const kpis = [
-    { label: "Total Students",     value: uniqueStudents,     icon: Users,      color: "text-blue-600 bg-blue-50 border-blue-100",      tab: "students" },
-    { label: "Active Students",    value: activeStudents,     icon: Activity,   color: "text-green-600 bg-green-50 border-green-100",    tab: "students" },
-    { label: "New Enrollments",    value: newEnrollments,     icon: Layers,     color: "text-purple-600 bg-purple-50 border-purple-100", tab: "students" },
-    { label: "Completion Rate",    value: `${completionRate}%`,icon: BarChart3, color: "text-harvest bg-harvest/10 border-harvest/20",   tab: "analytics" },
-    { label: "Certificates Issued",value: certs,              icon: Award,      color: "text-emerald-600 bg-emerald-50 border-emerald-100",tab: "certificates" },
-    { label: "Pending Assignments",value: pendingAssignments, icon: FileText,   color: "text-amber-600 bg-amber-50 border-amber-100",    tab: "gradebook" },
-    { label: "Quiz Attempts",      value: quizAttempts.length,icon: HelpCircle, color: "text-rose-600 bg-rose-50 border-rose-100",       tab: "analytics" },
-    { label: "Quiz Pass Rate",     value: `${passRate}%`,     icon: TrendingUp, color: "text-teal-600 bg-teal-50 border-teal-100",       tab: "analytics" },
+    { label: "Total Students",     value: uniqueStudents,               icon: Users,      color: "text-blue-600 bg-blue-50 border-blue-100",        tab: "students" },
+    { label: "Active Students",    value: activeStudents,               icon: Activity,   color: "text-green-600 bg-green-50 border-green-100",      tab: "students" },
+    { label: "New Enrollments",    value: newEnrollments,               icon: Layers,     color: "text-purple-600 bg-purple-50 border-purple-100",   tab: "students" },
+    { label: "Completion Rate",    value: `${completionRate}%`,         icon: BarChart3,  color: "text-harvest bg-harvest/10 border-harvest/20",     tab: "analytics" },
+    { label: "Certificates Issued",value: certs,                        icon: Award,      color: "text-emerald-600 bg-emerald-50 border-emerald-100",tab: "certificates" },
+    { label: "Pending Assignments",value: pendingAssignments,           icon: FileText,   color: "text-amber-600 bg-amber-50 border-amber-100",      tab: "gradebook" },
+    { label: "Quiz Attempts",      value: quizAttempts.length,          icon: HelpCircle, color: "text-rose-600 bg-rose-50 border-rose-100",         tab: "analytics" },
+    { label: "Quiz Pass Rate",     value: `${passRate}%`,               icon: TrendingUp, color: "text-teal-600 bg-teal-50 border-teal-100",         tab: "analytics" },
+    { label: "Team Members",       value: teamCount === null ? "…" : teamCount, icon: Users2, color: "text-violet-600 bg-violet-50 border-violet-100", tab: "team" },
   ];
 
   // Level distribution for pie
@@ -90,8 +97,8 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-3">
-        {kpis.slice(0, 8).map((k, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        {kpis.map((k, i) => (
           <motion.button key={k.label}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             onClick={() => setActiveTab(k.tab)}
