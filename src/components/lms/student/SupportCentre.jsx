@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import {
   LifeBuoy, Mail, Phone, MessageSquare, ChevronDown, ChevronUp,
-  Send, CheckCircle, Plus, Clock, AlertCircle, X, User
+  Send, Plus, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, RefreshCw, Clock, CheckCircle2, AlertCircle, Eye,
+  Search, RefreshCw, CheckCircle2, AlertCircle,
   Phone, Mail, Building2, User, MapPin, FileText, Tag, Users,
   ChevronRight, X, Calendar, DollarSign, Layers
 } from "lucide-react";

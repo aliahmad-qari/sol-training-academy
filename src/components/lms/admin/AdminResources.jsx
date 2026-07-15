@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileText, Upload, Trash2, Download, Search, Plus, File, BookOpen, Shield, ExternalLink } from "lucide-react";
+import { FileText, Upload, Trash2, Download, Search, File, BookOpen, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

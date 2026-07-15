@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, ChevronRight, CheckCircle, Play, HelpCircle, BookOpen, FileText,
-  Menu, X, Clock, TrendingUp, LayoutGrid, ChevronDown, ChevronUp, Award
+  ChevronLeft, ChevronRight, CheckCircle,
+  Menu, Clock, TrendingUp, LayoutGrid, ChevronDown, ChevronUp, Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoPlayer from "@/components/lms/VideoPlayer";
@@ -132,24 +132,24 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
   return (
     <div className="flex flex-col h-full">
       {/* Topic header bar */}
-      <div className="px-6 py-4 border-b border-white/10 flex-shrink-0">
-        <div className="flex items-center gap-2 mb-1">
-          {mod && <span className="text-white/30 text-xs">{mod.title}</span>}
+      <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          {mod && <span className="text-white/30 text-xs truncate max-w-[50%]">{mod.title}</span>}
           <span className="text-white/20 text-xs">›</span>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${tc.bg} ${tc.textColor}`}>
             {tc.icon} {tc.label}
           </span>
         </div>
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-white font-display font-bold text-xl leading-tight">{topic.title}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-white font-display font-bold text-lg sm:text-xl leading-tight min-w-0">{topic.title}</h1>
           <div className="text-white/30 text-xs flex-shrink-0">
-            {topicIndexInModule}/{modTopics.length} in module
+            {topicIndexInModule}/{modTopics.length}<span className="hidden sm:inline"> in module</span>
           </div>
         </div>
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
         <AnimatePresence mode="wait">
           <motion.div key={tid(topic)}
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -189,10 +189,10 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
       </div>
 
       {/* Navigation Footer */}
-      <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between gap-3 flex-shrink-0 bg-slate-950/50">
+      <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-white/10 flex items-center justify-between gap-2 sm:gap-3 flex-shrink-0 bg-slate-950/50">
         <Button variant="outline" onClick={onPrev} disabled={!hasPrev}
-          className="gap-2 text-white border-white/20 hover:bg-white/10 disabled:opacity-30">
-          <ChevronLeft className="w-4 h-4" /> Previous
+          className="gap-2 text-white border-white/20 hover:bg-white/10 disabled:opacity-30 px-3 sm:px-4">
+          <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Previous</span>
         </Button>
 
         <div className="flex items-center gap-2 text-white/30 text-xs">
@@ -201,8 +201,8 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
         </div>
 
         <Button onClick={onNext} disabled={!hasNext}
-          className="gap-2 bg-harvest hover:bg-harvest/90 text-white disabled:opacity-30">
-          Next <ChevronRight className="w-4 h-4" />
+          className="gap-2 bg-harvest hover:bg-harvest/90 text-white disabled:opacity-30 px-3 sm:px-4">
+          <span className="hidden sm:inline">Next</span> <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
     </div>
@@ -283,14 +283,23 @@ export default function CoursePlayer({ enrollment, course, modules, topics, user
       </div>
 
       {/* ── Body ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile backdrop — tap to dismiss the drawer */}
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="absolute inset-0 z-30 bg-black/50 md:hidden"
+            aria-hidden="true"
+          />
+        )}
         {/* Sidebar */}
         <AnimatePresence>
           {sidebarOpen && (
             <motion.aside
               initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-              className="bg-slate-900 border-r border-white/10 overflow-hidden flex-shrink-0 flex flex-col"
+              className="bg-slate-900 border-r border-white/10 overflow-hidden flex-shrink-0 flex flex-col
+                absolute inset-y-0 left-0 z-40 max-w-[85vw] md:relative md:inset-auto md:z-auto md:max-w-none"
               style={{ width: 280 }}>
               <CourseSidebar
                 modules={modules} topics={topics} enrollment={enrollment}

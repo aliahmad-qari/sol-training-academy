@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Users, Award, HelpCircle, TrendingUp, Video, Layers, CheckCircle, Activity, Clock, FileText, BarChart3, AlertCircle, ShieldCheck, ChevronRight, Building2, Mail, Users2 } from "lucide-react";
+import { Users, Award, HelpCircle, TrendingUp, Layers, Activity, Clock, FileText, BarChart3, ShieldCheck, ChevronRight, Users2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import apiClient from "@/api/apiClient";
 import { format } from "date-fns";

@@ -117,68 +117,68 @@ export default function CertificateViewer({ enrollment, user }) {
       <div ref={certRef} className="relative bg-white" style={{ aspectRatio: "1.413" }}>
         {/* Dark blue header with gold accent */}
         <div className="absolute top-0 left-0 right-0 h-[26%] bg-gradient-to-r from-[#003d7a] to-[#003d7a] overflow-hidden">
-          <div className="absolute -right-12 -top-12 w-64 h-64 bg-[#d4af37] transform rotate-45 opacity-30" />
-          <div className="relative z-10 px-12 pt-6">
-            <p className="text-white text-sm font-bold">SOL BUSINESS CONSULTANT</p>
-            <p className="text-white/80 text-xs">Australian NDIS Training Academy</p>
+          <div className="absolute -right-12 -top-12 w-32 h-32 sm:w-64 sm:h-64 bg-[#d4af37] transform rotate-45 opacity-30" />
+          <div className="relative z-10 px-4 pt-2 sm:px-12 sm:pt-6">
+            <p className="text-white text-[10px] sm:text-sm font-bold">SOL BUSINESS CONSULTANT</p>
+            <p className="text-white/80 text-[8px] sm:text-xs">Australian NDIS Training Academy</p>
           </div>
         </div>
 
         {/* Main content area */}
-        <div className="relative h-full flex flex-col items-center justify-center px-16 pt-20 pb-12">
-          <h1 className="text-6xl font-bold text-[#003d7a] mb-1">CERTIFICATE</h1>
-          <p className="text-2xl font-serif text-[#d4af37] mb-6">OF ACHIEVEMENT</p>
+        <div className="relative h-full flex flex-col items-center justify-center px-4 pt-12 pb-4 sm:px-16 sm:pt-20 sm:pb-12">
+          <h1 className="text-2xl sm:text-6xl font-bold text-[#003d7a] mb-0.5 sm:mb-1">CERTIFICATE</h1>
+          <p className="text-sm sm:text-2xl font-serif text-[#d4af37] mb-2 sm:mb-6">OF ACHIEVEMENT</p>
 
-          <div className="flex items-center justify-center gap-8 w-full mb-8">
-            <div className="flex-1 h-1" style={{ backgroundColor: "#003d7a" }} />
-            <span className="text-[#d4af37] text-2xl">●</span>
-            <div className="flex-1 h-1" style={{ backgroundColor: "#003d7a" }} />
+          <div className="flex items-center justify-center gap-3 sm:gap-8 w-full mb-3 sm:mb-8">
+            <div className="flex-1 h-0.5 sm:h-1" style={{ backgroundColor: "#003d7a" }} />
+            <span className="text-[#d4af37] text-sm sm:text-2xl">●</span>
+            <div className="flex-1 h-0.5 sm:h-1" style={{ backgroundColor: "#003d7a" }} />
           </div>
 
-          <p className="text-slate-600 text-sm mb-2 tracking-wide">THIS CERTIFICATE IS PROUDLY PRESENTED TO</p>
-          <p className="text-4xl font-bold text-[#003d7a] mb-2 uppercase tracking-wide">{studentName}</p>
-          <div className="w-64 h-1 mb-6" style={{ backgroundColor: "#003d7a" }} />
+          <p className="text-slate-600 text-[8px] sm:text-sm mb-1 sm:mb-2 tracking-wide text-center">THIS CERTIFICATE IS PROUDLY PRESENTED TO</p>
+          <p className="text-lg sm:text-4xl font-bold text-[#003d7a] mb-1 sm:mb-2 uppercase tracking-wide text-center">{studentName}</p>
+          <div className="w-32 sm:w-64 h-0.5 sm:h-1 mb-2 sm:mb-6" style={{ backgroundColor: "#003d7a" }} />
 
-          <p className="text-center text-slate-700 text-sm mb-2">
+          <p className="text-center text-slate-700 text-[9px] sm:text-sm mb-1 sm:mb-2">
             For successful completion of: <span className="font-semibold">{enrollment.course_title || "NDIS Training Course"}</span>
           </p>
-          <p className="text-center text-slate-600 text-xs mb-4">
+          <p className="text-center text-slate-600 text-[8px] sm:text-xs mb-1 sm:mb-4">
             Level: {level.name} | Date: {completedDate}
           </p>
-          <p className="text-center text-slate-600 text-xs mb-6">Certificate No: {certNum}</p>
+          <p className="text-center text-slate-600 text-[8px] sm:text-xs mb-2 sm:mb-6">Certificate No: {certNum}</p>
 
           {/* Signature area */}
-          <div className="w-full flex justify-between items-end px-4 mt-6 pt-4 border-t border-slate-300">
+          <div className="w-full flex justify-between items-end px-2 sm:px-4 mt-2 sm:mt-6 pt-2 sm:pt-4 border-t border-slate-300">
             <div className="text-center">
-              <div className="w-24 h-px mb-2" style={{ backgroundColor: "#003d7a" }} />
-              <p className="font-semibold text-[#003d7a] text-sm">Sol Mwangi</p>
-              <p className="text-slate-600 text-xs">Director</p>
+              <div className="w-12 sm:w-24 h-px mb-1 sm:mb-2" style={{ backgroundColor: "#003d7a" }} />
+              <p className="font-semibold text-[#003d7a] text-[9px] sm:text-sm">Sol Mwangi</p>
+              <p className="text-slate-600 text-[8px] sm:text-xs">Director</p>
             </div>
             <div className="text-center">
-              <div className="w-24 h-px mb-2" style={{ backgroundColor: "#003d7a" }} />
-              <p className="font-semibold text-[#003d7a] text-sm">Verified</p>
-              <p className="text-slate-600 text-xs">Official</p>
+              <div className="w-12 sm:w-24 h-px mb-1 sm:mb-2" style={{ backgroundColor: "#003d7a" }} />
+              <p className="font-semibold text-[#003d7a] text-[9px] sm:text-sm">Verified</p>
+              <p className="text-slate-600 text-[8px] sm:text-xs">Official</p>
             </div>
           </div>
 
           {/* Footer */}
-          <p className="text-center text-xs text-slate-500 mt-6 px-4">
+          <p className="text-center text-[7px] sm:text-xs text-slate-500 mt-2 sm:mt-6 px-2 sm:px-4">
             www.solbusinessconsultant.com.au | ABN: 20 662 022 522
           </p>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-3">
-        <Button onClick={handleDownloadPDF} className="gap-2 text-white bg-[#003d7a] hover:bg-[#002651]">
+      <div className="px-4 py-4 sm:px-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+        <Button onClick={handleDownloadPDF} className="w-full sm:w-auto gap-2 text-white bg-[#003d7a] hover:bg-[#002651]">
           <Download className="w-4 h-4" /> Download PDF
         </Button>
-        <Button variant="outline" className="gap-2" onClick={() => {
+        <Button variant="outline" className="w-full sm:w-auto gap-2" onClick={() => {
           navigator.clipboard.writeText(`${studentName} | ${enrollment.course_title} | ${level.name} Level | Cert No: ${certNum} | ${completedDate}`);
         }}>
           <Share2 className="w-4 h-4" /> Copy to Clipboard
         </Button>
-        <div className="flex items-center gap-1.5 ml-auto text-xs font-medium text-[#003d7a]">
+        <div className="flex items-center gap-1.5 sm:ml-auto text-xs font-medium text-[#003d7a]">
           <Shield className="w-3.5 h-3.5" />
           Officially Certified
         </div>

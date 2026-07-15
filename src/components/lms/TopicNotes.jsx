@@ -77,7 +77,7 @@ export default function TopicNotes({ userId, courseId, courseTitle, topicId, top
       {/* Header */}
       <button
         onClick={() => setCollapsed(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/5 transition-colors">
+        className="w-full flex items-center justify-between px-4 py-3 sm:px-5 sm:py-3.5 hover:bg-white/5 transition-colors">
         <div className="flex items-center gap-2.5">
           <StickyNote className="w-4 h-4 text-harvest" />
           <span className="text-sm font-semibold text-white">My Notes</span>
@@ -94,7 +94,7 @@ export default function TopicNotes({ userId, courseId, courseTitle, topicId, top
 
       {/* Body */}
       {!collapsed && (
-        <div className="px-5 pb-5">
+        <div className="px-4 pb-4 sm:px-5 sm:pb-5">
           {loading ? (
             <div className="flex items-center gap-2 py-4 text-white/30 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading notes…

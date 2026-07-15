@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import {
-  HelpCircle, Search, Edit2, Trash2, Plus, Save, X, CheckCircle, BarChart3, Sparkles
+  HelpCircle, Search, Edit2, Trash2, Plus, Save, X, CheckCircle, Sparkles
 } from "lucide-react";
 import AIQuizGenerator from "@/components/lms/admin/AIQuizGenerator";
 import AIQuizQuestionsPanel from "@/components/lms/admin/AIQuizQuestionsPanel";

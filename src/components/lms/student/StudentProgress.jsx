@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TrendingUp, CheckCircle, Clock, BookOpen, BarChart3, Target } from "lucide-react";
+import { TrendingUp, CheckCircle, Clock, BookOpen } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import ProgressRing from "@/components/lms/ProgressRing";
 import CPDHoursTracker from "@/components/lms/student/CPDHoursTracker";
@@ -14,9 +14,9 @@ export default function StudentProgress({ enrollments, courses }) {
   const [tab, setTab] = useState("progress");
   if (enrollments.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-sm">
-        <TrendingUp className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-        <h3 className="font-display font-bold text-xl text-[#0d2348] mb-2">No progress to show yet</h3>
+      <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-16 text-center shadow-sm">
+        <TrendingUp className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-4" />
+        <h3 className="font-display font-bold text-lg sm:text-xl text-[#0d2348] mb-2">No progress to show yet</h3>
         <p className="text-slate-500 text-sm">Enrol in a course and start learning to track your progress here.</p>
       </div>
     );
@@ -38,10 +38,10 @@ export default function StudentProgress({ enrollments, courses }) {
   return (
     <div className="space-y-5">
       {/* Tab toggle */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-full sm:w-fit">
         {[{ id: "progress", label: "Learning Progress" }, { id: "cpd", label: "CPD Hours Tracker" }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.id ? "bg-white shadow text-ink" : "text-slate-500 hover:text-ink"}`}>
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${tab === t.id ? "bg-white shadow text-ink" : "text-slate-500 hover:text-ink"}`}>
             {t.label}
           </button>
         ))}
@@ -57,7 +57,7 @@ export default function StudentProgress({ enrollments, courses }) {
           { label: "Lessons Completed", value: totalDone,         icon: CheckCircle, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
           { label: "Courses Finished",  value: completed,         icon: BookOpen,    color: "text-amber-600 bg-amber-50 border-amber-100" },
         ].map(s => (
-          <div key={s.label} className={`bg-white rounded-2xl border p-5 flex items-center gap-4 shadow-sm ${s.color.split(" ").slice(2).join(" ")}`}>
+          <div key={s.label} className={`bg-white rounded-2xl border p-4 sm:p-5 flex items-center gap-4 shadow-sm ${s.color.split(" ").slice(2).join(" ")}`}>
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color.split(" ").slice(0, 2).join(" ")}`}>
               <s.icon className="w-5 h-5" />
             </div>
@@ -92,9 +92,9 @@ export default function StudentProgress({ enrollments, courses }) {
           const cfg       = LEVEL_CONFIG[enr.course_level] || LEVEL_CONFIG.level1;
           const topicsDone = enr.completed_topic_ids?.length || 0;
           return (
-            <div key={enr.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div key={enr.id} className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex-1">
+                <div className="flex-1 order-2 sm:order-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${cfg.pill}`}>{cfg.label}</span>
                     {enr.status === "completed" && (
@@ -133,7 +133,7 @@ export default function StudentProgress({ enrollments, courses }) {
                     </div>
                   </div>
                 </div>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 self-center order-1 sm:order-2">
                   <ProgressRing progress={enr.progress_percent || 0} size={70} />
                 </div>
               </div>

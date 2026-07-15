@@ -164,12 +164,12 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
 
   if (isCompleted && !submitted) {
     return (
-      <div className="text-center py-16">
+      <div className="text-center py-10 sm:py-16 px-4">
         <Trophy className="w-16 h-16 text-harvest mx-auto mb-4" />
-        <h3 className="text-white font-display font-bold text-2xl mb-2">Quiz Passed!</h3>
+        <h3 className="text-white font-display font-bold text-xl sm:text-2xl mb-2">Quiz Passed!</h3>
         <p className="text-white/60">You have already completed this quiz.</p>
         {onNext && (
-          <Button onClick={onNext} className="mt-6 gap-2 bg-harvest hover:bg-harvest/90 text-white px-8">
+          <Button onClick={onNext} className="w-full sm:w-auto mt-6 gap-2 bg-harvest hover:bg-harvest/90 text-white px-8">
             <ChevronRight className="w-4 h-4" /> Continue to Next Topic
           </Button>
         )}
@@ -214,12 +214,12 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
 
   if (!quizStarted && !submitted) {
     return (
-      <div className="bg-white/5 rounded-2xl p-10 text-center space-y-6">
+      <div className="bg-white/5 rounded-2xl p-6 sm:p-10 text-center space-y-6">
         <div>
           <div className="w-16 h-16 rounded-2xl bg-harvest/20 flex items-center justify-center mx-auto mb-4">
             <HelpCircleIcon className="w-8 h-8 text-harvest" />
           </div>
-          <h2 className="text-white font-display font-bold text-2xl mb-2">{topic.title}</h2>
+          <h2 className="text-white font-display font-bold text-xl sm:text-2xl mb-2">{topic.title}</h2>
           <p className="text-white/50 text-sm">Read the details carefully before starting.</p>
         </div>
 
@@ -257,7 +257,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
 
         <Button
           onClick={() => setQuizStarted(true)}
-          className="gap-2 bg-harvest hover:bg-harvest/90 text-white px-10 py-6 text-base font-display font-semibold">
+          className="w-full sm:w-auto gap-2 bg-harvest hover:bg-harvest/90 text-white px-10 py-6 text-base font-display font-semibold">
           <Play className="w-5 h-5" /> Start Quiz
         </Button>
       </div>
@@ -267,8 +267,8 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h2 className="text-white font-display font-bold text-xl">{topic.title}</h2>
+        <div className="min-w-0">
+          <h2 className="text-white font-display font-bold text-lg sm:text-xl">{topic.title}</h2>
           <p className="text-white/40 text-xs mt-0.5">
             {questions.length} question{questions.length !== 1 ? "s" : ""} / {grandTotal} total marks / {passingMarks} marks to pass ({passingPercent}%)
             {topic.time_limit_mins ? ` / ${topic.time_limit_mins} min limit` : ""}
@@ -348,7 +348,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
           };
 
           return (
-            <div key={qIdx} className={`rounded-2xl p-5 transition-all ${
+            <div key={qIdx} className={`rounded-2xl p-4 sm:p-5 transition-all ${
               submitted
                 ? (isCorrect ? "bg-emerald-500/10 border border-emerald-400/30" : (rv ? "bg-red-500/10 border border-red-400/30" : "bg-white/5"))
                 : "bg-white/5"
@@ -471,19 +471,19 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
           {submitting ? "Submitting..." : `Submit Quiz (${answeredCount}/${questions.length} answered)`}
         </Button>
       ) : (
-        <div className={`rounded-2xl p-6 ${passed ? "bg-green-500/10 border border-green-400/30" : "bg-red-500/10 border border-red-400/30"}`}>
+        <div className={`rounded-2xl p-4 sm:p-6 ${passed ? "bg-green-500/10 border border-green-400/30" : "bg-red-500/10 border border-red-400/30"}`}>
           <div className="text-center mb-4">
             {passed ? (
               <Trophy className="w-10 h-10 text-green-400 mx-auto mb-2" />
             ) : (
               <XCircle className="w-10 h-10 text-red-400 mx-auto mb-2" />
             )}
-            <p className={`font-display font-bold text-2xl ${passed ? "text-green-400" : "text-red-400"}`}>
+            <p className={`font-display font-bold text-xl sm:text-2xl ${passed ? "text-green-400" : "text-red-400"}`}>
               {passed ? "Passed!" : `Not quite - ${score}%`}
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
             <div className="bg-white/5 rounded-xl p-3 text-center">
               <p className="text-white/40 text-xs">Your Score</p>
               <p className="text-white font-display font-bold text-xl">{earnedMarks}<span className="text-white/40 text-sm">/{totalMarks}</span></p>
@@ -503,7 +503,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
 
           {passed ? (
             <div className="text-center mt-2">
-              <Button onClick={onNext || onPass} className="gap-2 bg-harvest hover:bg-harvest/90 text-white px-8">
+              <Button onClick={onNext || onPass} className="w-full sm:w-auto gap-2 bg-harvest hover:bg-harvest/90 text-white px-8">
                 <ChevronRight className="w-4 h-4" /> Continue to Next Topic
               </Button>
             </div>
@@ -512,7 +512,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
               <p className="text-white/60 text-sm mb-4">
                 You need {passingMarks}/{grandTotal} marks to pass. Review the material and try again.
               </p>
-              <Button onClick={handleRetry} variant="outline" className="gap-2 text-white border-white/20 hover:bg-white/10">
+              <Button onClick={handleRetry} variant="outline" className="w-full sm:w-auto gap-2 text-white border-white/20 hover:bg-white/10">
                 <RotateCcw className="w-4 h-4" /> Retry Quiz
               </Button>
             </div>

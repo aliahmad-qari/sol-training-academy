@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Inbox, CheckCircle, XCircle, Clock, Loader2, ChevronDown, ChevronUp,
+  Inbox, Loader2, ChevronDown, ChevronUp,
   MessageSquare, BookOpen, Video, FileText, Sparkles, Layers, RefreshCw, Send
 } from "lucide-react";
 

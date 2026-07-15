@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import apiClient from "@/api/apiClient";
 import {
-  BookOpen, Award, Settings, Play, CheckCircle, LogOut,
+  BookOpen, Award, Settings, LogOut,
   Home, HelpCircle, LifeBuoy, ChevronRight, Menu, X, Clock,
   TrendingUp, FileText, Megaphone, Video, Target, Calendar, UserCircle, ClipboardList, Gift,
   StickyNote, MessageSquare, Flame, Map, Star, CreditCard, Sparkles, Inbox, Plus
@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import CoursePlayer from "@/components/lms/CoursePlayer";
-import ProgressRing from "@/components/lms/ProgressRing";
 import StudentOverview from "@/components/lms/student/StudentOverview";
 import StudentProgress from "@/components/lms/student/StudentProgress";
 import StudentQuizzes from "@/components/lms/student/StudentQuizzes";

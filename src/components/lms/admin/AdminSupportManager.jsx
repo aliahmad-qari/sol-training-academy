@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { LifeBuoy, MessageSquare, Send, CheckCircle, Clock, AlertCircle, X, User, Search, ChevronDown } from "lucide-react";
+import { LifeBuoy, MessageSquare, Send, CheckCircle, Clock, AlertCircle, X, User, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 const STATUS_COLORS = {

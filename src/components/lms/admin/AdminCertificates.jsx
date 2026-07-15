@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Award, Search, Download, CheckCircle } from "lucide-react";
+import { Award, Search, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const LEVEL_COLORS = {

@@ -11,7 +11,7 @@ export default function ReadingTopicView({ topic, isCompleted, onComplete }) {
           <span className="text-2xl">📖</span>
           <span className="text-xs font-bold text-green-400 uppercase tracking-wider bg-green-500/20 px-2 py-0.5 rounded">Reading</span>
         </div>
-        <h2 className="text-white font-display font-bold text-2xl leading-snug">{topic.title}</h2>
+        <h2 className="text-white font-display font-bold text-xl sm:text-2xl leading-snug">{topic.title}</h2>
         {topic.reading_duration_mins > 0 && (
           <p className="text-white/40 text-xs mt-1">{topic.reading_duration_mins} min estimated reading time</p>
         )}
@@ -31,7 +31,7 @@ export default function ReadingTopicView({ topic, isCompleted, onComplete }) {
             </a>
           </div>
           {topic.reading_file_url.toLowerCase().includes(".pdf") ? (
-            <iframe src={topic.reading_file_url} className="w-full h-[600px]" title={topic.title} />
+            <iframe src={topic.reading_file_url} className="w-full h-[60vh] sm:h-[600px]" title={topic.title} />
           ) : (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <BookOpen className="w-12 h-12 text-white/20" />
@@ -48,7 +48,7 @@ export default function ReadingTopicView({ topic, isCompleted, onComplete }) {
 
       {/* Rich Text Content */}
       {topic.content && (
-        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+        <div className="bg-white/5 rounded-xl border border-white/10 p-4 sm:p-6">
           <p className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">Reading Content</p>
           <div className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">{topic.content}</div>
         </div>
@@ -62,7 +62,7 @@ export default function ReadingTopicView({ topic, isCompleted, onComplete }) {
       )}
 
       {/* Completion */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
         {isCompleted ? (
           <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
             <CheckCircle className="w-4 h-4" /> Topic Completed
@@ -71,7 +71,7 @@ export default function ReadingTopicView({ topic, isCompleted, onComplete }) {
           <p className="text-white/30 text-xs">Mark as complete when you've finished reading</p>
         )}
         {!isCompleted && (
-          <Button onClick={onComplete} className="bg-harvest hover:bg-harvest/90 text-white gap-2">
+          <Button onClick={onComplete} className="w-full sm:w-auto bg-harvest hover:bg-harvest/90 text-white gap-2">
             Mark Complete <ChevronRight className="w-4 h-4" />
           </Button>
         )}

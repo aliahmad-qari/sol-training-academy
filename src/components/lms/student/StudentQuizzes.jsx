@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { HelpCircle, CheckCircle, XCircle, Target, TrendingUp, RotateCcw, BookOpen } from "lucide-react";
+import { HelpCircle, CheckCircle, XCircle, Target, TrendingUp, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 

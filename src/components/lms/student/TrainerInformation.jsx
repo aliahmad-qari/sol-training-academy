@@ -1,5 +1,5 @@
 import React from "react";
-import { User, Mail, Phone, Award, BookOpen, Star, Globe, Clock, CheckCircle } from "lucide-react";
+import { User, Mail, Phone, Award, BookOpen, Star, Globe, CheckCircle } from "lucide-react";
 
 const TRAINERS = [
   {

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Send, Clock, CheckCircle, XCircle, Loader2,
   ChevronDown, ChevronUp, MessageSquare, Inbox, BookOpen,
-  Video, FileText, Star, Layers, Sparkles, Paperclip, X, ExternalLink
+  Video, FileText, Layers, Sparkles, Paperclip, X, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 

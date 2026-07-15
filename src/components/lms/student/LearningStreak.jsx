@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { Flame, Trophy, Star, Zap, Award } from "lucide-react";
+import { Flame, Trophy, Star, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 const BADGES = [

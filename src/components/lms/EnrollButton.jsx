@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Play, CheckCircle, LogIn } from "lucide-react";
+import { Play, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";

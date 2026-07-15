@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Video, HelpCircle, FileText, Clock, Calendar, TrendingUp, CheckCircle, Play, Award } from "lucide-react";
+import { BookOpen, Video, HelpCircle, FileText, CheckCircle, Play, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const LEVEL_CONFIG = {
@@ -51,7 +51,7 @@ export default function CourseOverview({ enrollment, course, modules, topics, on
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 p-6">
+    <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6">
 
       {/* Hero Banner */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -59,20 +59,20 @@ export default function CourseOverview({ enrollment, course, modules, topics, on
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
         <div className="absolute inset-0 opacity-20"
           style={{ backgroundImage: "radial-gradient(circle at 80% 20%, #D97706 0%, transparent 50%)" }} />
-        <div className="relative z-10 p-8">
-          <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex-1">
-              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${cfg.bg} ${cfg.border} ${cfg.color} uppercase tracking-wider`}>
+        <div className="relative z-10 p-5 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-6">
+            <div className="flex-1 min-w-0">
+              <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full border ${cfg.bg} ${cfg.border} ${cfg.color} uppercase tracking-wider`}>
                 {cfg.label}
               </span>
-              <h1 className="text-white font-display font-bold text-3xl mt-3 mb-2 leading-tight">
+              <h1 className="text-white font-display font-bold text-2xl sm:text-3xl mt-3 mb-2 leading-tight">
                 {enrollment.course_title}
               </h1>
               {course?.description && (
                 <p className="text-white/50 text-sm leading-relaxed max-w-xl">{course.description}</p>
               )}
             </div>
-            <div className="flex flex-col items-end gap-3 flex-shrink-0">
+            <div className="flex flex-col items-start md:items-end gap-3 flex-shrink-0 w-full md:w-auto">
               {progress === 100 ? (
                 <div className="flex items-center gap-2 text-emerald-400">
                   <Award className="w-6 h-6" />
@@ -80,13 +80,13 @@ export default function CourseOverview({ enrollment, course, modules, topics, on
                 </div>
               ) : (
                 <Button onClick={onStartLearning}
-                  className="bg-harvest hover:bg-harvest/90 text-white gap-2 px-6 py-5 text-base font-semibold font-display">
+                  className="w-full md:w-auto bg-harvest hover:bg-harvest/90 text-white gap-2 px-6 py-5 text-base font-semibold font-display">
                   <Play className="w-5 h-5" />
                   {progress > 0 ? "Continue Learning" : "Start Learning"}
                 </Button>
               )}
               {nextTopic && progress < 100 && (
-                <p className="text-white/40 text-xs text-right">Next: {nextTopic.title}</p>
+                <p className="text-white/40 text-xs md:text-right truncate max-w-full">Next: {nextTopic.title}</p>
               )}
             </div>
           </div>

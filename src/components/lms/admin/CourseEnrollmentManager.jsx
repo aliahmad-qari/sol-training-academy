@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import {
-  Users, UserPlus, Search, X, Eye, RotateCcw,
-  Ban, Trash2, CalendarDays, TrendingUp, Award, Clock, AlertTriangle,
+  Users, UserPlus, Search, X, RotateCcw,
+  Ban, Trash2, CalendarDays, TrendingUp, Award,
   CheckCircle, XCircle, MoreVertical, RefreshCw, Send, BarChart2,
   BookOpen, HelpCircle, FileText, Loader2, UserCircle
 } from "lucide-react";
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format, addDays, differenceInDays } from "date-fns";
 

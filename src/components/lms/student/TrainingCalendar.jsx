@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Calendar, Clock, Bell, BookOpen, AlertCircle, Star, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, Bell, BookOpen, AlertCircle, Star, ChevronLeft, ChevronRight } from "lucide-react";
 
 const EVENTS = [
   {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import apiClient from "@/api/apiClient";
 import { uploadFile } from "@/api/uploadClient";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Upload, FileText, CheckCircle, Clock, XCircle, AlertTriangle,
+  Upload, CheckCircle, Clock, XCircle, AlertTriangle,
   RefreshCw, Eye, Trash2, Plus, X, FolderOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

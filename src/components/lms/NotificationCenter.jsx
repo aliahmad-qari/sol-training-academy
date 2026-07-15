@@ -143,7 +143,7 @@ export default function NotificationCenter({ onSelectTab, className }) {
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" sideOffset={10} className="w-[360px] p-0 border-white/10 bg-slate-950 text-white shadow-2xl">
+      <PopoverContent align="end" sideOffset={10} className="w-[calc(100vw-1.5rem)] max-w-[360px] p-0 border-white/10 bg-slate-950 text-white shadow-2xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
           <div>
             <p className="font-display font-bold text-sm">Notifications</p>

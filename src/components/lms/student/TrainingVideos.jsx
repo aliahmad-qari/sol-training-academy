@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Video, Search, Play, CheckCircle, Clock, BookOpen, Lock } from "lucide-react";
+import { Video, Search, Play, CheckCircle, Clock, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import apiClient from "@/api/apiClient";
 
@@ -33,9 +33,9 @@ export default function TrainingVideos({ enrollments = [] }) {
 
   if (!enrollments.length) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-sm">
-        <Video className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-        <h3 className="font-display font-bold text-xl text-[#0d2348] mb-2">No training videos yet</h3>
+      <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-16 text-center shadow-sm">
+        <Video className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-4" />
+        <h3 className="font-display font-bold text-lg sm:text-xl text-[#0d2348] mb-2">No training videos yet</h3>
         <p className="text-slate-500 text-sm">Enrol in a course to access its training videos.</p>
       </div>
     );
@@ -80,12 +80,12 @@ export default function TrainingVideos({ enrollments = [] }) {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6">
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5">
           <div className="w-12 h-12 bg-harvest/20 rounded-xl flex items-center justify-center flex-shrink-0">
             <Video className="w-6 h-6 text-harvest" />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h2 className="font-display font-bold text-white text-lg">Training Videos</h2>
             <p className="text-white/50 text-sm">Video lessons from your enrolled courses</p>
           </div>

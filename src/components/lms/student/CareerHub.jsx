@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
-  Target, TrendingUp, Briefcase, Globe, Star, ChevronRight,
-  MapPin, Building, DollarSign, Clock, Award, BookOpen, ExternalLink, ArrowRight
+  Target, ChevronRight, DollarSign, Award, ExternalLink, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

@@ -232,7 +232,7 @@ export default function VideoPlayer({ topic, isCompleted, topicProgress, onProgr
     <div className="space-y-5">
       {/* Title */}
       <div>
-        <h2 className="text-white font-display font-bold text-xl leading-snug">{topic.title}</h2>
+        <h2 className="text-white font-display font-bold text-lg sm:text-xl leading-snug">{topic.title}</h2>
         {topic.video_duration_mins > 0 && (
           <p className="text-white/40 text-xs mt-1">{topic.video_duration_mins} min</p>
         )}
@@ -268,7 +268,7 @@ export default function VideoPlayer({ topic, isCompleted, topicProgress, onProgr
       )}
 
       {/* Completion row */}
-      <div className="flex items-center justify-between pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
         {isCompleted ? (
           <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
             <CheckCircle className="w-4 h-4" /> Topic Completed
@@ -282,7 +282,7 @@ export default function VideoPlayer({ topic, isCompleted, topicProgress, onProgr
           <Button
             onClick={onComplete}
             disabled={useDirect && !watched}
-            className="bg-harvest hover:bg-harvest/90 text-white gap-2 disabled:opacity-40"
+            className="w-full sm:w-auto bg-harvest hover:bg-harvest/90 text-white gap-2 disabled:opacity-40"
           >
             Mark Complete <ChevronRight className="w-4 h-4" />
           </Button>

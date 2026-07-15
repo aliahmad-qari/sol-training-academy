@@ -66,11 +66,11 @@ export default function AssessmentTopicView({ topic, user, enrollment, isComplet
           <span className="text-2xl">📝</span>
           <span className="text-xs font-bold text-amber-400 uppercase tracking-wider bg-amber-500/20 px-2 py-0.5 rounded">Assessment</span>
         </div>
-        <h2 className="text-white font-display font-bold text-2xl leading-snug">{topic.title}</h2>
+        <h2 className="text-white font-display font-bold text-xl sm:text-2xl leading-snug">{topic.title}</h2>
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { icon: Award,  label: "Max Marks", value: topic.assessment_max_marks || 100 },
           { icon: Clock,  label: "Due In",    value: topic.assessment_due_days ? `${topic.assessment_due_days} days` : "No deadline" },
