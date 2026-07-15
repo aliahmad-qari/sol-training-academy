@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   User,
@@ -18,11 +18,15 @@ import {
   ExternalLink,
   ClipboardList,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import apiClient from "@/api/apiClient";
+import { uploadFile } from "@/api/uploadClient";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 
@@ -50,17 +54,50 @@ const safeDate = (value) => {
   });
 };
 
-export default function StudentProfile({ user, enrollments = [], quizAttempts = [] }) {
+/**
+ * Normalise a quiz attempt to a 0–100 percentage.
+ * The backend stores `score` as RAW marks (not a percentage), alongside
+ * `total_marks` / `total_questions`. If a percentage-style field is ever
+ * present we honour it; otherwise we derive one — matching how the rest of
+ * the app (StudentOverview, AdminGradebook, AdminAnalytics) reads scores.
+ * Returns null when the attempt carries no usable score data.
+ */
+const attemptPercent = (attempt) => {
+  if (!attempt) return null;
+
+  const explicitPercent = Number(attempt.score_percent);
+  if (Number.isFinite(explicitPercent)) return explicitPercent;
+
+  const score = Number(attempt.score);
+  if (!Number.isFinite(score)) return null;
+
+  const denominator = Number(attempt.total_marks) || Number(attempt.total_questions) || 0;
+  if (denominator > 0) return Math.round((score / denominator) * 100);
+
+  return null;
+};
+
+export default function StudentProfile({ user, enrollments = [], quizAttempts = [], onOpenCourse, setActiveTab }) {
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [phone, setPhone] = useState(user?.phone || "");
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef(null);
   const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [loadingLearningData, setLoadingLearningData] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
 
   useEffect(() => {
     setPhone(user?.phone || "");
   }, [user?.phone]);
+
+  useEffect(() => {
+    setAvatarUrl(user?.avatar_url || "");
+  }, [user?.avatar_url]);
 
   useEffect(() => {
     let active = true;
@@ -120,26 +157,32 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
   const passedQ = quizAttempts.filter((q) => q.passed).length;
   const submittedAssignmentsCount = submissions.length;
 
-  const scoredQuizAttempts = quizAttempts.filter(
-    (attempt) => attempt.score_percent !== undefined || attempt.score !== undefined
-  );
+  const scoredPercents = quizAttempts
+    .map(attemptPercent)
+    .filter((percent) => percent !== null);
 
-  const avgQuizGrade = scoredQuizAttempts.length > 0
-    ? Math.round(
-        scoredQuizAttempts.reduce((sum, attempt) => {
-          const score = Number(attempt.score_percent ?? attempt.score ?? 0);
-          return sum + (Number.isFinite(score) ? score : 0);
-        }, 0) / scoredQuizAttempts.length
-      )
+  const avgQuizGrade = scoredPercents.length > 0
+    ? Math.round(scoredPercents.reduce((sum, percent) => sum + percent, 0) / scoredPercents.length)
     : null;
 
   const featuredEnrollment = useMemo(() => {
     if (!enrollments.length) return null;
-    return (
-      enrollments.find((enrollment) =>
-        String(enrollment.course_title || "").toLowerCase().includes("support coordinator")
-      ) || enrollments[0]
-    );
+
+    const ranked = [...enrollments].sort((a, b) => {
+      const aActive = a.status === "active" || Number(a.progress_percent || 0) > 0;
+      const bActive = b.status === "active" || Number(b.progress_percent || 0) > 0;
+      if (aActive !== bActive) return aActive ? -1 : 1;
+
+      const aProgress = Number(a.progress_percent || 0);
+      const bProgress = Number(b.progress_percent || 0);
+      if (bProgress !== aProgress) return bProgress - aProgress;
+
+      const aDate = new Date(a.created_date || a.createdAt || 0).getTime();
+      const bDate = new Date(b.created_date || b.createdAt || 0).getTime();
+      return bDate - aDate;
+    });
+
+    return ranked[0] || enrollments[0];
   }, [enrollments]);
 
   const featuredProgress = featuredEnrollment
@@ -231,6 +274,34 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
       .slice(0, 2);
   }, [user?.email, user?.full_name]);
 
+  const handleAvatarSelect = async (event) => {
+    const file = event.target.files?.[0];
+    // Reset the input so selecting the same file again still fires onChange.
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image is too large. Please choose a file under 5 MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const { file_url } = await uploadFile({ file, kind: "avatar" });
+      await base44.auth.updateMe({ avatar_url: file_url });
+      setAvatarUrl(file_url);
+      toast.success("Profile photo updated.");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to upload photo.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const saveProfile = async () => {
     setSaving(true);
     try {
@@ -241,6 +312,55 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
       toast.error("Failed to update profile.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openFeaturedCourse = async () => {
+    if (!featuredEnrollment) return;
+    if (onOpenCourse) {
+      await onOpenCourse(featuredEnrollment);
+      setActiveTab?.("courses");
+      return;
+    }
+    toast.info("Open this course from the student dashboard to resume learning.");
+  };
+
+  const handleResumeLearning = () => openFeaturedCourse();
+  const handleViewCurriculum = () => openFeaturedCourse();
+
+  const openPasswordModal = () => {
+    setPasswordOpen(true);
+  };
+
+  const closePasswordModal = () => {
+    if (passwordSaving) return;
+    setPasswordOpen(false);
+    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      toast.error("Please fill in both password fields.");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("New passwords do not match.");
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      await apiClient.patch("/auth/change-password", {
+        current_password: passwordForm.currentPassword,
+        new_password: passwordForm.newPassword,
+      });
+      toast.success("Password changed successfully.");
+      setPasswordOpen(false);
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to change password.");
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -267,13 +387,31 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
           <div className="-mt-10 flex flex-col gap-4 sm:-mt-14 md:flex-row md:items-end md:justify-between md:gap-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
               <div className="relative self-start sm:self-auto">
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-harvest to-amber-600 shadow-lg sm:h-24 sm:w-24">
-                  <span className="font-display text-2xl font-bold text-white sm:text-3xl">{initials}</span>
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-gradient-to-br from-harvest to-amber-600 shadow-lg sm:h-24 sm:w-24">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={user?.full_name || "Profile"} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="font-display text-2xl font-bold text-white sm:text-3xl">{initials}</span>
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40">
+                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    </div>
+                  )}
                 </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarSelect}
+                />
                 <button
                   type="button"
-                  aria-label="Profile photo"
-                  className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-harvest bg-white text-harvest shadow-md transition-colors hover:bg-slate-50"
+                  aria-label="Change profile photo"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-harvest bg-white text-harvest shadow-md transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Camera className="h-4 w-4" />
                 </button>
@@ -479,17 +617,13 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
         <div className="p-4 sm:p-6">
           {featuredEnrollment ? (
             <div className="grid gap-3 sm:grid-cols-2">
-              <Button asChild className="w-full gap-2 bg-harvest text-white hover:bg-harvest/90">
-                <Link to="/training-courses">
-                  <Play className="h-4 w-4" />
-                  Resume Learning
-                </Link>
+              <Button type="button" onClick={handleResumeLearning} className="w-full gap-2 bg-harvest text-white hover:bg-harvest/90">
+                <Play className="h-4 w-4" />
+                Resume Learning
               </Button>
-              <Button asChild variant="outline" className="w-full gap-2">
-                <Link to="/services/support-coordination-training">
-                  <ExternalLink className="h-4 w-4" />
-                  View Curriculum
-                </Link>
+              <Button type="button" variant="outline" onClick={handleViewCurriculum} className="w-full gap-2">
+                <ExternalLink className="h-4 w-4" />
+                View Curriculum
               </Button>
             </div>
           ) : (
@@ -715,11 +849,9 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
               <h4 className="font-display text-lg font-bold text-ink">Password & Security</h4>
               <p className="text-sm text-slate-600">Keep your account secure by updating your password regularly.</p>
             </div>
-            <Button asChild variant="outline" size="sm" className="gap-2">
-              <Link to="/forgot-password">
-                <Lock className="h-4 w-4" />
-                Change Password
-              </Link>
+            <Button type="button" variant="outline" size="sm" className="gap-2" onClick={openPasswordModal}>
+              <Lock className="h-4 w-4" />
+              Change Password
             </Button>
             <p className="text-xs text-slate-500">
               Need help?{' '}
@@ -730,6 +862,67 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
           </div>
         </div>
       </Card>
+
+      <Dialog open={passwordOpen} onOpenChange={(open) => (open ? openPasswordModal() : closePasswordModal())}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Update your password securely from this page. Use a strong password you have not used before.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Current Password</Label>
+              <Input
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                className="h-11 w-full"
+                placeholder="Enter current password"
+                autoComplete="current-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">New Password</Label>
+              <Input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                className="h-11 w-full"
+                placeholder="Create a new password"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Confirm New Password</Label>
+              <Input
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                className="h-11 w-full"
+                placeholder="Re-enter new password"
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+            <Button type="button" variant="outline" onClick={closePasswordModal} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handlePasswordChange}
+              disabled={passwordSaving}
+              className="w-full bg-harvest text-white hover:bg-harvest/90 sm:w-auto"
+            >
+              {passwordSaving ? "Updating..." : "Update Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

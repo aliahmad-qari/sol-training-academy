@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Award, TrendingUp, Play, ChevronRight, Target, Zap, Clock, CheckCircle, BarChart3, AlertTriangle, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -58,49 +58,54 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       {/* Welcome banner */}
       <div className="rounded-2xl overflow-hidden shadow-md"
         style={{ background: "linear-gradient(135deg, #1a1a1a 0%, #2d1f00 60%, #3d2800 100%)" }}>
-        <div className="p-4 sm:p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-4 sm:gap-6">
-          <div className="flex-1">
-            <p className="text-harvest/70 text-xs uppercase tracking-widest mb-1 font-semibold">
+        <div className="grid gap-6 p-4 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center lg:gap-8">
+          <div className="min-w-0 max-w-xl space-y-3">
+            <p className="text-harvest/70 text-xs font-semibold uppercase tracking-widest">
               NDIS Training Academy
             </p>
-            <h2 className="font-display font-bold text-xl sm:text-2xl md:text-3xl text-white mb-2">
+            <h2 className="font-display text-xl font-bold leading-tight text-white sm:text-2xl md:text-3xl">
               Welcome back, {user?.full_name?.split(" ")[0] || "Student"}! 👋
             </h2>
-            <p className="text-white/50 text-sm mb-5 max-w-full sm:max-w-md">
+            <p className="max-w-full text-sm text-white/50 sm:max-w-md">
               {inProgress > 0
                 ? `You have ${inProgress} course${inProgress > 1 ? "s" : ""} in progress. Keep up the great work!`
                 : completed > 0
                 ? `You've completed ${completed} course${completed > 1 ? "s" : ""}. Ready for the next level?`
                 : "Start your NDIS Support Coordinator training journey today."}
             </p>
-            <div className="flex w-full flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-2">
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
               {inProgress > 0 ? (
-                <Button onClick={() => setActiveTab("courses")}
-                  className="w-full sm:w-auto bg-harvest hover:bg-harvest/90 text-white gap-2 shadow-lg shadow-harvest/30">
+                <Button
+                  onClick={() => setActiveTab("courses")}
+                  className="w-full gap-2 bg-harvest text-white shadow-lg shadow-harvest/30 hover:bg-harvest/90 sm:w-auto"
+                >
                   <Play className="w-4 h-4" /> Continue Learning
                 </Button>
               ) : (
                 <Link to="/training-courses">
-                  <Button className="w-full sm:w-auto bg-harvest hover:bg-harvest/90 text-white gap-2">
+                  <Button className="w-full gap-2 bg-harvest text-white hover:bg-harvest/90 sm:w-auto">
                     <BookOpen className="w-4 h-4" /> Browse Courses
                   </Button>
                 </Link>
               )}
               {certs > 0 && (
-                <Button variant="outline" onClick={() => setActiveTab("certificates")}
-                  className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveTab("certificates")}
+                  className="w-full gap-2 border-white/20 text-white hover:bg-white/10 sm:w-auto"
+                >
                   <Award className="w-4 h-4" /> My Certificates
                 </Button>
               )}
             </div>
           </div>
           {enrollments.length > 0 && (
-            <div className="flex w-full flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5">
+            <div className="flex w-full flex-col items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5 lg:justify-self-end">
               <ProgressRing progress={avgProgress} size={80} />
               <div>
-                <p className="text-white font-display font-bold text-3xl leading-none">{avgProgress}%</p>
-                <p className="text-white/40 text-xs mt-1">Avg Progress</p>
-                <p className="text-white/40 text-xs">{completed}/{enrollments.length} courses done</p>
+                <p className="font-display text-3xl font-bold leading-none text-white">{avgProgress}%</p>
+                <p className="mt-1 text-xs text-white/40">Avg Progress</p>
+                <p className="text-xs text-white/40">{completed}/{enrollments.length} courses done</p>
               </div>
             </div>
           )}
@@ -109,7 +114,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         <div className="bg-harvest/20 border-t border-white/10 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
           <Clock className="w-3.5 h-3.5 text-harvest" />
           <p className="text-harvest/80 text-xs">
-            <strong>Upcoming:</strong> New NDIS Practice Standards update — content reviewed June 2026
+            <strong>Upcoming:</strong> New NDIS Practice Standards update â€” content reviewed June 2026
           </p>
         </div>
       </div>
@@ -132,7 +137,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         ))}
       </div>
 
-      {/* ── Course Progress Bars ─────────────────────────── */}
+      {/* â”€â”€ Course Progress Bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {enrollments.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -183,10 +188,10 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         </div>
       )}
 
-      {/* ── AI Progress Report ─────────────────────────── */}
+      {/* â”€â”€ AI Progress Report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <AIProgressReport user={user} enrollments={enrollments} quizAttempts={quizAttempts} />
 
-      {/* ── Upcoming Deadlines + Continue Learning ─────── */}
+      {/* â”€â”€ Upcoming Deadlines + Continue Learning â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Upcoming Assignment Deadlines */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
@@ -218,7 +223,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
                       <p className="text-xs text-slate_mist truncate">{a.course_title}</p>
                       <p className={`text-xs font-bold mt-0.5 ${isUrgent ? "text-red-600" : isSoon ? "text-amber-600" : "text-slate_mist"}`}>
                         {daysLeft === 0 ? "Due today!" : daysLeft === 1 ? "Due tomorrow!" : `Due in ${daysLeft} days`}
-                        <span className="font-normal text-slate_mist ml-1">· {dueDate.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
+                        <span className="font-normal text-slate_mist ml-1">Â· {dueDate.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
                       </p>
                     </div>
                   </div>
@@ -297,7 +302,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-medium text-[#0d2348]">Attempt #{attempt.attempt_number || 1}</p>
-                      <p className="text-[10px] text-slate-400">{attempt.score}/{attempt.total_questions} correct · {new Date(attempt.created_date).toLocaleDateString("en-AU")}</p>
+                      <p className="text-[10px] text-slate-400">{attempt.score}/{attempt.total_questions} correct Â· {new Date(attempt.created_date).toLocaleDateString("en-AU")}</p>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
                       ${attempt.passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
@@ -313,3 +318,4 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
     </div>
   );
 }
+

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Gift, Copy, Check, Users, Share2, Link2, CheckCircle, Clock, BookOpen } from "lucide-react";
+import {
+  Gift, Copy, Check, Users, Share2, Link2, CheckCircle, Clock, BookOpen,
+  UserPlus, Mail, Trash2, RefreshCw, Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -15,6 +19,10 @@ export default function ReferralHub({ user }) {
   const [referrals, setReferrals] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [copied, setCopied]       = useState(false);
+  const [inviteName, setInviteName]   = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting]       = useState(false);
+  const [deletingId, setDeletingId]   = useState(null);
 
   // Generate a stable referral code from the user ID. Guard against a missing or
   // short id so this never throws on `.slice()` of undefined.
@@ -86,6 +94,64 @@ export default function ReferralHub({ user }) {
     }
   };
 
+  const sendInvite = async (e) => {
+    e?.preventDefault();
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email) {
+      toast.error("Please enter an email address.");
+      return;
+    }
+    // Basic email shape check before hitting the API.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (email === user?.email?.toLowerCase()) {
+      toast.error("You can't refer yourself.");
+      return;
+    }
+    if (referrals.some(r => (r.referred_email || "").toLowerCase() === email)) {
+      toast.error("You've already invited this person.");
+      return;
+    }
+
+    setInviting(true);
+    try {
+      await base44.entities.Referral.create({
+        referred_name: inviteName.trim() || undefined,
+        referred_email: email,
+        referral_code: referralCode || undefined,
+      });
+      toast.success("Invite logged! We'll track them once they sign up with your link.");
+      setInviteName("");
+      setInviteEmail("");
+      await loadReferrals();
+    } catch (err) {
+      console.error("Failed to create referral:", err);
+      toast.error(err?.response?.data?.message || "Couldn't log that invite. Please try again.");
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const deleteReferral = async (referral) => {
+    if (!referral?.id) return;
+    // Only pending, self-logged invites should be removable — a person who has
+    // already registered/enrolled is a real, earned referral.
+    setDeletingId(referral.id);
+    try {
+      await base44.entities.Referral.delete(referral.id);
+      setReferrals(prev => prev.filter(r => r.id !== referral.id));
+      toast.success("Invite removed.");
+    } catch (err) {
+      console.error("Failed to delete referral:", err);
+      toast.error(err?.response?.data?.message || "Couldn't remove that invite.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const totalPending    = referrals.filter(r => r.status === "pending").length;
   const totalRegistered = referrals.filter(r => r.status === "registered" || r.status === "enrolled").length;
   const totalEnrolled   = referrals.filter(r => r.status === "enrolled").length;
 
@@ -181,13 +247,59 @@ export default function ReferralHub({ user }) {
         </div>
       </div>
 
+      {/* Invite by email */}
+      <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-5">
+        <h3 className="font-display font-semibold text-ink flex items-center gap-2 mb-1">
+          <UserPlus className="w-4 h-4 text-harvest" /> Invite by Email
+        </h3>
+        <p className="text-xs text-slate_mist mb-4">
+          Log someone you've invited. They'll move to <strong>Registered</strong> automatically once
+          they sign up with your link, then to <strong>Enrolled</strong> when they join a course.
+        </p>
+        <form onSubmit={sendInvite} className="flex flex-col sm:flex-row gap-2">
+          <Input
+            value={inviteName}
+            onChange={(e) => setInviteName(e.target.value)}
+            placeholder="Name (optional)"
+            className="h-10 sm:max-w-[200px]"
+            autoComplete="name"
+          />
+          <div className="relative flex-1">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="colleague@example.com"
+              className="h-10 pl-9 w-full"
+              autoComplete="off"
+            />
+          </div>
+          <Button type="submit" disabled={inviting}
+            className="h-10 gap-2 bg-harvest text-white hover:bg-harvest/90 flex-shrink-0">
+            {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+            {inviting ? "Adding…" : "Add Invite"}
+          </Button>
+        </form>
+      </div>
+
       {/* Referrals list */}
       <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border/30 flex items-center justify-between">
           <h3 className="font-display font-semibold text-ink flex items-center gap-2">
             <Users className="w-4 h-4 text-harvest" /> My Referrals
           </h3>
-          <span className="text-xs text-slate_mist">{referrals.length} total</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate_mist">{referrals.length} total</span>
+            <button
+              onClick={loadReferrals}
+              disabled={loading}
+              title="Refresh"
+              className="text-slate_mist hover:text-harvest transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -220,9 +332,23 @@ export default function ReferralHub({ user }) {
                     <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.color}`}>
                       <Icon className="w-3 h-3" /> {cfg.label}
                     </span>
-                    <span className="text-[10px] text-slate_mist">
-                      {new Date(ref.created_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+                    <span className="text-[10px] text-slate_mist w-12 text-right">
+                      {ref.created_date
+                        ? new Date(ref.created_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })
+                        : "—"}
                     </span>
+                    {ref.status === "pending" && (
+                      <button
+                        onClick={() => deleteReferral(ref)}
+                        disabled={deletingId === ref.id}
+                        title="Remove invite"
+                        className="text-slate-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                      >
+                        {deletingId === ref.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               );
