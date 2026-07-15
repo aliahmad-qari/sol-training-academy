@@ -61,7 +61,7 @@ export default function Login() {
     >
       {/* Success banner — shown after registration */}
       {successMessage && (
-        <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+        <div className="mb-4 sm:mb-5 flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
           {successMessage}
         </div>
@@ -69,13 +69,13 @@ export default function Login() {
 
       {/* Error banner */}
       {error && (
-        <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+        <div className="mb-4 sm:mb-5 flex items-start gap-2.5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <div>
           <Label htmlFor="email" className="text-slate-700 font-medium">Email address</Label>
           <div className="relative mt-1.5">
@@ -88,14 +88,14 @@ export default function Login() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
+              className="w-full pl-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
               required
             />
           </div>
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1.5">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between mb-1.5">
             <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
             <Link to="/forgot-password" className="text-xs text-harvest hover:underline font-medium">
               Forgot password?
@@ -111,7 +111,7 @@ export default function Login() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
+              className="w-full pl-10 pr-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
               required
             />
             <button

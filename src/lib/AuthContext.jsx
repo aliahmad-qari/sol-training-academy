@@ -75,13 +75,14 @@ export const AuthProvider = ({ children }) => {
    * /verify-otp screen with the returned email.
    * Returns { success, pendingVerification?, email?, error? }
    */
-  const register = async (full_name, email, password, phone) => {
+  const register = async (full_name, email, password, phone, referral_code) => {
     try {
       const { data } = await apiClient.post('/auth/register', {
         full_name,
         email,
         password,
         phone,
+        referral_code,
       });
       return {
         success: true,

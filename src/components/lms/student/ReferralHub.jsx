@@ -120,6 +120,23 @@ export default function ReferralHub({ user }) {
             ))}
           </div>
 
+
+          {/* Status at a glance */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-xs">
+              <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG.pending.color.split(" ")[0]}`} />
+              Pending: {totalPending}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-white text-xs">
+              <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG.registered.color.split(" ")[0]}`} />
+              Registered: {totalRegistered}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/20 text-white text-xs">
+              <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG.enrolled.color.split(" ")[0]}`} />
+              Enrolled: {totalEnrolled}
+            </span>
+          </div>
+
           {/* Referral link */}
           <div>
             <p className="text-white/40 text-[10px] uppercase tracking-wider mb-2">Your Referral Link</p>

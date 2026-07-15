@@ -58,44 +58,44 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       {/* Welcome banner */}
       <div className="rounded-2xl overflow-hidden shadow-md"
         style={{ background: "linear-gradient(135deg, #1a1a1a 0%, #2d1f00 60%, #3d2800 100%)" }}>
-        <div className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
+        <div className="p-4 sm:p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-4 sm:gap-6">
           <div className="flex-1">
             <p className="text-harvest/70 text-xs uppercase tracking-widest mb-1 font-semibold">
               NDIS Training Academy
             </p>
-            <h2 className="font-display font-bold text-2xl md:text-3xl text-white mb-2">
+            <h2 className="font-display font-bold text-xl sm:text-2xl md:text-3xl text-white mb-2">
               Welcome back, {user?.full_name?.split(" ")[0] || "Student"}! 👋
             </h2>
-            <p className="text-white/50 text-sm mb-5 max-w-md">
+            <p className="text-white/50 text-sm mb-5 max-w-full sm:max-w-md">
               {inProgress > 0
                 ? `You have ${inProgress} course${inProgress > 1 ? "s" : ""} in progress. Keep up the great work!`
                 : completed > 0
                 ? `You've completed ${completed} course${completed > 1 ? "s" : ""}. Ready for the next level?`
                 : "Start your NDIS Support Coordinator training journey today."}
             </p>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex w-full flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-2">
               {inProgress > 0 ? (
                 <Button onClick={() => setActiveTab("courses")}
-                  className="bg-harvest hover:bg-harvest/90 text-white gap-2 shadow-lg shadow-harvest/30">
+                  className="w-full sm:w-auto bg-harvest hover:bg-harvest/90 text-white gap-2 shadow-lg shadow-harvest/30">
                   <Play className="w-4 h-4" /> Continue Learning
                 </Button>
               ) : (
                 <Link to="/training-courses">
-                  <Button className="bg-harvest hover:bg-harvest/90 text-white gap-2">
+                  <Button className="w-full sm:w-auto bg-harvest hover:bg-harvest/90 text-white gap-2">
                     <BookOpen className="w-4 h-4" /> Browse Courses
                   </Button>
                 </Link>
               )}
               {certs > 0 && (
                 <Button variant="outline" onClick={() => setActiveTab("certificates")}
-                  className="border-white/20 text-white hover:bg-white/10 gap-2">
+                  className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 gap-2">
                   <Award className="w-4 h-4" /> My Certificates
                 </Button>
               )}
             </div>
           </div>
           {enrollments.length > 0 && (
-            <div className="flex items-center gap-5 bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex w-full flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5">
               <ProgressRing progress={avgProgress} size={80} />
               <div>
                 <p className="text-white font-display font-bold text-3xl leading-none">{avgProgress}%</p>
@@ -106,7 +106,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
           )}
         </div>
         {/* Upcoming notice bar */}
-        <div className="bg-harvest/20 border-t border-white/10 px-6 py-2.5 flex items-center gap-2">
+        <div className="bg-harvest/20 border-t border-white/10 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
           <Clock className="w-3.5 h-3.5 text-harvest" />
           <p className="text-harvest/80 text-xs">
             <strong>Upcoming:</strong> New NDIS Practice Standards update — content reviewed June 2026
@@ -115,17 +115,17 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {stats.map((s, i) => (
           <motion.button key={s.label}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             onClick={() => setActiveTab(s.tab)}
-            className={`bg-white rounded-xl border p-4 flex flex-col gap-2 hover:shadow-md transition-all text-left ${s.color.split(" ").slice(2).join(" ")} hover:border-current`}>
+            className={`bg-white rounded-xl border p-3 sm:p-4 flex flex-col gap-2 hover:shadow-md transition-all text-left ${s.color.split(" ").slice(2).join(" ")} hover:border-current`}>
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.color.split(" ").slice(0, 2).join(" ")}`}>
               <s.icon className="w-4 h-4" />
             </div>
             <div>
-              <p className="font-display font-bold text-xl text-[#0d2348] leading-none">{s.value}</p>
+              <p className="font-display font-bold text-lg sm:text-xl text-[#0d2348] leading-none">{s.value}</p>
               <p className="text-[10px] text-slate-500 mt-0.5">{s.label}</p>
             </div>
           </motion.button>
@@ -134,14 +134,14 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
 
       {/* ── Course Progress Bars ─────────────────────────── */}
       {enrollments.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-harvest" />
               <h3 className="font-display font-semibold text-[#0d2348]">Course Progress</h3>
             </div>
             <button onClick={() => setActiveTab("courses")}
-              className="text-xs text-harvest hover:underline flex items-center gap-1">
+              className="text-xs text-harvest hover:underline flex items-center gap-1 self-start sm:self-auto">
               View all <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -153,7 +153,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
               return (
                 <motion.div key={enr.id}
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between mb-1.5">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.pill}`}>{cfg.label}</span>
                       <p className="text-sm font-medium text-ink truncate">{enr.course_title}</p>
@@ -187,9 +187,9 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       <AIProgressReport user={user} enrollments={enrollments} quizAttempts={quizAttempts} />
 
       {/* ── Upcoming Deadlines + Continue Learning ─────── */}
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Upcoming Assignment Deadlines */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <CalendarDays className="w-4 h-4 text-harvest" />
             <h3 className="font-display font-semibold text-[#0d2348]">Upcoming Deadlines</h3>
@@ -229,11 +229,11 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         </div>
 
         {/* Continue learning */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
             <h3 className="font-display font-semibold text-[#0d2348]">Continue Learning</h3>
             <button onClick={() => setActiveTab("courses")}
-              className="text-xs text-harvest hover:underline flex items-center gap-1">
+              className="text-xs text-harvest hover:underline flex items-center gap-1 self-start sm:self-auto">
               All courses <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -251,7 +251,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
                 const cfg = LEVEL_CONFIG[enr.course_level] || LEVEL_CONFIG.level1;
                 return (
                   <button key={enr.id} onClick={() => onOpenCourse(enr)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-harvest/5 transition-all text-left group border border-transparent hover:border-harvest/20">
+                    className="w-full flex items-start sm:items-center gap-3 p-3 rounded-xl hover:bg-harvest/5 transition-all text-left group border border-transparent hover:border-harvest/20">
                     <div className={`w-2 h-8 rounded-full flex-shrink-0 ${cfg.bar}`} />
                     <div className="flex-1 overflow-hidden">
                       <p className="text-sm font-medium text-ink truncate group-hover:text-harvest transition-colors">{enr.course_title}</p>
@@ -271,11 +271,11 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         </div>
 
         {/* Quiz activity */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm lg:col-span-1">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm lg:col-span-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
             <h3 className="font-display font-semibold text-[#0d2348]">Quiz Activity</h3>
             <button onClick={() => setActiveTab("quizzes")}
-              className="text-xs text-harvest hover:underline flex items-center gap-1">
+              className="text-xs text-harvest hover:underline flex items-center gap-1 self-start sm:self-auto">
               All quizzes <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -290,7 +290,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
               {quizAttempts.slice(0, 4).map(attempt => {
                 const pct = attempt.total_questions > 0 ? Math.round((attempt.score / attempt.total_questions) * 100) : 0;
                 return (
-                  <div key={attempt.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div key={attempt.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-xs
                       ${attempt.passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
                       {pct}%

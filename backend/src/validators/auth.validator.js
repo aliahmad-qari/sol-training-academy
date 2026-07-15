@@ -21,6 +21,7 @@ export const validateRegister = (body) => {
   value.password = password;
 
   if (body.phone !== undefined) value.phone = String(body.phone).trim();
+  if (body.referral_code !== undefined) value.referral_code = String(body.referral_code).trim();
 
   // Role is NOT accepted from the client on public register (defaults to student).
   // Admin creation happens via seed script or admin-only endpoints.

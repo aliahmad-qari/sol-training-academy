@@ -1,6 +1,8 @@
-﻿import { CourseEnrollment, Course, User } from '../models/index.js';
+import { CourseEnrollment, Course, User } from '../models/index.js';
 import { ApiError } from '../utils/ApiError.js';
 import { safeCreateNotification, safeNotifyAdmins } from './notification.service.js';
+import { markReferralEnrolled } from './referral.service.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Create (or return existing) enrollment for a user in a course.
@@ -62,6 +64,13 @@ export const enrollUserInCourse = async ({ userId, courseId, actorId = null, sou
       actionUrl: '/lms-admin',
       metadata: { tab: 'students', course_id: course._id, enrollment_id: enrollment._id, student_id: user._id, source },
       eventKey: `student_enrolled:${enrollment._id}`,
+    });
+
+    void markReferralEnrolled({
+      referredUserId: user._id,
+      referredEmail: user.email,
+    }).catch((err) => {
+      logger.warn(`[enrollment] Failed to mark referral enrolled for ${user.email}:`, err);
     });
 
     return { enrollment, created: true };

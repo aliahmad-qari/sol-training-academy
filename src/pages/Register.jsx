@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import AuthLayout from "@/components/AuthLayout";
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const referralCode = new URLSearchParams(location.search).get('ref')?.trim() || '';
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,7 +38,7 @@ export default function Register() {
     }
 
     setLoading(true);
-    const result = await register(fullName, email, password);
+    const result = await register(fullName, email, password, undefined, referralCode);
     setLoading(false);
 
     if (result.success) {
@@ -62,13 +64,13 @@ export default function Register() {
       }
     >
       {error && (
-        <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+        <div className="mb-4 sm:mb-5 flex items-start gap-2.5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         {/* Full name */}
         <div>
           <Label htmlFor="full_name" className="text-slate-700 font-medium">Full name</Label>
@@ -82,7 +84,7 @@ export default function Register() {
               placeholder="Jane Smith"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="pl-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
+              className="w-full pl-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
               required
             />
           </div>
@@ -100,7 +102,7 @@ export default function Register() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
+              className="w-full pl-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
               required
             />
           </div>
@@ -118,7 +120,7 @@ export default function Register() {
               placeholder="Min. 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
+              className="w-full pl-10 pr-10 h-11 border-slate-200 focus:border-harvest focus:ring-harvest/20"
               required
             />
             <button
@@ -144,7 +146,7 @@ export default function Register() {
               placeholder="Re-enter your password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`pl-10 pr-10 h-11 border-slate-200 focus:ring-harvest/20 transition-colors ${
+              className={`w-full pl-10 pr-10 h-11 border-slate-200 focus:ring-harvest/20 transition-colors ${
                 passwordsMismatch
                   ? "border-red-400 focus:border-red-400"
                   : passwordsMatch

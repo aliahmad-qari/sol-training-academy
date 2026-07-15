@@ -62,7 +62,7 @@ export default function AuthLayout({ title, subtitle, footer, children }) {
       </div>
 
       {/* ── Right Form Panel ── */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 px-6 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 px-4 py-8 sm:px-6 sm:py-12">
         {/* Mobile logo */}
         <Link to="/" className="flex items-center gap-2.5 mb-10 lg:hidden">
           <div className="w-8 h-8 rounded-lg bg-harvest flex items-center justify-center">
@@ -71,21 +71,21 @@ export default function AuthLayout({ title, subtitle, footer, children }) {
           <span className="font-display font-bold text-ink text-base">SOL Business</span>
         </Link>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md mx-auto">
           {/* Heading */}
-          <div className="mb-8">
-            <h1 className="font-display font-bold text-2xl text-ink">{title}</h1>
+          <div className="mb-6 sm:mb-8">
+            <h1 className="font-display font-bold text-xl sm:text-2xl text-ink">{title}</h1>
             {subtitle && <p className="text-slate-500 text-sm mt-1.5">{subtitle}</p>}
           </div>
 
           {/* Form card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-8">
             {children}
           </div>
 
           {/* Footer link */}
           {footer && (
-            <p className="text-center text-sm text-slate-500 mt-6">{footer}</p>
+            <p className="text-center text-sm text-slate-500 mt-5 sm:mt-6">{footer}</p>
           )}
         </div>
       </div>

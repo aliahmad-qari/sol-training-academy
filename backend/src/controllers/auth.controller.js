@@ -1,4 +1,4 @@
-﻿import User from '../models/User.js';
+import User from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -16,6 +16,7 @@ import { sendEmail } from '../services/email/email.service.js';
 import { otpEmail, resetPasswordEmail } from '../services/email/email.templates.js';
 import { logger } from '../utils/logger.js';
 import { safeCreateNotification, safeNotifyAdmins } from '../services/notification.service.js';
+import { upsertSignupReferral, markReferralRegistered } from '../services/referral.service.js';
 
 /**
  * Generate a fresh OTP for a user, persist it, and email it.
@@ -67,7 +68,7 @@ const issueTokens = async (user, res) => {
  * 201 ? { email, pending_verification: true }
  */
 export const register = asyncHandler(async (req, res) => {
-  const { full_name, email, password, phone } = req.body;
+  const { full_name, email, password, phone, referral_code } = req.body;
 
   const existing = await User.findOne({ email }).select('+password');
   if (existing) {
@@ -82,6 +83,13 @@ export const register = asyncHandler(async (req, res) => {
     existing.password = password;
     if (phone !== undefined) existing.phone = phone;
     await issueOtp(existing, 'registration_retry');
+    void upsertSignupReferral({
+      referralCode: referral_code,
+      referredEmail: existing.email,
+      referredName: existing.full_name,
+    }).catch((err) => {
+      logger.warn(`[auth] Failed to refresh referral for ${existing.email}:`, err);
+    });
     return sendCreated(
       res,
       { email: existing.email, pending_verification: true },
@@ -100,6 +108,13 @@ export const register = asyncHandler(async (req, res) => {
 
   try {
     await issueOtp(user, 'registration');
+    void upsertSignupReferral({
+      referralCode: referral_code,
+      referredEmail: user.email,
+      referredName: user.full_name,
+    }).catch((err) => {
+      logger.warn(`[auth] Failed to create referral for ${user.email}:`, err);
+    });
   } catch (err) {
     // Roll back the just-created account so a transient email failure doesn't
     // leave a dangling row that blocks the user from retrying.
@@ -177,6 +192,13 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
   const accessToken = await issueTokens(user, res);
   await user.save({ validateBeforeSave: false });
+
+  void markReferralRegistered({
+    referredEmail: user.email,
+    referredUserId: user._id,
+  }).catch((err) => {
+    logger.warn(`[auth] Failed to mark referral registered for ${user.email}:`, err);
+  });
 
   void safeCreateNotification({
     recipientId: user._id,
