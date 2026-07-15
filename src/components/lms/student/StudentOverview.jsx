@@ -54,11 +54,11 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
     .slice(0, 2);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Welcome banner */}
       <div className="rounded-2xl overflow-hidden shadow-md"
         style={{ background: "linear-gradient(135deg, #1a1a1a 0%, #2d1f00 60%, #3d2800 100%)" }}>
-        <div className="grid gap-6 p-4 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center lg:gap-8">
+        <div className="grid gap-4 p-4 sm:gap-6 sm:p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center lg:gap-8">
           <div className="min-w-0 max-w-xl space-y-3">
             <p className="text-harvest/70 text-xs font-semibold uppercase tracking-widest">
               NDIS Training Academy
@@ -120,7 +120,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3">
         {stats.map((s, i) => (
           <motion.button key={s.label}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -192,7 +192,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       <AIProgressReport user={user} enrollments={enrollments} quizAttempts={quizAttempts} />
 
       {/* â”€â”€ Upcoming Deadlines + Continue Learning â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* Upcoming Assignment Deadlines */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">

@@ -91,9 +91,29 @@ const NAV_SECTIONS = [
 ];
 
 /* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLogout }) {
+function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLogout, mobileOpen, setMobileOpen }) {
+  // On mobile the sidebar is never in the "collapsed rail" state — it's either a
+  // full-width drawer (open) or slid completely off-screen (closed).
+  const handleNavSelect = (id) => {
+    setActiveTab(id);
+    setMobileOpen(false);
+  };
+
   return (
-    <aside className={`fixed left-0 top-0 h-full bg-slate-900 z-40 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
+    <>
+      {/* Mobile backdrop — tap to dismiss the drawer */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          aria-hidden="true"
+        />
+      )}
+
+    <aside className={`fixed left-0 top-0 h-full bg-slate-900 z-50 flex flex-col transition-transform duration-300
+      lg:z-40 lg:transition-all
+      ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
+      w-64 ${collapsed ? "lg:w-16" : "lg:w-64"}`}>
 
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
@@ -106,9 +126,15 @@ function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLog
             <p className="text-white/40 text-[10px] tracking-wider">SOL Academy</p>
           </div>
         )}
+        {/* Desktop collapse toggle (rail ↔ full) */}
         <button onClick={() => setCollapsed(!collapsed)}
-          className={`text-white/30 hover:text-white transition-colors ${collapsed ? "mx-auto" : "ml-auto"}`}>
+          className={`hidden lg:block text-white/30 hover:text-white transition-colors ${collapsed ? "mx-auto" : "ml-auto"}`}>
           {collapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
+        </button>
+        {/* Mobile close button */}
+        <button onClick={() => setMobileOpen(false)}
+          className="lg:hidden ml-auto text-white/40 hover:text-white transition-colors">
+          <X className="w-5 h-5" />
         </button>
       </div>
 
@@ -133,7 +159,7 @@ function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLog
           <div key={section.label} className="mb-4">
             {!collapsed && <p className="text-[10px] font-bold uppercase tracking-wider text-white/25 px-3 mb-1.5">{section.label}</p>}
             {section.items.map(item => (
-              <button key={item.id} onClick={() => setActiveTab(item.id)}
+              <button key={item.id} onClick={() => handleNavSelect(item.id)}
                 title={collapsed ? item.label : undefined}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 transition-all ${
                   activeTab === item.id ? "bg-harvest text-white" : "text-white/50 hover:text-white hover:bg-white/5"
@@ -157,6 +183,7 @@ function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLog
         </button>
       </div>
     </aside>
+    </>
   );
 }
 
@@ -173,6 +200,7 @@ export default function StudentDashboard() {
   const [topics, setTopics]               = useState([]);
   const [loading, setLoading]             = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen]       = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -340,7 +368,9 @@ export default function StudentDashboard() {
   }
 
   /* â”€â”€ Dashboard Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const ml = sidebarCollapsed ? "ml-16" : "ml-64";
+  // Content margin follows the desktop rail width; on mobile the sidebar is an
+  // overlay drawer, so no margin is applied (content stays full-width).
+  const ml = sidebarCollapsed ? "lg:ml-16" : "lg:ml-64";
 
 
   const allNavItems = NAV_SECTIONS.flatMap(s => s.items);
@@ -348,19 +378,30 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user}
-        collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} onLogout={logout} />
+        collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} onLogout={logout}
+        mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
       <main className={`${ml} transition-all duration-300 min-h-screen`}>
         {/* Top header bar */}
-        <div className="bg-white border-b border-border/50 px-6 py-4 sticky top-0 z-20">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-display font-bold text-xl text-ink">
-                {allNavItems.find(n => n.id === activeTab)?.label}
-              </h1>
-              <p className="text-xs text-slate_mist mt-0.5">SOL Training Academy â€” Student Portal</p>
+        <div className="bg-white border-b border-border/50 px-4 py-4 sm:px-6 sticky top-0 z-20">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Mobile hamburger — opens the sidebar drawer */}
+              <button
+                onClick={() => setMobileOpen(true)}
+                aria-label="Open menu"
+                className="lg:hidden flex-shrink-0 p-2 -ml-2 rounded-lg text-ink hover:bg-slate-100 transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="font-display font-bold text-lg sm:text-xl text-ink truncate">
+                  {allNavItems.find(n => n.id === activeTab)?.label}
+                </h1>
+                <p className="text-xs text-slate_mist mt-0.5 hidden sm:block">SOL Training Academy Student Portal</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <NotificationCenter onSelectTab={setActiveTab} />
               <Button size="sm" onClick={() => setActiveTab("requests")} className="gap-2 text-xs bg-harvest text-white hover:bg-harvest/90 hidden sm:flex">
                 <Plus className="w-3.5 h-3.5" /> New Request
@@ -375,7 +416,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Page content */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-4 sm:p-6">
           <AnimatePresence mode="wait">
             <motion.div key={activeTab}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
