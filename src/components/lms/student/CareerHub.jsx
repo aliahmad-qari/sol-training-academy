@@ -67,9 +67,9 @@ export default function CareerHub() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-harvest/20 rounded-xl flex items-center justify-center flex-shrink-0">
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-4 sm:p-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-harvest/20 rounded-xl flex items-center justify-center flex-shrink-0">
             <Target className="w-6 h-6 text-harvest" />
           </div>
           <div>
@@ -102,7 +102,7 @@ export default function CareerHub() {
           <p className="text-sm text-slate-500">Your SOL Training Academy certification directly prepares you for these in-demand Australian NDIS roles.</p>
           {CAREER_PATHS.map((path, i) => (
             <div key={i} className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-all">
-              <div className="p-5">
+              <div className="p-4 sm:p-5">
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                   <div className="text-3xl flex-shrink-0">{path.icon}</div>
                   <div className="flex-1">
@@ -133,7 +133,7 @@ export default function CareerHub() {
 
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Career Levels</p>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         {["Entry", "Mid", "Senior", "Executive"].map((lvl, li) => (
                           <React.Fragment key={lvl}>
                             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
@@ -157,9 +157,9 @@ export default function CareerHub() {
       {/* Industry Insights */}
       {activeTab === "insights" && (
         <div className="space-y-5">
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {INDUSTRY_INSIGHTS.map((ins, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-border/50 p-5 shadow-sm">
+              <div key={i} className="bg-white rounded-2xl border border-border/50 p-4 sm:p-5 shadow-sm">
                 <div className="text-3xl mb-3">{ins.icon}</div>
                 <p className="font-display font-bold text-2xl text-ink mb-1">{ins.stat}</p>
                 <p className="font-semibold text-sm text-ink mb-1">{ins.title}</p>
@@ -168,7 +168,7 @@ export default function CareerHub() {
             ))}
           </div>
 
-          <div className="bg-white rounded-2xl border border-border/50 p-5 shadow-sm">
+          <div className="bg-white rounded-2xl border border-border/50 p-4 sm:p-5 shadow-sm">
             <h3 className="font-display font-semibold text-ink mb-4">2026 NDIS Industry Update</h3>
             <div className="space-y-3">
               {[
@@ -190,7 +190,7 @@ export default function CareerHub() {
       {/* Employment Resources */}
       {activeTab === "resources" && (
         <div className="space-y-5">
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {RESOURCES.map((r, i) => (
               <a key={i} href={r.href} target="_blank" rel="noopener noreferrer"
                 className="bg-white rounded-2xl border border-border/50 p-4 shadow-sm hover:shadow-md hover:border-harvest/40 transition-all group flex items-center gap-3">
@@ -203,13 +203,13 @@ export default function CareerHub() {
             ))}
           </div>
 
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-center">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-4 sm:p-6 text-center">
             <div className="text-3xl mb-3">🎓</div>
             <h3 className="font-display font-bold text-white text-lg mb-2">Complete Your Certification</h3>
             <p className="text-white/50 text-sm mb-4 max-w-md mx-auto">
               Finishing your Level 1, 2, and 3 NDIS Support Coordinator Training significantly increases your employability and earning potential in the Australian NDIS sector.
             </p>
-            <Button className="bg-harvest text-white hover:bg-harvest/90 gap-2">
+            <Button className="w-full sm:w-auto bg-harvest text-white hover:bg-harvest/90 gap-2">
               <Award className="w-4 h-4" /> View Courses
             </Button>
           </div>

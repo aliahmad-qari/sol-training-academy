@@ -41,12 +41,12 @@ export default function StudentPayments({ user }) {
         ].map((s, i) => (
           <motion.div key={s.label}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className={`bg-white rounded-2xl border p-5 flex items-center gap-4 shadow-sm ${s.color.split(" ").slice(2).join(" ")}`}>
+            className={`bg-white rounded-2xl border p-4 sm:p-5 flex items-center gap-4 shadow-sm ${s.color.split(" ").slice(2).join(" ")}`}>
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color.split(" ").slice(0, 2).join(" ")}`}>
               <s.icon className="w-5 h-5" />
             </div>
-            <div>
-              <p className="font-display font-bold text-xl text-[#0d2348]">{s.value}</p>
+            <div className="min-w-0">
+              <p className="font-display font-bold text-lg sm:text-xl text-[#0d2348]">{s.value}</p>
               <p className="text-xs text-slate-500">{s.label}</p>
             </div>
           </motion.div>
@@ -65,7 +65,7 @@ export default function StudentPayments({ user }) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
                   {["Course", "Amount", "Method", "Status", "Date", "Receipt"].map(h => (

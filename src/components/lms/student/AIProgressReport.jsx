@@ -65,17 +65,17 @@ export default function AIProgressReport({ user, enrollments = [], quizAttempts 
   return (
     <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-border/30">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-5 py-4 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-border/30">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center flex-shrink-0">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="font-display font-semibold text-ink">AI Progress Report</h3>
             <p className="text-[10px] text-slate_mist">Personalised summary based on your activity</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {report && (
             <button onClick={() => setExpanded(e => !e)} className="text-slate_mist hover:text-ink transition-colors">
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -95,7 +95,7 @@ export default function AIProgressReport({ user, enrollments = [], quizAttempts 
 
       {/* Empty state */}
       {!report && !loading && (
-        <div className="px-5 py-8 text-center">
+        <div className="px-4 sm:px-5 py-8 text-center">
           <Sparkles className="w-8 h-8 text-purple-200 mx-auto mb-3" />
           <p className="text-sm text-slate_mist mb-1">Get your personalised AI progress report</p>
           <p className="text-xs text-slate_mist/70">AI will analyse your quiz scores and course activity to give you tailored feedback.</p>
@@ -104,7 +104,7 @@ export default function AIProgressReport({ user, enrollments = [], quizAttempts 
 
       {/* Loading */}
       {loading && (
-        <div className="px-5 py-8 text-center">
+        <div className="px-4 sm:px-5 py-8 text-center">
           <Loader2 className="w-8 h-8 text-purple-400 mx-auto mb-3 animate-spin" />
           <p className="text-sm text-slate_mist">Analysing your learning journey…</p>
         </div>
@@ -119,7 +119,7 @@ export default function AIProgressReport({ user, enrollments = [], quizAttempts 
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-5 py-5 space-y-4">
+            <div className="px-4 sm:px-5 py-5 space-y-4">
               {/* Greeting + Summary */}
               <div>
                 <p className="font-display font-semibold text-ink mb-1">{report.greeting}</p>

@@ -35,16 +35,16 @@ export default function AnnouncementsSection() {
   return (
     <div>
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-2xl p-6 mb-6 flex items-center gap-4">
-        <div className="w-12 h-12 bg-harvest/20 rounded-xl flex items-center justify-center">
+      <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-2xl p-4 sm:p-6 mb-6 flex items-center gap-3 sm:gap-4">
+        <div className="w-11 h-11 sm:w-12 sm:h-12 bg-harvest/20 rounded-xl flex items-center justify-center flex-shrink-0">
           <Megaphone className="w-6 h-6 text-harvest" />
         </div>
-        <div>
-          <h2 className="font-display font-bold text-white text-lg">Announcements</h2>
-          <p className="text-white/50 text-sm">Training updates, new modules, and important notices</p>
+        <div className="min-w-0">
+          <h2 className="font-display font-bold text-white text-base sm:text-lg">Announcements</h2>
+          <p className="text-white/50 text-xs sm:text-sm">Training updates, new modules, and important notices</p>
         </div>
         {!loading && announcements.length > 0 && (
-          <div className="ml-auto bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+          <div className="ml-auto bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">
             {announcements.length}
           </div>
         )}
@@ -55,7 +55,7 @@ export default function AnnouncementsSection() {
           <Loader2 className="w-6 h-6 animate-spin text-harvest" />
         </div>
       ) : announcements.length === 0 ? (
-        <div className="bg-white rounded-2xl border-2 border-dashed border-border p-16 text-center">
+        <div className="bg-white rounded-2xl border-2 border-dashed border-border p-8 sm:p-16 text-center">
           <Megaphone className="w-10 h-10 mx-auto mb-3 text-slate-300" />
           <p className="text-slate-500 text-sm">No announcements at this time.</p>
         </div>
@@ -68,7 +68,7 @@ export default function AnnouncementsSection() {
             return (
               <div key={id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all
                 ${a.pinned ? "border-red-200 ring-1 ring-red-100" : "border-slate-200"}`}>
-                <button className="w-full text-left p-5" onClick={() => toggle(id)}>
+                <button className="w-full text-left p-4 sm:p-5" onClick={() => toggle(id)}>
                   <div className="flex items-start gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-50 mt-0.5 ${cfg.color}`}>
                       <Icon className="w-4 h-4" />
@@ -89,7 +89,7 @@ export default function AnnouncementsSection() {
                   </div>
                 </button>
                 {expanded[id] && (
-                  <div className="px-5 pb-5 pt-0 border-t border-slate-100">
+                  <div className="px-4 sm:px-5 pb-5 pt-0 border-t border-slate-100">
                     <p className="text-sm text-slate-600 leading-relaxed">{a.body}</p>
                   </div>
                 )}

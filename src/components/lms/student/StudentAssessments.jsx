@@ -315,15 +315,15 @@ function AssignmentCard({ assignment, submission: initialSubmission, userId, onS
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1">
+      <div className="p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-start gap-3 flex-1 w-full min-w-0">
             <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
               <FileText className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h3 className="font-display font-semibold text-ink">{assignment.title}</h3>
+                <h3 className="font-display font-semibold text-ink break-words">{assignment.title}</h3>
                 {isExpired && !submission && (
                   <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Lock className="w-2.5 h-2.5" /> Expired
@@ -360,7 +360,7 @@ function AssignmentCard({ assignment, submission: initialSubmission, userId, onS
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex flex-col items-end gap-2">
+          <div className="flex-shrink-0 flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 w-full sm:w-auto flex-wrap">
             {/* Countdown */}
             {!submission && (
               <DeadlineCountdown countdown={countdown} durationDays={assignment.duration_days} />
@@ -748,8 +748,8 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
               {quizAttempts.length > 0 && (
                 <div>
                   <h3 className="font-display font-semibold text-ink mb-3">Attempt History</h3>
-                  <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-                    <table className="w-full text-sm">
+                  <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-x-auto">
+                    <table className="w-full text-sm min-w-[560px]">
                       <thead>
                         <tr className="bg-slate-50 border-b border-border/30">
                           {["Quiz", "Date", "Score", "Questions", "Status"].map(h => (

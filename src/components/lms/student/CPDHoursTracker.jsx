@@ -43,12 +43,12 @@ export default function CPDHoursTracker({ enrollments, courses }) {
         ].map((s, i) => (
           <motion.div key={s.label}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className={`bg-white rounded-2xl border p-5 flex items-center gap-4 shadow-sm ${s.color.split(" ").slice(2).join(" ")}`}>
+            className={`bg-white rounded-2xl border p-4 sm:p-5 flex items-center gap-4 shadow-sm ${s.color.split(" ").slice(2).join(" ")}`}>
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color.split(" ").slice(0, 2).join(" ")}`}>
               <s.icon className="w-5 h-5" />
             </div>
-            <div>
-              <p className="font-display font-bold text-2xl text-[#0d2348]">{s.value}</p>
+            <div className="min-w-0">
+              <p className="font-display font-bold text-xl sm:text-2xl text-[#0d2348]">{s.value}</p>
               <p className="text-xs text-slate-500">{s.label}</p>
             </div>
           </motion.div>
@@ -56,7 +56,7 @@ export default function CPDHoursTracker({ enrollments, courses }) {
       </div>
 
       {/* Overall progress bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-harvest" />
@@ -75,7 +75,7 @@ export default function CPDHoursTracker({ enrollments, courses }) {
       </div>
 
       {/* Per-course breakdown */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
         <h3 className="font-display font-semibold text-[#0d2348] mb-4">CPD Hours by Course</h3>
         {perCourse.length === 0 ? (
           <p className="text-slate-400 text-sm text-center py-4">No enrolled courses.</p>
@@ -84,9 +84,9 @@ export default function CPDHoursTracker({ enrollments, courses }) {
             {perCourse.map(({ enr, cpdDone, cpdTotal, p }, i) => (
               <motion.div key={enr.id}
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 }}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-sm font-medium text-[#0d2348] truncate max-w-xs">{enr.course_title}</p>
-                  <span className="text-xs font-bold text-harvest ml-2 flex-shrink-0">{cpdDone}h / {cpdTotal}h</span>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <p className="text-sm font-medium text-[#0d2348] truncate min-w-0">{enr.course_title}</p>
+                  <span className="text-xs font-bold text-harvest ml-2 flex-shrink-0 whitespace-nowrap">{cpdDone}h / {cpdTotal}h</span>
                 </div>
                 <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                   <motion.div

@@ -700,14 +700,14 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
       {/* Certificates */}
       <Card className="overflow-hidden border-slate-200 shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Award className="h-5 w-5 text-harvest" />
-            <div>
+          <div className="flex min-w-0 items-center gap-3">
+            <Award className="h-5 w-5 flex-shrink-0 text-harvest" />
+            <div className="min-w-0">
               <h3 className="font-display text-lg font-bold text-ink">My Certificates</h3>
               <p className="text-sm text-slate-500">Completed course credentials and certificate access</p>
             </div>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+          <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
             {certs} total
           </span>
         </div>
@@ -825,7 +825,7 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
                         <p className="mt-1 text-sm text-slate-500">Date Submitted: {row.submittedAt}</p>
                       </div>
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${ASSIGNMENT_STATUS_STYLES[row.statusKey] || ASSIGNMENT_STATUS_STYLES.pending}`}
+                        className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${ASSIGNMENT_STATUS_STYLES[row.statusKey] || ASSIGNMENT_STATUS_STYLES.pending}`}
                       >
                         {row.statusLabel}
                       </span>

@@ -27,7 +27,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
   if (quizAttempts.length === 0) {
     return (
       <div className="space-y-5">
-        <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-10 text-center shadow-sm">
           <HelpCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-display font-bold text-xl text-[#0d2348] mb-2">No quiz attempts yet</h3>
           <p className="text-slate-500 text-sm max-w-md mx-auto">
@@ -35,7 +35,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
           </p>
         </div>
         {!loadingQuizzes && availableQuizzes.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
             <h3 className="font-display font-semibold text-[#0d2348] mb-3">Available Quizzes in Your Courses ({availableQuizzes.length})</h3>
             <div className="space-y-2">
               {availableQuizzes.map(q => {
@@ -45,11 +45,11 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
                     <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
                       <HelpCircle className="w-4 h-4 text-purple-600" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[#0d2348]">{q.title}</p>
-                      <p className="text-xs text-slate-400">{course?.title} · {q.quiz_questions?.length || 0} questions</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#0d2348] break-words">{q.title}</p>
+                      <p className="text-xs text-slate-400 break-words">{course?.title} · {q.quiz_questions?.length || 0} questions</p>
                     </div>
-                    <span className="text-xs text-slate_mist bg-slate-200 px-2 py-0.5 rounded-full">Open in course</span>
+                    <span className="text-xs text-slate_mist bg-slate-200 px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">Open in course</span>
                   </div>
                 );
               })}
@@ -76,9 +76,9 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#0d2348] to-[#1a3a6e] rounded-2xl p-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+      <div className="bg-gradient-to-r from-[#0d2348] to-[#1a3a6e] rounded-2xl p-4 sm:p-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
             <HelpCircle className="w-6 h-6 text-blue-300" />
           </div>
           <div>
@@ -102,10 +102,10 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 bg-white rounded-xl border border-slate-200 p-1 w-fit shadow-sm">
+      <div className="flex flex-wrap gap-1 bg-white rounded-xl border border-slate-200 p-1 w-full sm:w-fit shadow-sm">
         {["all", "passed", "failed"].map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold capitalize whitespace-nowrap transition-all
               ${filter === f ? "bg-blue-600 text-white shadow" : "text-slate-500 hover:text-[#0d2348]"}`}>
             {f === "all" ? `All (${quizAttempts.length})` : f === "passed" ? `Passed (${passed})` : `Need Retry (${failed})`}
           </button>
@@ -189,7 +189,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
 
       {/* Available quizzes in enrolled courses */}
       {!loadingQuizzes && availableQuizzes.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <h3 className="font-display font-semibold text-[#0d2348] mb-3">All Quizzes in Your Courses ({availableQuizzes.length})</h3>
           <div className="space-y-2">
             {availableQuizzes.map(q => {
@@ -206,11 +206,11 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
                     <p className="text-xs text-slate-400">{course?.title} · {q.quiz_questions?.length || 0} questions</p>
                   </div>
                   {bestAttempt ? (
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${bestAttempt.passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${bestAttempt.passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
                       {bestAttempt.passed ? "✓ Passed" : "Retry"}
                     </span>
                   ) : (
-                    <span className="text-xs text-slate_mist bg-slate-200 px-2 py-0.5 rounded-full">Not attempted</span>
+                    <span className="text-xs text-slate_mist bg-slate-200 px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">Not attempted</span>
                   )}
                 </div>
               );

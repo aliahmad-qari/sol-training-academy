@@ -190,21 +190,21 @@ export default function StudentDocumentUpload({ user }) {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="font-display font-bold text-xl text-ink">My Documents</h2>
+          <h2 className="font-display font-bold text-lg sm:text-xl text-ink">My Documents</h2>
           <p className="text-sm text-slate_mist mt-0.5">Upload and track your compliance documents for admin verification.</p>
         </div>
-        <Button onClick={() => setShowModal(true)} className="bg-harvest text-white gap-2">
+        <Button onClick={() => setShowModal(true)} className="bg-harvest text-white gap-2 w-full sm:w-auto flex-shrink-0">
           <Plus className="w-4 h-4" /> Upload Document
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
         {stats.map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-border/50 p-4 shadow-sm text-center">
-            <p className={`font-display font-bold text-2xl ${s.color}`}>{s.value}</p>
+          <div key={s.label} className="bg-white rounded-2xl border border-border/50 p-3 sm:p-4 shadow-sm text-center">
+            <p className={`font-display font-bold text-xl sm:text-2xl ${s.color}`}>{s.value}</p>
             <p className="text-xs text-slate_mist mt-0.5">{s.label}</p>
           </div>
         ))}
@@ -242,8 +242,8 @@ export default function StudentDocumentUpload({ user }) {
                   <div className={`h-1 rounded-r-full transition-all duration-700 ${cfg.bar} ${cfg.barWidth}`} />
                 </div>
 
-                <div className="p-5">
-                  <div className="flex items-start gap-4">
+                <div className="p-4 sm:p-5">
+                  <div className="flex items-start gap-3 sm:gap-4">
                     {/* Icon */}
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                       doc.status === "verified" ? "bg-emerald-100" :

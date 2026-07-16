@@ -52,7 +52,7 @@ export default function SkillMap({ enrollments }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-5">
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4 sm:p-5">
         <div className="flex items-center gap-3 mb-1">
           <Star className="w-5 h-5 text-purple-600" />
           <h2 className="font-display font-bold text-ink">Skill Map</h2>
@@ -75,12 +75,12 @@ export default function SkillMap({ enrollments }) {
                 </div>
               )}
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: ti * 0.1 }}
-                className={`rounded-2xl border-2 p-5 ${isLocked ? "bg-slate-50 border-slate-200 opacity-60" : tier.bg}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tier.color} flex items-center justify-center`}>
+                className={`rounded-2xl border-2 p-4 sm:p-5 ${isLocked ? "bg-slate-50 border-slate-200 opacity-60" : tier.bg}`}>
+                <div className="flex items-center flex-wrap gap-3 mb-4">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tier.color} flex items-center justify-center flex-shrink-0`}>
                     <span className="text-white font-bold">{ti + 1}</span>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-display font-bold text-ink">{tier.category}</p>
                     <p className="text-xs text-slate_mist">Level {ti + 1} Course Skills</p>
                   </div>
@@ -90,7 +90,7 @@ export default function SkillMap({ enrollments }) {
                     {isLocked && <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2.5 py-1 rounded-full flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
                   </div>
                 </div>
-                <div className="grid sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {tier.skills.map((skill, si) => {
                     const Icon = skill.icon;
                     return (

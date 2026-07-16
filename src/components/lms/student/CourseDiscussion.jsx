@@ -37,7 +37,7 @@ function PostCard({ post, replies, user, onReply, onLike }) {
               <span className="text-[10px] text-slate_mist">{new Date(post.created_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
             </div>
             {post.title && <p className="font-display font-semibold text-ink mb-1">{post.title}</p>}
-            <p className="text-sm text-slate-700 leading-relaxed">{post.content}</p>
+            <p className="text-sm text-slate-700 leading-relaxed break-words">{post.content}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border/30">
@@ -77,12 +77,12 @@ function PostCard({ post, replies, user, onReply, onLike }) {
               <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-slate_mist">
                 {(r.user_name || "S").charAt(0).toUpperCase()}
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2 mb-0.5">
                   <span className="text-xs font-semibold text-ink">{r.user_name}</span>
                   <span className="text-[10px] text-slate_mist">{new Date(r.created_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
                 </div>
-                <p className="text-xs text-slate-700">{r.content}</p>
+                <p className="text-xs text-slate-700 break-words">{r.content}</p>
               </div>
             </div>
           ))}
@@ -183,7 +183,7 @@ export default function CourseDiscussion({ user, enrollments }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 sm:p-5">
         <div className="flex items-center gap-3 mb-1">
           <MessageSquare className="w-5 h-5 text-blue-600" />
           <h2 className="font-display font-bold text-ink">Course Discussion Board</h2>
@@ -192,27 +192,27 @@ export default function CourseDiscussion({ user, enrollments }) {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
-        <div className="flex gap-3 flex-1">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate_mist" />
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search discussions…" className="pl-9 h-9 text-sm" />
           </div>
           <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-            <SelectTrigger className="w-44 h-9 text-sm"><SelectValue placeholder="All Courses" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44 h-9 text-sm"><SelectValue placeholder="All Courses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Courses</SelectItem>
               {enrollments.map(e => <SelectItem key={e.course_id} value={e.course_id}>{e.course_title}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setShowNewForm(true)} size="sm" className="bg-harvest text-white gap-1.5 h-9">
+        <Button onClick={() => setShowNewForm(true)} size="sm" className="w-full sm:w-auto bg-harvest text-white gap-1.5 h-9">
           <Plus className="w-3.5 h-3.5" /> New Post
         </Button>
       </div>
 
       {showNewForm && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-border/50 p-5 shadow-sm space-y-3">
+          className="bg-white rounded-2xl border border-border/50 p-4 sm:p-5 shadow-sm space-y-3">
           <h3 className="font-display font-semibold text-ink">Create a New Discussion Post</h3>
           <Select value={newPost.course_id} onValueChange={v => setNewPost(p => ({ ...p, course_id: v }))}>
             <SelectTrigger><SelectValue placeholder="Select a course *" /></SelectTrigger>
@@ -233,7 +233,7 @@ export default function CourseDiscussion({ user, enrollments }) {
       {loading ? (
         <div className="text-center py-10 text-slate_mist text-sm">Loading discussions…</div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border-2 border-dashed border-border/40 p-12 text-center">
+        <div className="bg-white rounded-2xl border-2 border-dashed border-border/40 p-6 sm:p-12 text-center">
           <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <p className="text-slate_mist text-sm">No discussions yet. Start the conversation!</p>
         </div>

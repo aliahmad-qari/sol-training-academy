@@ -93,7 +93,7 @@ export default function CourseFeedbackForm({ enrollment, user, onSubmitted }) {
 
   if (submitted) {
     return (
-      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-center gap-3">
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5 flex items-center gap-3">
         <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
         <div>
           <p className="font-semibold text-emerald-800 text-sm">Feedback submitted — thank you!</p>
@@ -106,7 +106,7 @@ export default function CourseFeedbackForm({ enrollment, user, onSubmitted }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="bg-amber-50 border-b border-amber-100 px-5 py-4 flex items-start gap-3">
+      <div className="bg-amber-50 border-b border-amber-100 px-4 sm:px-5 py-4 flex items-start gap-3">
         <MessageSquare className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-display font-semibold text-slate-800 text-sm">Course Feedback</p>
@@ -116,7 +116,7 @@ export default function CourseFeedbackForm({ enrollment, user, onSubmitted }) {
         </div>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="p-4 sm:p-5 space-y-5">
         {/* Overall rating */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">

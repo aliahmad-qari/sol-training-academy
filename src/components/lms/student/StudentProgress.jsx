@@ -61,8 +61,8 @@ export default function StudentProgress({ enrollments, courses }) {
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color.split(" ").slice(0, 2).join(" ")}`}>
               <s.icon className="w-5 h-5" />
             </div>
-            <div>
-              <p className="font-display font-bold text-2xl text-[#0d2348]">{s.value}</p>
+            <div className="min-w-0">
+              <p className="font-display font-bold text-xl sm:text-2xl text-[#0d2348]">{s.value}</p>
               <p className="text-xs text-slate-500">{s.label}</p>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function StudentProgress({ enrollments, courses }) {
 
       {/* Progress chart */}
       {chartData.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <h3 className="font-display font-semibold text-[#0d2348] mb-4">Progress by Course Level</h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={chartData} margin={{ left: -20 }}>

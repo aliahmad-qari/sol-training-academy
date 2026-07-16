@@ -146,8 +146,8 @@ function NativePlayer({ topic, watched, onWatched, isCompleted, initialProgress,
       {/* Big play overlay (shown when paused) */}
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-20 h-20 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 shadow-2xl">
-            <Play className="w-9 h-9 text-white ml-1" />
+          <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 shadow-2xl">
+            <Play className="w-6 h-6 sm:w-9 sm:h-9 text-white ml-1" />
           </div>
         </div>
       )}
@@ -159,7 +159,7 @@ function NativePlayer({ topic, watched, onWatched, isCompleted, initialProgress,
         onClick={stopPropagation}
       >
         {/* Seek bar */}
-        <div className="px-4 pt-4 pb-1">
+        <div className="px-2.5 sm:px-4 pt-3 sm:pt-4 pb-1">
           <div
             className="w-full h-1.5 bg-white/20 rounded-full cursor-pointer group/seek hover:h-2.5 transition-all duration-150"
             onClick={handleSeek}
@@ -173,7 +173,7 @@ function NativePlayer({ topic, watched, onWatched, isCompleted, initialProgress,
           </div>
         </div>
 
-        <div className="flex items-center gap-3 px-4 pb-3">
+        <div className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-4 pb-3">
           <button onClick={togglePlay} className="text-white hover:text-harvest transition-colors">
             {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </button>

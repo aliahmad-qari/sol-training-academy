@@ -41,13 +41,13 @@ export default function AchievementBadges({ enrollments = [], quizAttempts = [] 
   const locked = BADGES.filter(b => !b.earned);
 
   return (
-    <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-harvest" />
           <h3 className="font-display font-semibold text-ink">Achievement Badges</h3>
         </div>
-        <span className="text-xs text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">{earned.length}/{BADGES.length} earned</span>
+        <span className="text-xs text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full flex-shrink-0 whitespace-nowrap">{earned.length}/{BADGES.length} earned</span>
       </div>
 
       {/* Progress bar */}

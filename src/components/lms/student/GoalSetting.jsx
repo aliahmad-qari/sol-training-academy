@@ -23,7 +23,7 @@ function GoalForm({ enrollments, onSave, onCancel }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-border/50 p-5 shadow-sm space-y-4">
+      className="bg-white rounded-2xl border border-border/50 p-4 sm:p-5 shadow-sm space-y-4">
       <h3 className="font-display font-semibold text-ink">Set a Learning Goal</h3>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
@@ -49,9 +49,9 @@ function GoalForm({ enrollments, onSave, onCancel }) {
         <Label className="text-xs uppercase tracking-wider text-slate_mist mb-1 block">Notes (Optional)</Label>
         <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="resize-none" />
       </div>
-      <div className="flex gap-2 justify-end">
-        <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" onClick={save} disabled={saving} className="bg-harvest text-white gap-1.5">
+      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+        <Button variant="outline" size="sm" onClick={onCancel} className="w-full sm:w-auto">Cancel</Button>
+        <Button size="sm" onClick={save} disabled={saving} className="w-full sm:w-auto bg-harvest text-white gap-1.5">
           <Save className="w-3.5 h-3.5" /> {saving ? "Saving…" : "Save Goal"}
         </Button>
       </div>
@@ -117,16 +117,16 @@ export default function GoalSetting({ user, enrollments }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Target className="w-5 h-5 text-emerald-600" />
+            <Target className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <div>
               <h2 className="font-display font-bold text-ink">Learning Goals</h2>
               <p className="text-sm text-slate_mist">Set target dates to stay on track.</p>
             </div>
           </div>
-          <Button onClick={() => setShowForm(true)} size="sm" className="bg-harvest text-white gap-1.5 h-8">
+          <Button onClick={() => setShowForm(true)} size="sm" className="w-full sm:w-auto bg-harvest text-white gap-1.5 h-8">
             <Plus className="w-3.5 h-3.5" /> New Goal
           </Button>
         </div>
@@ -137,7 +137,7 @@ export default function GoalSetting({ user, enrollments }) {
       {loading ? (
         <div className="text-center py-10 text-slate_mist text-sm">Loading goals…</div>
       ) : goals.length === 0 ? (
-        <div className="bg-white rounded-2xl border-2 border-dashed border-border/40 p-12 text-center">
+        <div className="bg-white rounded-2xl border-2 border-dashed border-border/40 p-8 sm:p-12 text-center">
           <Target className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <p className="text-slate_mist text-sm">No goals set yet. Set a target date to stay motivated!</p>
         </div>
@@ -149,15 +149,15 @@ export default function GoalSetting({ user, enrollments }) {
             const isOverdue = daysLeft < 0;
             return (
               <motion.div key={goal.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl border border-border/50 shadow-sm p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-display font-semibold text-ink">{goal.course_title}</p>
+                className="bg-white rounded-2xl border border-border/50 shadow-sm p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="min-w-0">
+                    <p className="font-display font-semibold text-ink break-words">{goal.course_title}</p>
                     <p className="text-xs text-slate_mist flex items-center gap-1 mt-0.5">
-                      <CalendarDays className="w-3 h-3" /> Target: {new Date(goal.target_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                      <CalendarDays className="w-3 h-3 flex-shrink-0" /> Target: {new Date(goal.target_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   </div>
-                  <button onClick={() => deleteGoal(goal.id)} className="text-slate-300 hover:text-red-400 transition-colors p-1">
+                  <button onClick={() => deleteGoal(goal.id)} className="text-slate-300 hover:text-red-400 transition-colors p-1 flex-shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -170,9 +170,9 @@ export default function GoalSetting({ user, enrollments }) {
                     <div className="h-2 bg-emerald-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className={`text-xs font-semibold flex items-center gap-1 ${isOverdue ? "text-red-500" : daysLeft <= 7 ? "text-amber-600" : "text-emerald-600"}`}>
-                    <Clock className="w-3 h-3" />
+                    <Clock className="w-3 h-3 flex-shrink-0" />
                     {isOverdue ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days left`}
                   </span>
                   <span className="text-xs text-slate_mist">{goal.weekly_hours}h/week goal</span>
