@@ -19,15 +19,34 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
   useEffect(() => {
     if (!enrollments.length) return;
     const courseIds = [...new Set(enrollments.map(e => e.course_id))];
-    base44.entities.Assignment.filter({ is_published: true }, "due_date", 50).then(all => {
-      const mine = all.filter(a => courseIds.includes(a.course_id) && a.due_date);
-      const upcoming = mine
-        .filter(a => new Date(a.due_date) >= new Date())
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+    // Assignments carry `duration_days` (deadline is relative to first access,
+    // stored per-user in localStorage), not an absolute `due_date`. We surface
+    // unsubmitted assignments for enrolled courses, computing a deadline from
+    // the same localStorage start key that StudentAssessments writes.
+    Promise.all([
+      base44.entities.Assignment.filter({ is_published: true }, "-created_date", 50).catch(() => []),
+      user ? base44.entities.AssignmentSubmission.filter({ user_id: user.id }).catch(() => []) : Promise.resolve([]),
+    ]).then(([all, subs]) => {
+      const submittedIds = new Set(subs.map(s => s.assignment_id));
+      const now = Date.now();
+      const mine = all
+        .filter(a => courseIds.includes(a.course_id) && !submittedIds.has(a.id))
+        .map(a => {
+          let dueMs = null;
+          if (a.duration_days > 0 && user) {
+            const start = localStorage.getItem(`asgn_start_${a.id}_${user.id}`);
+            if (start) dueMs = parseInt(start, 10) + a.duration_days * 24 * 60 * 60 * 1000;
+          }
+          return { ...a, dueMs };
+        })
+        // Drop assignments whose deadline has already passed.
+        .filter(a => a.dueMs === null || a.dueMs >= now)
+        // Soonest deadlines first; assignments with no active deadline last.
+        .sort((a, b) => (a.dueMs ?? Infinity) - (b.dueMs ?? Infinity))
         .slice(0, 5);
-      setAssignments(upcoming);
+      setAssignments(mine);
     });
-  }, [enrollments]);
+  }, [enrollments, user]);
 
   const completed   = enrollments.filter(e => e.status === "completed").length;
   const inProgress  = enrollments.filter(e => e.status === "active" && (e.progress_percent || 0) > 0).length;
@@ -208,10 +227,11 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
           ) : (
             <div className="space-y-2">
               {assignments.map(a => {
-                const dueDate = new Date(a.due_date);
-                const daysLeft = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
-                const isUrgent = daysLeft <= 3;
-                const isSoon = daysLeft <= 7;
+                const hasDeadline = a.dueMs != null;
+                const dueDate = hasDeadline ? new Date(a.dueMs) : null;
+                const daysLeft = hasDeadline ? Math.ceil((a.dueMs - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                const isUrgent = hasDeadline && daysLeft <= 3;
+                const isSoon = hasDeadline && daysLeft <= 7;
                 return (
                   <div key={a.id}
                     className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${isUrgent ? "bg-red-50 border-red-200" : isSoon ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-100"}`}>
@@ -222,8 +242,12 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
                       <p className="text-sm font-semibold text-ink truncate">{a.title}</p>
                       <p className="text-xs text-slate_mist truncate">{a.course_title}</p>
                       <p className={`text-xs font-bold mt-0.5 ${isUrgent ? "text-red-600" : isSoon ? "text-amber-600" : "text-slate_mist"}`}>
-                        {daysLeft === 0 ? "Due today!" : daysLeft === 1 ? "Due tomorrow!" : `Due in ${daysLeft} days`}
-                        <span className="font-normal text-slate_mist ml-1">Â· {dueDate.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
+                        {!hasDeadline
+                          ? (a.duration_days > 0 ? `${a.duration_days}-day deadline (starts on open)` : "No deadline")
+                          : daysLeft <= 0 ? "Due today!" : daysLeft === 1 ? "Due tomorrow!" : `Due in ${daysLeft} days`}
+                        {dueDate && (
+                          <span className="font-normal text-slate_mist ml-1">· {dueDate.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
+                        )}
                       </p>
                     </div>
                   </div>

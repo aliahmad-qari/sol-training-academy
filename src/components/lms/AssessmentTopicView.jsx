@@ -27,8 +27,22 @@ export default function AssessmentTopicView({ topic, user, enrollment, isComplet
     setUploading(true);
     try {
       const { file_url } = await uploadFile({ file, kind: "assignment" });
+      // This assessment topic is mirrored to an Assignment record (see TopicModal
+      // sync). The "My Assessments" tab and admin gradebook key submissions on
+      // the Assignment id, so submit against that id to keep both entry points in
+      // sync. Fall back to the topic id for legacy topics without a mirror yet.
+      const topicId = topic._id || topic.id;
+      let assignmentId = topicId;
+      try {
+        const res = await apiClient.get('/assignments', {
+          params: { source_topic_id: topicId, limit: 1 },
+        });
+        const linked = res.data?.data?.[0];
+        if (linked?._id || linked?.id) assignmentId = linked._id || linked.id;
+      } catch { /* no mirror — fall back to topic id */ }
+
       await apiClient.post('/submissions', {
-        assignment_id: topic._id || topic.id,
+        assignment_id: assignmentId,
         assignment_title: topic.title,
         course_id: enrollment.course_id,
         course_title: enrollment.course_title,

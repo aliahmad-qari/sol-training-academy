@@ -18,6 +18,11 @@ const assignmentSchema = new Schema(
     course_title: { type: String, trim: true },
     module_title: { type: String, trim: true },
 
+    // When an assignment is auto-created from a course topic (type: 'assessment')
+    // via the TopicModal, this links it back to that CourseTopic so edits/deletes
+    // stay in sync and no duplicate assignment records are created.
+    source_topic_id: { type: Schema.Types.ObjectId, ref: 'CourseTopic', index: true },
+
     title: { type: String, required: [true, 'Assignment title is required'], trim: true },
     instructions: { type: String },
 

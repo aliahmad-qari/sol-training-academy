@@ -1,5 +1,5 @@
 ﻿import mongoose from 'mongoose';
-import { CourseTopic, CourseModule, Course } from '../models/index.js';
+import { CourseTopic, CourseModule, Course, Assignment } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -143,6 +143,9 @@ export const deleteTopic = asyncHandler(async (req, res) => {
   const courseId = topic.course_id;
   await topic.deleteOne();
   await syncTopicCount(courseId);
+  // Remove any Assignment auto-synced from this topic (type: 'assessment') so it
+  // doesn't linger in the student/admin assignment tabs after the topic is gone.
+  await Assignment.deleteMany({ source_topic_id: topic._id });
   // Reclaim Cloudinary storage for any uploaded assets (non-blocking failures).
   await reclaimTopicAssets(topic);
   return sendOk(res, { id: req.params.id }, 'Topic deleted');

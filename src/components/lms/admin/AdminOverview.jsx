@@ -10,6 +10,7 @@ const PIE_COLORS = ["#D97706", "#3B82F6", "#10B981", "#8B5CF6"];
 
 export default function AdminOverview({ courses, enrollments, quizAttempts, setActiveTab }) {
   const [pendingAssignments, setPendingAssignments] = useState(0);
+  const [totalAssignments, setTotalAssignments] = useState(0);
   const [pendingDocs, setPendingDocs] = useState([]);
   const [teamCount, setTeamCount] = useState(null); // null = loading
 
@@ -17,6 +18,13 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
     // Pending assignment submissions
     apiClient.get('/submissions?status=submitted&limit=200')
       .then(res => setPendingAssignments((res.data?.data ?? []).length))
+      .catch(() => {});
+    // Total assignment definitions (includes assessments synced from topics)
+    apiClient.get('/assignments?limit=1')
+      .then(res => {
+        const total = res.data?.meta?.total ?? (Array.isArray(res.data?.data) ? res.data.data.length : 0);
+        setTotalAssignments(total);
+      })
       .catch(() => {});
     // Admin overview (pending docs — not yet exposed)
     apiClient.get('/admin/overview')
@@ -50,6 +58,7 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
     { label: "New Enrollments",    value: newEnrollments,               icon: Layers,     color: "text-purple-600 bg-purple-50 border-purple-100",   tab: "students" },
     { label: "Completion Rate",    value: `${completionRate}%`,         icon: BarChart3,  color: "text-harvest bg-harvest/10 border-harvest/20",     tab: "analytics" },
     { label: "Certificates Issued",value: certs,                        icon: Award,      color: "text-emerald-600 bg-emerald-50 border-emerald-100",tab: "certificates" },
+    { label: "Total Assignments",  value: totalAssignments,             icon: FileText,   color: "text-blue-600 bg-blue-50 border-blue-100",         tab: "assessments" },
     { label: "Pending Assignments",value: pendingAssignments,           icon: FileText,   color: "text-amber-600 bg-amber-50 border-amber-100",      tab: "gradebook" },
     { label: "Quiz Attempts",      value: quizAttempts.length,          icon: HelpCircle, color: "text-rose-600 bg-rose-50 border-rose-100",         tab: "analytics" },
     { label: "Quiz Pass Rate",     value: `${passRate}%`,               icon: TrendingUp, color: "text-teal-600 bg-teal-50 border-teal-100",         tab: "analytics" },

@@ -11,7 +11,7 @@ import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
 export const listAssignments = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'team_member'].includes(req.user.role);
   const { filter, sort, skip, limit, page } = buildQuery(req.query, {
-    allowedFilters: ['course_id', 'module_id', 'is_published'],
+    allowedFilters: ['course_id', 'module_id', 'is_published', 'source_topic_id'],
     searchFields: ['title'],
     defaultSort: 'sort_order',
   });

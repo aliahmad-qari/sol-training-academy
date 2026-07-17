@@ -380,15 +380,61 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
       assessment_due_days: toNum(form.assessment_due_days),
       assessment_max_marks: toNum(form.assessment_max_marks),
     };
+    let savedTopic;
     if (topic?.id) {
-      await base44.entities.CourseTopic.update(topic.id, data);
+      savedTopic = await base44.entities.CourseTopic.update(topic.id, data);
     } else {
-      await base44.entities.CourseTopic.create(data);
+      savedTopic = await base44.entities.CourseTopic.create(data);
     }
+
+    // Keep an Assignment record in sync so assessment topics show up in the
+    // student & admin "Assignments" tabs (which read the Assignment entity,
+    // not CourseTopic). Best-effort: never block the topic save on this.
+    await syncAssignment(savedTopic || { ...data, id: topic?.id });
+
     toast.success("Topic saved.");
     onClose();
     await onSave();
     setSaving(false);
+  };
+
+  // Mirror an "assessment" topic into the Assignment entity (create/update),
+  // and tear the mirror down if the topic is no longer an assessment.
+  const syncAssignment = async (t) => {
+    const topicId = t?.id || topic?.id;
+    if (!topicId) return;
+    try {
+      const existing = await base44.entities.Assignment
+        .filter({ source_topic_id: topicId })
+        .catch(() => []);
+      const linked = existing?.[0];
+
+      if (form.type !== "assessment") {
+        // Type changed away from assessment — remove any stale mirror.
+        if (linked) await base44.entities.Assignment.delete(linked.id);
+        return;
+      }
+
+      const payload = {
+        source_topic_id: topicId,
+        course_id: form.course_id,
+        module_id: form.module_id,
+        title: form.title.trim(),
+        instructions: form.assessment_instructions || "",
+        duration_days: toNum(form.assessment_due_days) || 0,
+        max_marks: toNum(form.assessment_max_marks) || 100,
+        passing_marks: toNum(form.passing_marks) || 50,
+        brief_file_url: form.assessment_file_url || "",
+        brief_file_name: form.assessment_file_name || "",
+        is_published: true,
+      };
+
+      if (linked) await base44.entities.Assignment.update(linked.id, payload);
+      else await base44.entities.Assignment.create(payload);
+    } catch (err) {
+      // The topic itself already saved — surface a soft warning only.
+      toast.warning("Topic saved, but syncing it to the Assignments list failed.");
+    }
   };
 
   return (
