@@ -304,7 +304,7 @@ export default function StudentDashboard() {
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-harvest border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white font-display font-semibold text-base mb-1">SOL Training Academy</p>
-          <p className="text-white/40 text-sm">Loading your dashboardâ€¦</p>
+          <p className="text-white/40 text-sm">Loading your dashboard</p>
         </div>
       </div>
     );

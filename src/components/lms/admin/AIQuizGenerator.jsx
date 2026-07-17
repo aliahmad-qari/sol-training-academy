@@ -10,7 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
+export default function AIQuizGenerator({ courses, modules, onClose, onSave, onApply }) {
+  // Embedded mode: when `onApply` is provided (e.g. from TopicModal), the modal
+  // hands the reviewed questions back to the caller instead of creating a brand
+  // new quiz topic. In that mode the course/module/title/passing fields are
+  // supplied by the host, so they are hidden here.
+  const embedded = typeof onApply === "function";
+
   const [step, setStep] = useState("configure"); // configure | preview | saving
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -32,9 +38,13 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
 
   const generate = async () => {
     if (!content.trim()) { toast.error("Please paste some content first."); return; }
-    if (!courseId) { toast.error("Please select a course."); return; }
-    if (!moduleId) { toast.error("Please select a module - quizzes must belong to a module."); return; }
-    if (!quizTitle.trim()) { toast.error("Please enter a quiz title."); return; }
+    // In embedded mode the host (TopicModal) owns course/module/title, so only
+    // require them for the standalone "create a new quiz topic" flow.
+    if (!embedded) {
+      if (!courseId) { toast.error("Please select a course."); return; }
+      if (!moduleId) { toast.error("Please select a module - quizzes must belong to a module."); return; }
+      if (!quizTitle.trim()) { toast.error("Please enter a quiz title."); return; }
+    }
 
     setGenerating(true);
     try {
@@ -92,6 +102,15 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
     }
   };
 
+  // Embedded mode: hand the reviewed questions back to the host instead of
+  // persisting a new quiz topic. The host appends them to the quiz it's editing.
+  const applyQuestions = () => {
+    if (generatedQuestions.length === 0) { toast.error("No questions to add."); return; }
+    onApply(generatedQuestions);
+    toast.success(`${generatedQuestions.length} AI question${generatedQuestions.length !== 1 ? "s" : ""} added to the quiz.`);
+    onClose();
+  };
+
   const updateQuestion = (i, field, value) => {
     setGeneratedQuestions(prev => {
       const updated = [...prev];
@@ -146,31 +165,38 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
           {/* ── CONFIGURE STEP ── */}
           {step === "configure" && (
             <>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Course *</Label>
-                  <Select value={courseId} onValueChange={v => { setCourseId(v); setModuleId(""); }}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Select course…" /></SelectTrigger>
-                    <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Module *</Label>
-                  <Select value={moduleId} onValueChange={setModuleId} disabled={!courseId}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder={courseId ? "Select module…" : "Select a course first"} /></SelectTrigger>
-                    <SelectContent>{courseMods.map(m => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)}</SelectContent>
-                  </Select>
-                  {courseId && courseMods.length === 0 && (
-                    <p className="text-[10px] text-amber-600 mt-1">This course has no modules yet — create one before adding a quiz.</p>
-                  )}
-                </div>
-              </div>
+              {/* Course / Module / Title / Passing are only for the standalone
+                  "create a new quiz topic" flow. In embedded mode the host
+                  (TopicModal) already owns them, so they're hidden. */}
+              {!embedded && (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Course *</Label>
+                      <Select value={courseId} onValueChange={v => { setCourseId(v); setModuleId(""); }}>
+                        <SelectTrigger className="h-10"><SelectValue placeholder="Select course…" /></SelectTrigger>
+                        <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Module *</Label>
+                      <Select value={moduleId} onValueChange={setModuleId} disabled={!courseId}>
+                        <SelectTrigger className="h-10"><SelectValue placeholder={courseId ? "Select module…" : "Select a course first"} /></SelectTrigger>
+                        <SelectContent>{courseMods.map(m => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)}</SelectContent>
+                      </Select>
+                      {courseId && courseMods.length === 0 && (
+                        <p className="text-[10px] text-amber-600 mt-1">This course has no modules yet — create one before adding a quiz.</p>
+                      )}
+                    </div>
+                  </div>
 
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Quiz Title *</Label>
-                <Input value={quizTitle} onChange={e => setQuizTitle(e.target.value)}
-                  placeholder="e.g. Module 2 Knowledge Check" className="h-10" />
-              </div>
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">Quiz Title *</Label>
+                    <Input value={quizTitle} onChange={e => setQuizTitle(e.target.value)}
+                      placeholder="e.g. Module 2 Knowledge Check" className="h-10" />
+                  </div>
+                </>
+              )}
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -206,14 +232,16 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">
-                  Passing Score (%) — students need this % to pass
-                </Label>
-                <Input type="number" min={1} max={100} value={passingScore}
-                  onChange={e => setPassingScore(Number(e.target.value))}
-                  className="h-10 w-32" />
-              </div>
+              {!embedded && (
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">
+                    Passing Score (%) — students need this % to pass
+                  </Label>
+                  <Input type="number" min={1} max={100} value={passingScore}
+                    onChange={e => setPassingScore(Number(e.target.value))}
+                    className="h-10 w-32" />
+                </div>
+              )}
 
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">
@@ -240,10 +268,10 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
                 <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-ink">
-                    {generatedQuestions.length} questions generated for <span className="text-purple-700">{quizTitle}</span>
+                    {generatedQuestions.length} questions generated{quizTitle ? <> for <span className="text-purple-700">{quizTitle}</span></> : null}
                   </p>
                   <p className="text-xs text-slate_mist mt-0.5">
-                    Review below. You can edit question text or correct answers before saving.
+                    Review below. You can edit question text or correct answers before {embedded ? "adding them to the quiz" : "saving"}.
                   </p>
                 </div>
               </div>
@@ -337,13 +365,20 @@ export default function AIQuizGenerator({ courses, modules, onClose, onSave }) {
               <Button variant="outline" onClick={() => setStep("configure")} className="gap-1.5">
                 <RefreshCw className="w-4 h-4" /> Regenerate
               </Button>
-              <Button onClick={saveQuiz} disabled={saving}
-                className="flex-1 bg-harvest text-white gap-2 font-semibold">
-                {saving
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
-                  : <><Save className="w-4 h-4" /> Save Quiz ({generatedQuestions.length} Questions)</>
-                }
-              </Button>
+              {embedded ? (
+                <Button onClick={applyQuestions}
+                  className="flex-1 bg-harvest text-white gap-2 font-semibold">
+                  <Save className="w-4 h-4" /> Add {generatedQuestions.length} Questions to Quiz
+                </Button>
+              ) : (
+                <Button onClick={saveQuiz} disabled={saving}
+                  className="flex-1 bg-harvest text-white gap-2 font-semibold">
+                  {saving
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                    : <><Save className="w-4 h-4" /> Save Quiz ({generatedQuestions.length} Questions)</>
+                  }
+                </Button>
+              )}
             </>
           )}
         </div>

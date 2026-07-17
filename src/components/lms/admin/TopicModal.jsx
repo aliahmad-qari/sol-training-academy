@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { X, Save, Plus, Trash2, Video, BookOpen, HelpCircle, FileText, Upload } from "lucide-react";
+import { X, Save, Plus, Trash2, Video, BookOpen, HelpCircle, FileText, Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import AIQuizGenerator from "@/components/lms/admin/AIQuizGenerator";
 
 const TYPE_CONFIG = {
   video:      { icon: Video,      color: "bg-blue-100 text-blue-600",   label: "Video" },
@@ -129,9 +130,13 @@ function ReadingFields({ form, setForm }) {
 
 // ── Quiz Fields ───────────────────────────────────────────────────────────────
 function QuizFields({ form, setForm }) {
+  const [aiOpen, setAiOpen] = useState(false);
   const questions = form.quiz_questions?.length ? form.quiz_questions : [];
 
   const addQuestion = () => setForm(f => ({ ...f, quiz_questions: [...(f.quiz_questions || []), { ...EMPTY_QUESTION }] }));
+
+  const appendQuestions = (generated) =>
+    setForm(f => ({ ...f, quiz_questions: [...(f.quiz_questions || []), ...generated] }));
 
   const updateQuestion = (qi, field, val) => setForm(f => {
     const qs = [...(f.quiz_questions || [])];
@@ -153,6 +158,31 @@ function QuizFields({ form, setForm }) {
 
   return (
     <div className="space-y-4">
+      {/* AI Generator — same procedure as the standalone AI Quiz Generator */}
+      <button
+        type="button"
+        onClick={() => setAiOpen(true)}
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 text-left hover:shadow-sm transition-all"
+      >
+        <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-4 h-4 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-ink">Generate with AI</p>
+          <p className="text-xs text-slate_mist">Paste content → AI creates questions → review & add to this quiz</p>
+        </div>
+        <span className="text-xs font-semibold text-purple-600 flex-shrink-0">Open</span>
+      </button>
+
+      {aiOpen && (
+        <AIQuizGenerator
+          courses={[]}
+          modules={[]}
+          onClose={() => setAiOpen(false)}
+          onApply={appendQuestions}
+        />
+      )}
+
       {/* Quiz Config */}
       <SectionBox>
         <div className="grid grid-cols-3 gap-3">
@@ -178,7 +208,12 @@ function QuizFields({ form, setForm }) {
         {questions.map((q, qi) => (
           <div key={qi} className="bg-white border border-border/50 rounded-xl p-4 space-y-3 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate_mist uppercase tracking-wider">Question {qi + 1}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate_mist uppercase tracking-wider">Question {qi + 1}</span>
+                <span className="text-[10px] font-medium uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate_mist">
+                  {q.type === "true_false" ? "True/False" : "MCQ"}
+                </span>
+              </div>
               <button onClick={() => removeQuestion(qi)} className="text-slate_mist hover:text-destructive p-1 rounded">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -187,21 +222,46 @@ function QuizFields({ form, setForm }) {
               <FieldLabel>Question Text</FieldLabel>
               <Textarea value={q.question} onChange={e => updateQuestion(qi, "question", e.target.value)} rows={2} placeholder="Enter the question…" className="text-sm resize-none" />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {(q.options || ["", "", "", ""]).map((opt, oi) => (
-                <div key={oi} className={`flex items-center gap-2 rounded-lg border p-2 transition-colors ${q.correct_index === oi ? "border-green-400 bg-green-50" : "border-border/40"}`}>
-                  <button
-                    onClick={() => updateQuestion(qi, "correct_index", oi)}
-                    className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition-colors ${q.correct_index === oi ? "border-green-500 bg-green-500" : "border-slate-300"}`}
-                    title="Mark as correct"
-                  >
-                    {q.correct_index === oi && <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />}
-                  </button>
-                  <Input value={opt} onChange={e => updateOption(qi, oi, e.target.value)}
-                    placeholder={`Option ${oi + 1}`} className="border-0 shadow-none p-0 h-auto text-sm focus-visible:ring-0 bg-transparent" />
+
+            {/* Answer editor — True/False gets a two-button toggle; everything
+                else uses the standard 4-option MCQ grid. */}
+            {q.type === "true_false" ? (
+              <div>
+                <FieldLabel>Correct Answer</FieldLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  {["True", "False"].map((opt, oi) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => updateQuestion(qi, "correct_index", oi)}
+                      className={`py-2 rounded-lg text-sm font-semibold border-2 transition-all ${
+                        q.correct_index === oi
+                          ? "border-green-500 bg-green-500 text-white"
+                          : "border-border/40 text-slate_mist hover:bg-slate-50"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {(q.options || ["", "", "", ""]).map((opt, oi) => (
+                  <div key={oi} className={`flex items-center gap-2 rounded-lg border p-2 transition-colors ${q.correct_index === oi ? "border-green-400 bg-green-50" : "border-border/40"}`}>
+                    <button
+                      onClick={() => updateQuestion(qi, "correct_index", oi)}
+                      className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition-colors ${q.correct_index === oi ? "border-green-500 bg-green-500" : "border-slate-300"}`}
+                      title="Mark as correct"
+                    >
+                      {q.correct_index === oi && <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />}
+                    </button>
+                    <Input value={opt} onChange={e => updateOption(qi, oi, e.target.value)}
+                      placeholder={`Option ${oi + 1}`} className="border-0 shadow-none p-0 h-auto text-sm focus-visible:ring-0 bg-transparent" />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <FieldLabel>Marks</FieldLabel>
