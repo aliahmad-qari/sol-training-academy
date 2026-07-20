@@ -374,7 +374,7 @@ const ASSIGNMENT_DURATION_OPTIONS = [
 ];
 
 // ── Assignment Builder ────────────────────────────────────────────────────────
-function AssignmentModal({ assignment, courses, modules, onClose, onSave }) {
+export function AssignmentModal({ assignment, courses, modules, onClose, onSave }) {
   const [form, setForm] = useState(assignment || {
     title: "", course_id: "", module_id: "", instructions: "",
     duration_days: 7, max_marks: 100, passing_marks: 50, is_published: false,
@@ -394,11 +394,13 @@ function AssignmentModal({ assignment, courses, modules, onClose, onSave }) {
       data.brief_file_url = file_url;
       data.brief_file_name = file.name;
     }
-    if (assignment?.id) await base44.entities.Assignment.update(assignment.id, data);
-    else await base44.entities.Assignment.create(data);
+    const saved = assignment?.id
+      ? await base44.entities.Assignment.update(assignment.id, data)
+      : await base44.entities.Assignment.create(data);
     toast.success("Assignment saved.");
     setSaving(false);
-    onSave(); onClose();
+    onSave?.(saved);
+    onClose();
   };
 
   return (

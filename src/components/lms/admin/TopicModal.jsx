@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import AIQuizGenerator from "@/components/lms/admin/AIQuizGenerator";
+import { AssignmentModal } from "@/components/lms/admin/AdminAssessmentManager";
 
 const TYPE_CONFIG = {
   video:      { icon: Video,      color: "bg-blue-100 text-blue-600",   label: "Video" },
@@ -359,13 +360,33 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
     assignment_instructions: "", assignment_due_days: "", assignment_max_marks: "", assignment_file_url: "", assignment_file_name: "", assignment_id: "",
   });
   const [saving, setSaving] = useState(false);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [assignmentPrompted, setAssignmentPrompted] = useState(false);
 
   const cfg = TYPE_CONFIG[form.type] || TYPE_CONFIG.video;
   const Icon = cfg.icon;
 
-  const handleTypeChange = (val) => setForm(f => ({ ...f, type: val }));
+  const handleTypeChange = (val) => {
+    setForm(f => ({ ...f, type: val }));
+    if (val !== "assignment") {
+      setShowAssignmentModal(false);
+      setAssignmentPrompted(false);
+    }
+  };
 
   const toNum = (v) => (v === "" || v === null || v === undefined) ? null : Number(v);
+
+  useEffect(() => {
+    if (form.type === "assignment" && !form.assignment_id && !assignmentPrompted) {
+      setShowAssignmentModal(true);
+      setAssignmentPrompted(true);
+      return;
+    }
+    if (form.type !== "assignment") {
+      setAssignmentPrompted(false);
+      setShowAssignmentModal(false);
+    }
+  }, [form.type, form.assignment_id, assignmentPrompted]);
 
   useEffect(() => {
     let alive = true;
@@ -449,11 +470,12 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
     setSaving(true);
     try {
       const topicId = topic?.id || topic?._id || null;
-      let assignmentId = null;
-      if (form.type === "assignment") {
-        assignmentId = await persistAssignment(topicId);
+      const assignmentId = form.type === "assignment" ? (form.assignment_id || topic?.assignment_id || null) : null;
+      if (form.type === "assignment" && !assignmentId) {
+        toast.error("Please create the assignment first.");
+        setShowAssignmentModal(true);
+        return;
       }
-
       const data = buildTopicData(assignmentId);
       let savedTopic;
       if (topicId) {
@@ -548,7 +570,17 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
           {form.type === "video"      && <VideoFields form={form} setForm={setForm} />}
           {form.type === "reading"    && <ReadingFields form={form} setForm={setForm} />}
           {form.type === "quiz"       && <QuizFields form={form} setForm={setForm} />}
-          {form.type === "assignment" && <AssignmentFields form={form} setForm={setForm} />}
+          {form.type === "assignment" && (
+            <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-border/40">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-ink">Assignment Builder</p>
+                  <p className="text-xs text-slate_mist">{form.assignment_id ? "Assignment saved. Open the same modal to edit it." : "Open the existing assignment creation modal from AdminAssessmentManager."}</p>
+                </div>
+                <Button type="button" onClick={() => setShowAssignmentModal(true)} className="bg-harvest text-white">{form.assignment_id ? "Edit Assignment" : "Create Assignment"}</Button>
+              </div>
+            </div>
+          )}
 
           {/* Free Preview */}
           <div
@@ -566,6 +598,45 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
             </div>
           </div>
         </div>
+
+        {showAssignmentModal && (
+          <AssignmentModal
+            assignment={form.assignment_id ? {
+              id: form.assignment_id,
+              title: form.title,
+              course_id: form.course_id || courseId || topic?.course_id,
+              module_id: form.module_id || moduleId || topic?.module_id,
+              instructions: form.assignment_instructions || "",
+              duration_days: form.assignment_due_days || 7,
+              max_marks: form.assignment_max_marks || 100,
+              passing_marks: form.passing_marks || 50,
+              brief_file_url: form.assignment_file_url || "",
+              brief_file_name: form.assignment_file_name || "",
+              is_published: true,
+            } : null}
+            courses={[{ id: form.course_id || courseId || topic?.course_id || "", title: "Current Course" }]}
+            modules={[{ id: form.module_id || moduleId || topic?.module_id || "", title: "Current Module", course_id: form.course_id || courseId || topic?.course_id || "" }]}
+            onClose={() => setShowAssignmentModal(false)}
+            onSave={(saved) => {
+              const savedId = saved?.id || saved?._id || null;
+              if (!savedId) return;
+              setForm(f => ({
+                ...f,
+                assignment_id: savedId,
+                title: saved.title || f.title,
+                course_id: saved.course_id || f.course_id,
+                module_id: saved.module_id || f.module_id,
+                assignment_instructions: saved.instructions || f.assignment_instructions || "",
+                assignment_due_days: saved.duration_days ?? f.assignment_due_days ?? "",
+                assignment_max_marks: saved.max_marks ?? f.assignment_max_marks ?? "",
+                assignment_file_url: saved.brief_file_url || f.assignment_file_url || "",
+                assignment_file_name: saved.brief_file_name || f.assignment_file_name || "",
+                passing_marks: saved.passing_marks ?? f.passing_marks ?? "",
+              }));
+              setShowAssignmentModal(false);
+            }}
+          />
+        )}
 
         {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-border/50 bg-slate-50/50 flex-shrink-0">
