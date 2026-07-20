@@ -601,11 +601,11 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
 
         {showAssignmentModal && (
           <AssignmentModal
-            assignment={form.assignment_id ? {
-              id: form.assignment_id,
+            assignment={{
+              id: form.assignment_id || undefined,
               title: form.title,
-              course_id: form.course_id || courseId || topic?.course_id,
-              module_id: form.module_id || moduleId || topic?.module_id,
+              course_id: form.course_id || courseId || topic?.course_id || "",
+              module_id: form.module_id || moduleId || topic?.module_id || "",
               instructions: form.assignment_instructions || "",
               duration_days: form.assignment_due_days || 7,
               max_marks: form.assignment_max_marks || 100,
@@ -613,7 +613,7 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
               brief_file_url: form.assignment_file_url || "",
               brief_file_name: form.assignment_file_name || "",
               is_published: true,
-            } : null}
+            }}
             courses={[{ id: form.course_id || courseId || topic?.course_id || "", title: "Current Course" }]}
             modules={[{ id: form.module_id || moduleId || topic?.module_id || "", title: "Current Module", course_id: form.course_id || courseId || topic?.course_id || "" }]}
             onClose={() => setShowAssignmentModal(false)}
