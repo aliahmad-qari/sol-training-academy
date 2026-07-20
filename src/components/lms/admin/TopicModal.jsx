@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import { X, Save, Plus, Trash2, Video, BookOpen, HelpCircle, FileText, Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -362,6 +363,9 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
   const [saving, setSaving] = useState(false);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [assignmentPrompted, setAssignmentPrompted] = useState(false);
+  const [assignmentLookup, setAssignmentLookup] = useState({ course: null, module: null });
+  const [courseList, setCourseList] = useState([]);
+  const [moduleList, setModuleList] = useState([]);
 
   const cfg = TYPE_CONFIG[form.type] || TYPE_CONFIG.video;
   const Icon = cfg.icon;
@@ -376,9 +380,29 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
 
   const toNum = (v) => (v === "" || v === null || v === undefined) ? null : Number(v);
 
+  const loadAssignmentLookup = async () => {
+    const courseTarget = form.course_id || courseId || topic?.course_id;
+    const moduleTarget = form.module_id || moduleId || topic?.module_id;
+    const [course, module, courses, modules] = await Promise.all([
+      courseTarget ? apiClient.get(`/courses/${courseTarget}`).then(r => r.data?.data || r.data || null).catch(() => null) : Promise.resolve(null),
+      moduleTarget ? apiClient.get(`/modules/${moduleTarget}`).then(r => r.data?.data || r.data || null).catch(() => null) : Promise.resolve(null),
+      base44.entities.Course.list().catch(() => []),
+      base44.entities.CourseModule.list().catch(() => []),
+    ]);
+    setAssignmentLookup({ course, module });
+    setCourseList(Array.isArray(courses) ? courses : []);
+    setModuleList(Array.isArray(modules) ? modules : []);
+    return { course, module };
+  };
+
+  const openAssignmentModal = async () => {
+    await loadAssignmentLookup();
+    setShowAssignmentModal(true);
+  };
+
   useEffect(() => {
     if (form.type === "assignment" && !form.assignment_id && !assignmentPrompted) {
-      setShowAssignmentModal(true);
+      void openAssignmentModal();
       setAssignmentPrompted(true);
       return;
     }
@@ -387,6 +411,25 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
       setShowAssignmentModal(false);
     }
   }, [form.type, form.assignment_id, assignmentPrompted]);
+
+  useEffect(() => {
+    if (!showAssignmentModal) return;
+    let alive = true;
+    const courseTarget = form.course_id || courseId || topic?.course_id;
+    const moduleTarget = form.module_id || moduleId || topic?.module_id;
+    Promise.all([
+      courseTarget ? apiClient.get(`/courses/${courseTarget}`).then(r => r.data?.data || r.data || null).catch(() => null) : Promise.resolve(null),
+      moduleTarget ? apiClient.get(`/modules/${moduleTarget}`).then(r => r.data?.data || r.data || null).catch(() => null) : Promise.resolve(null),
+      base44.entities.Course.list().catch(() => []),
+      base44.entities.CourseModule.list().catch(() => []),
+    ]).then(([course, module, courses, modules]) => {
+      if (!alive) return;
+      setAssignmentLookup({ course, module });
+      setCourseList(Array.isArray(courses) ? courses : []);
+      setModuleList(Array.isArray(modules) ? modules : []);
+    });
+    return () => { alive = false; };
+  }, [showAssignmentModal, form.course_id, form.module_id, courseId, moduleId, topic?.course_id, topic?.module_id]);
 
   useEffect(() => {
     let alive = true;
@@ -473,7 +516,7 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
       const assignmentId = form.type === "assignment" ? (form.assignment_id || topic?.assignment_id || null) : null;
       if (form.type === "assignment" && !assignmentId) {
         toast.error("Please create the assignment first.");
-        setShowAssignmentModal(true);
+        void openAssignmentModal();
         return;
       }
       const data = buildTopicData(assignmentId);
@@ -577,7 +620,7 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
                   <p className="text-sm font-semibold text-ink">Assignment Builder</p>
                   <p className="text-xs text-slate_mist">{form.assignment_id ? "Assignment saved. Open the same modal to edit it." : "Open the existing assignment creation modal from AdminAssessmentManager."}</p>
                 </div>
-                <Button type="button" onClick={() => setShowAssignmentModal(true)} className="bg-harvest text-white">{form.assignment_id ? "Edit Assignment" : "Create Assignment"}</Button>
+                <Button type="button" onClick={() => openAssignmentModal()} className="bg-harvest text-white">{form.assignment_id ? "Edit Assignment" : "Create Assignment"}</Button>
               </div>
             </div>
           )}
@@ -604,8 +647,8 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
             assignment={{
               id: form.assignment_id || undefined,
               title: form.title,
-              course_id: form.course_id || courseId || topic?.course_id || "",
-              module_id: form.module_id || moduleId || topic?.module_id || "",
+              course_id: String(form.course_id || courseId || topic?.course_id || ""),
+              module_id: String(form.module_id || moduleId || topic?.module_id || ""),
               instructions: form.assignment_instructions || "",
               duration_days: form.assignment_due_days || 7,
               max_marks: form.assignment_max_marks || 100,
@@ -614,8 +657,8 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
               brief_file_name: form.assignment_file_name || "",
               is_published: true,
             }}
-            courses={[{ id: form.course_id || courseId || topic?.course_id || "", title: "Current Course" }]}
-            modules={[{ id: form.module_id || moduleId || topic?.module_id || "", title: "Current Module", course_id: form.course_id || courseId || topic?.course_id || "" }]}
+            courses={courseList.length ? courseList.map(c => ({ id: String(c.id || c._id), title: c.title + (c.level ? " (" + String(c.level).replace("level", "Level ") + ")" : "") })) : (assignmentLookup.course ? [{ id: String(assignmentLookup.course.id || assignmentLookup.course._id), title: assignmentLookup.course.title }] : [])}
+            modules={moduleList.length ? moduleList.map(m => ({ id: String(m.id || m._id), title: m.title, course_id: String(m.course_id || "") })) : (assignmentLookup.module ? [{ id: String(assignmentLookup.module.id || assignmentLookup.module._id), title: assignmentLookup.module.title, course_id: String(assignmentLookup.module.course_id || "") }] : [])}
             onClose={() => setShowAssignmentModal(false)}
             onSave={(saved) => {
               const savedId = saved?.id || saved?._id || null;
