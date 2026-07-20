@@ -18,7 +18,8 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
 
   useEffect(() => {
     if (!enrollments.length) return;
-    const courseIds = [...new Set(enrollments.map(e => e.course_id))];
+    const courseIds = [...new Set(enrollments.map(e => String(e.course_id)))];
+    const courseLevels = [...new Set(enrollments.map(e => e.course_level).filter(Boolean))];
     // Assignments carry `duration_days` (deadline is relative to first access,
     // stored per-user in localStorage), not an absolute `due_date`. We surface
     // unsubmitted assignments for enrolled courses, computing a deadline from
@@ -30,7 +31,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       const submittedIds = new Set(subs.map(s => s.assignment_id));
       const now = Date.now();
       const mine = all
-        .filter(a => courseIds.includes(a.course_id) && !submittedIds.has(a.id))
+        .filter(a => (courseIds.includes(String(a.course_id)) || (a.course_level && courseLevels.includes(a.course_level))) && !submittedIds.has(a.id))
         .map(a => {
           let dueMs = null;
           if (a.duration_days > 0 && user) {

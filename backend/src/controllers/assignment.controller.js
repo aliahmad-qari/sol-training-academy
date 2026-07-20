@@ -11,7 +11,7 @@ import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
 export const listAssignments = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'team_member'].includes(req.user.role);
   const { filter, sort, skip, limit, page } = buildQuery(req.query, {
-    allowedFilters: ['course_id', 'module_id', 'is_published', 'source_topic_id'],
+    allowedFilters: ['course_id', 'module_id', 'course_level', 'is_published', 'source_topic_id'],
     searchFields: ['title'],
     defaultSort: 'sort_order',
   });
@@ -40,6 +40,7 @@ export const createAssignment = asyncHandler(async (req, res) => {
   const course = await Course.findById(req.body.course_id).lean();
   if (!course) throw ApiError.badRequest('Invalid course_id.');
   req.body.course_title = req.body.course_title || course.title;
+  req.body.course_level = req.body.course_level || course.level;
   const assignment = await Assignment.create(req.body);
   return sendCreated(res, assignment, 'Assignment created');
 });
@@ -48,6 +49,12 @@ export const createAssignment = asyncHandler(async (req, res) => {
  * PUT /api/v1/assignments/:id   (staff)
  */
 export const updateAssignment = asyncHandler(async (req, res) => {
+  if (req.body.course_id) {
+    const course = await Course.findById(req.body.course_id).lean();
+    if (!course) throw ApiError.badRequest('Invalid course_id.');
+    req.body.course_title = req.body.course_title || course.title;
+    req.body.course_level = req.body.course_level || course.level;
+  }
   const assignment = await Assignment.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,

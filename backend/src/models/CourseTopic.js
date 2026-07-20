@@ -30,7 +30,7 @@ const quizQuestionSchema = new Schema(
  *  - video      -> video_url, video_duration_mins, content
  *  - reading    -> reading_file_url, content, reading_duration_mins
  *  - quiz       -> quiz_questions, passing_marks, total_marks, time_limit_mins
- *  - assessment -> assessment_instructions, assessment_* fields
+ *  - assessment/assignment -> assessment_instructions, assessment_* fields
  */
 const courseTopicSchema = new Schema(
   {
@@ -49,12 +49,13 @@ const courseTopicSchema = new Schema(
     title: { type: String, required: [true, 'Topic title is required'], trim: true },
     type: {
       type: String,
-      enum: ['video', 'quiz', 'reading', 'assessment'],
+      enum: ['video', 'quiz', 'reading', 'assessment', 'assignment'],
       default: 'video',
       index: true,
     },
     sort_order: { type: Number, default: 0 },
     is_free_preview: { type: Boolean, default: false },
+    assignment_id: { type: Schema.Types.ObjectId, ref: 'Assignment', index: true },
 
     // Video
     video_url: { type: String, trim: true },

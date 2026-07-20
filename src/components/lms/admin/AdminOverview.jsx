@@ -19,7 +19,7 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
     apiClient.get('/submissions?status=submitted&limit=200')
       .then(res => setPendingAssignments((res.data?.data ?? []).length))
       .catch(() => {});
-    // Total assignment definitions (includes assessments synced from topics)
+    // Total assignment definitions (includes assignment records synced from topics)
     apiClient.get('/assignments?limit=1')
       .then(res => {
         const total = res.data?.meta?.total ?? (Array.isArray(res.data?.data) ? res.data.data.length : 0);

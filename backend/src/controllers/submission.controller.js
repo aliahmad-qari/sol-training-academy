@@ -28,7 +28,7 @@ const resolveSubmissionTarget = async (assignmentId) => {
     return {
       kind: 'assignment',
       assignment_id: assignment._id,
-      topic_id: undefined,
+      topic_id: assignment.source_topic_id,
       title: assignment.title,
       course_id: assignment.course_id,
       course_title: assignment.course_title,
@@ -39,10 +39,10 @@ const resolveSubmissionTarget = async (assignmentId) => {
   }
 
   const topic = await CourseTopic.findById(assignmentId).lean();
-  if (topic && topic.type === 'assessment') {
+  if (topic && (topic.type === 'assessment' || topic.type === 'assignment')) {
     return {
-      kind: 'assessment_topic',
-      assignment_id: undefined,
+      kind: topic.type === 'assignment' ? 'assignment_topic' : 'assessment_topic',
+      assignment_id: topic.assignment_id,
       topic_id: topic._id,
       title: topic.title,
       course_id: topic.course_id,
@@ -95,7 +95,7 @@ export const createSubmission = asyncHandler(async (req, res) => {
 
   const submission = await AssignmentSubmission.create({
     assignment_id: target.assignment_id,
-    topic_id: target.topic_id,
+    topic_id: req.body.topic_id || target.topic_id,
     assignment_title: target.title,
     course_id: target.course_id,
     course_title: target.course_title || req.body.course_title || '',
@@ -112,12 +112,13 @@ export const createSubmission = asyncHandler(async (req, res) => {
     passing_marks: target.passing_marks,
   });
 
-  if (target.topic_id) {
+  const topicId = req.body.topic_id || target.topic_id;
+  if (topicId) {
     await applyTopicProgress({
       userId: req.user._id,
       courseId: target.course_id,
       actor: req.user,
-      topicId: target.topic_id,
+      topicId,
       completed: true,
     });
   }
@@ -133,7 +134,7 @@ export const createSubmission = asyncHandler(async (req, res) => {
     metadata: {
       tab: 'gradebook',
       assignment_id: target.assignment_id,
-      topic_id: target.topic_id,
+      topic_id: req.body.topic_id || target.topic_id,
       submission_id: submission._id,
       course_id: target.course_id,
       student_id: req.user._id,

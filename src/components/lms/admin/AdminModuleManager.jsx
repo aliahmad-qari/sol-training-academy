@@ -302,7 +302,7 @@ export default function AdminModuleManager({ courses }) {
                                                       className={`flex-shrink-0 ${dragEnabled ? "cursor-grab active:cursor-grabbing text-slate_mist/40 hover:text-slate_mist" : "text-slate_mist/15"}`}>
                                                       <GripVertical className="w-3 h-3" />
                                                     </span>
-                                                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${t.type === "quiz" ? "bg-purple-400" : t.type === "reading" ? "bg-green-400" : t.type === "assessment" ? "bg-amber-400" : "bg-blue-400"}`} />
+                                                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${t.type === "quiz" ? "bg-purple-400" : t.type === "reading" ? "bg-green-400" : (t.type === "assessment" || t.type === "assignment") ? "bg-amber-400" : "bg-blue-400"}`} />
                                                     <span className="flex-1 truncate text-ink">{t.title}</span>
                                                     <span className="capitalize opacity-60">{t.type}</span>
                                                     {t.video_duration_mins > 0 && <span>{t.video_duration_mins}m</span>}

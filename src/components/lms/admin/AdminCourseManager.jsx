@@ -331,8 +331,8 @@ function ModuleRow({ module, courseId, topics, onRefresh }) {
         <div className="p-3 space-y-1.5 bg-white">
           {modTopics.map(t => (
             <div key={t._id || t.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border/30 hover:bg-slate-50 transition-colors text-sm">
-              <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${t.type === "quiz" ? "bg-purple-100" : t.type === "reading" ? "bg-green-100" : t.type === "assessment" ? "bg-amber-100" : "bg-blue-100"}`}>
-                {t.type === "quiz" ? <HelpCircle className="w-3.5 h-3.5 text-purple-600" /> : t.type === "reading" ? <BookOpen className="w-3.5 h-3.5 text-green-600" /> : t.type === "assessment" ? <FileText className="w-3.5 h-3.5 text-amber-600" /> : <Video className="w-3.5 h-3.5 text-blue-600" />}
+              <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${t.type === "quiz" ? "bg-purple-100" : t.type === "reading" ? "bg-green-100" : (t.type === "assessment" || t.type === "assignment") ? "bg-amber-100" : "bg-blue-100"}`}>
+                {t.type === "quiz" ? <HelpCircle className="w-3.5 h-3.5 text-purple-600" /> : t.type === "reading" ? <BookOpen className="w-3.5 h-3.5 text-green-600" /> : (t.type === "assessment" || t.type === "assignment") ? <FileText className="w-3.5 h-3.5 text-amber-600" /> : <Video className="w-3.5 h-3.5 text-blue-600" />}
               </div>
               <span className="flex-1 text-ink font-medium truncate">{t.title}</span>
               {t.is_free_preview && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold">Preview</span>}
@@ -361,7 +361,7 @@ function ModuleRow({ module, courseId, topics, onRefresh }) {
 const COURSE_TABS = [
   { id: "content",      label: "Course Content",    icon: BookOpen },
   { id: "modules",      label: "Modules",           icon: ClipboardList },
-  { id: "assessments",  label: "Assessments",       icon: FileText },
+  { id: "assessments",  label: "Assignments",       icon: FileText },
   { id: "certificates", label: "Certificates",      icon: Award },
   { id: "students",     label: "Enrolled Students", icon: Users },
   { id: "analytics",    label: "Analytics",         icon: BarChart2 },
@@ -531,9 +531,9 @@ function CourseRow({ course, onRefresh }) {
                   </div>
                 )}
 
-                {/* Assessments tab */}
+                {/* Assignments tab */}
                 {activeTab === "assessments" && (
-                  <CourseAssessmentsTab course={course} />
+                  <CourseAssignmentsTab course={course} />
                 )}
 
                 {/* Certificates tab */}
@@ -560,8 +560,8 @@ function CourseRow({ course, onRefresh }) {
   );
 }
 
-// ── Course-scoped Assessments Tab ─────────────────────────────────────────────
-function CourseAssessmentsTab({ course }) {
+// ── Course-scoped Assignments Tab ─────────────────────────────────────────────
+function CourseAssignmentsTab({ course }) {
   return (
     <AdminAssessmentManager courses={[course]} />
   );

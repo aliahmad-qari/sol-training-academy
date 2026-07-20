@@ -923,7 +923,7 @@ export default function AdminAssessmentManager({ courses }) {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
-          <h2 className="font-display font-semibold text-lg text-ink">Assessment Management</h2>
+          <h2 className="font-display font-semibold text-lg text-ink">Assignment Management</h2>
           <p className="text-sm text-slate_mist">Quizzes, assignments, grading and results.</p>
         </div>
         <Button onClick={() => setModal(tab === "quizzes" ? "new-quiz" : tab === "assignments" ? "new-assignment" : null)}

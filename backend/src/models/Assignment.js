@@ -17,10 +17,11 @@ const assignmentSchema = new Schema(
     module_id: { type: Schema.Types.ObjectId, ref: 'CourseModule', index: true },
     course_title: { type: String, trim: true },
     module_title: { type: String, trim: true },
+    course_level: { type: String, trim: true, index: true },
 
-    // When an assignment is auto-created from a course topic (type: 'assessment')
-    // via the TopicModal, this links it back to that CourseTopic so edits/deletes
-    // stay in sync and no duplicate assignment records are created.
+    // When an assignment is created from a topic, keep a back-reference so
+    // course-topic views can resolve the exact Assignment record without a
+    // duplicate mirror record.
     source_topic_id: { type: Schema.Types.ObjectId, ref: 'CourseTopic', index: true },
 
     title: { type: String, required: [true, 'Assignment title is required'], trim: true },
@@ -50,6 +51,7 @@ const assignmentSchema = new Schema(
 );
 
 assignmentSchema.index({ course_id: 1, sort_order: 1 });
+assignmentSchema.index({ course_level: 1, is_published: 1 });
 
 assignmentSchema.virtual('id').get(function idVirtual() {
   return this._id.toHexString();

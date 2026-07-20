@@ -31,7 +31,7 @@ export default function CourseOverview({ enrollment, course, modules, topics, on
   const videoTopics      = topics.filter(t => t.type === "video" || !t.type);
   const quizTopics       = topics.filter(t => t.type === "quiz");
   const readingTopics    = topics.filter(t => t.type === "reading");
-  const assessmentTopics = topics.filter(t => t.type === "assessment");
+  const assignmentTopics = topics.filter(t => t.type === "assessment" || t.type === "assignment");
 
   const daysLeft = (() => {
     if (!enrollment.expiry_date) return null;
@@ -43,11 +43,14 @@ export default function CourseOverview({ enrollment, course, modules, topics, on
   // Find the first incomplete topic to resume
   const nextTopic = topics.find(t => !completedIds.includes(t.id));
 
+  const ASSIGNMENT_TYPE = { icon: "📝", label: "Assignment", color: "bg-amber-500/20 text-amber-300",  border: "border-amber-500/20" };
+
   const TOPIC_TYPE = {
     video:      { icon: "📹", label: "Video",      color: "bg-blue-500/20 text-blue-300",    border: "border-blue-500/20" },
     reading:    { icon: "📖", label: "Reading",    color: "bg-green-500/20 text-green-300",  border: "border-green-500/20" },
     quiz:       { icon: "❓", label: "Quiz",        color: "bg-purple-500/20 text-purple-300", border: "border-purple-500/20" },
-    assessment: { icon: "📝", label: "Assessment", color: "bg-amber-500/20 text-amber-300",  border: "border-amber-500/20" },
+    assignment: ASSIGNMENT_TYPE,
+    assessment: ASSIGNMENT_TYPE,
   };
 
   return (
@@ -120,7 +123,7 @@ export default function CourseOverview({ enrollment, course, modules, topics, on
         <StatCard icon={BookOpen}   label="Total Modules"  value={modules.length}         color="text-harvest" />
         <StatCard icon={Video}      label="Video Lessons"  value={videoTopics.length}     color="text-blue-400" />
         <StatCard icon={HelpCircle} label="Quizzes"        value={quizTopics.length}      color="text-purple-400" />
-        <StatCard icon={FileText}   label="Assessments"    value={assessmentTopics.length} color="text-amber-400" />
+        <StatCard icon={FileText}   label="Assignments"    value={assignmentTopics.length} color="text-amber-400" />
       </motion.div>
 
       {/* Module Structure */}

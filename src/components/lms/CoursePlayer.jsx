@@ -8,15 +8,18 @@ import { Button } from "@/components/ui/button";
 import VideoPlayer from "@/components/lms/VideoPlayer";
 import QuizComponent from "@/components/lms/QuizComponent";
 import ReadingTopicView from "@/components/lms/ReadingTopicView";
-import AssessmentTopicView from "@/components/lms/AssessmentTopicView";
+import AssignmentTopicView from "@/components/lms/student/AssignmentTopicView";
 import TopicNotes from "@/components/lms/TopicNotes";
 import CourseOverview from "@/components/lms/CourseOverview";
+
+const ASSIGNMENT_TYPE = { icon: "📝", label: "Assignment", textColor: "text-amber-300", bg: "bg-amber-500/20" };
 
 const TOPIC_TYPE = {
   video:      { icon: "📹", label: "Video",      textColor: "text-blue-300",    bg: "bg-blue-500/20" },
   reading:    { icon: "📖", label: "Reading",    textColor: "text-green-300",   bg: "bg-green-500/20" },
   quiz:       { icon: "❓", label: "Quiz",        textColor: "text-purple-300",  bg: "bg-purple-500/20" },
-  assessment: { icon: "📝", label: "Assessment", textColor: "text-amber-300",   bg: "bg-amber-500/20" },
+  assignment: ASSIGNMENT_TYPE,
+  assessment: ASSIGNMENT_TYPE,
 };
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -171,8 +174,8 @@ function TopicContent({ topic, user, enrollment, isCompleted, onComplete, onNext
               <QuizComponent topic={topic} userId={user?._id || user?.id} courseId={enrollment.course_id}
                 onPass={onComplete} onNext={onNext} isCompleted={isCompleted} />
             )}
-            {topic.type === "assessment" && (
-              <AssessmentTopicView topic={topic} user={user} enrollment={enrollment}
+            {(topic.type === "assessment" || topic.type === "assignment") && (
+              <AssignmentTopicView topic={topic} user={user} enrollment={enrollment}
                 isCompleted={isCompleted} onComplete={onComplete} />
             )}
 

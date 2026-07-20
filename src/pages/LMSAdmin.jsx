@@ -50,7 +50,7 @@ const NAV_SECTIONS = [
     { id: "modules",       label: "Module Management",  icon: Layers },
     { id: "videos",        label: "Video Library",      icon: Video },
     { id: "quizzes",       label: "Quiz Management",    icon: HelpCircle },
-    { id: "assessments",   label: "Assessments",        icon: ClipboardList },
+    { id: "assessments",   label: "Assignments",        icon: ClipboardList },
     { id: "gradebook",     label: "Gradebook",          icon: Users2 },
   ]},
   { label: "Students",  items: [

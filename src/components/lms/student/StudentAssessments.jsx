@@ -101,7 +101,7 @@ function DeadlineCountdown({ countdown, durationDays }) {
 }
 
 // ── Assignment Submission Modal ───────────────────────────────────────────────
-function AssignmentSubmitModal({ assignment, userId, user, onClose, onSubmitted }) {
+export function AssignmentSubmitModal({ assignment, userId, user, onClose, onSubmitted }) {
   const [file, setFile] = useState(null);
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -272,7 +272,7 @@ function AssignmentSubmitModal({ assignment, userId, user, onClose, onSubmitted 
 }
 
 // ── Assignment Card (with live deadline) ──────────────────────────────────────
-function AssignmentCard({ assignment, submission: initialSubmission, userId, onSubmit }) {
+export function AssignmentCard({ assignment, submission: initialSubmission, userId, onSubmit }) {
   const { countdown } = useDeadlineCountdown(assignment, userId);
   const isExpired = countdown?.expired;
 
@@ -501,7 +501,8 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
   const [loading, setLoading] = useState(true);
   const [submitModal, setSubmitModal] = useState(null);
 
-  const enrolledCourseIds = enrollments.map(e => e.course_id);
+  const enrolledCourseIds = enrollments.map(e => String(e.course_id));
+  const enrolledCourseLevels = [...new Set(enrollments.map(e => e.course_level).filter(Boolean))];
 
   const load = async () => {
     setLoading(true);
@@ -511,10 +512,10 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
       user ? base44.entities.QuizAttempt.filter({ user_id: user.id }).catch(() => quizAttempts) : Promise.resolve(quizAttempts),
       base44.entities.CourseTopic.filter({ type: "quiz" }).catch(() => []),
     ]);
-    setAssignments(asgns.filter(a => enrolledCourseIds.includes(a.course_id)));
+    setAssignments(asgns.filter(a => enrolledCourseIds.includes(String(a.course_id)) || (a.course_level && enrolledCourseLevels.includes(a.course_level))));
     setSubmissions(subs);
     setQuizAttempts(attempts);
-    setQuizTopics(allTopics.filter(t => enrolledCourseIds.includes(t.course_id)));
+    setQuizTopics(allTopics.filter(t => enrolledCourseIds.includes(String(t.course_id))));
     setLoading(false);
   };
 

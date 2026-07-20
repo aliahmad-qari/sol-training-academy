@@ -145,7 +145,7 @@ export const deleteTopic = asyncHandler(async (req, res) => {
   await syncTopicCount(courseId);
   // Remove any Assignment auto-synced from this topic (type: 'assessment') so it
   // doesn't linger in the student/admin assignment tabs after the topic is gone.
-  await Assignment.deleteMany({ source_topic_id: topic._id });
+  await Assignment.deleteMany({ $or: [{ source_topic_id: topic._id }, { _id: topic.assignment_id }] });
   // Reclaim Cloudinary storage for any uploaded assets (non-blocking failures).
   await reclaimTopicAssets(topic);
   return sendOk(res, { id: req.params.id }, 'Topic deleted');

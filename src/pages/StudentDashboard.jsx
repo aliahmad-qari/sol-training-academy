@@ -55,8 +55,8 @@ const NAV_SECTIONS = [
     { id: "progress",      label: "Learning Progress",     icon: TrendingUp },
     { id: "videos",        label: "Training Videos",       icon: Video },
   ]},
-  { label: "Assessments", items: [
-    { id: "assessments",   label: "My Assessments",        icon: ClipboardList },
+  { label: "Assignments", items: [
+    { id: "assessments",   label: "My Assignments",        icon: ClipboardList },
     { id: "quizzes",       label: "Quiz History",          icon: HelpCircle },
     { id: "certificates",  label: "Certificates",          icon: Award },
   ]},

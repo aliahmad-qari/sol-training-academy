@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { X, Save, Plus, Trash2, Video, BookOpen, HelpCircle, FileText, Upload, Sparkles } from "lucide-react";
@@ -13,7 +13,7 @@ const TYPE_CONFIG = {
   video:      { icon: Video,      color: "bg-blue-100 text-blue-600",   label: "Video" },
   reading:    { icon: BookOpen,   color: "bg-green-100 text-green-600", label: "Reading" },
   quiz:       { icon: HelpCircle, color: "bg-purple-100 text-purple-600", label: "Quiz" },
-  assessment: { icon: FileText,   color: "bg-amber-100 text-amber-600", label: "Assessment" },
+  assignment: { icon: FileText,   color: "bg-amber-100 text-amber-600", label: "Assignment" },
 };
 
 const EMPTY_QUESTION = { question: "", options: ["", "", "", ""], correct_index: 0, marks: 1, explanation: "" };
@@ -282,8 +282,8 @@ function QuizFields({ form, setForm }) {
   );
 }
 
-// ── Assessment Fields ─────────────────────────────────────────────────────────
-function AssessmentFields({ form, setForm }) {
+// ── Assignment Fields ─────────────────────────────────────────────────────────
+function AssignmentFields({ form, setForm }) {
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (e) => {
@@ -294,9 +294,9 @@ function AssessmentFields({ form, setForm }) {
     const { file_url, publicId } = await base44.integrations.Core.UploadFile({ file, kind: "assignment_brief" });
     setForm(f => ({
       ...f,
-      assessment_file_url: file_url,
-      assessment_file_public_id: publicId || f.assessment_file_public_id,
-      assessment_file_name: file.name,
+      assignment_file_url: file_url,
+      assignment_file_public_id: publicId || f.assignment_file_public_id,
+      assignment_file_name: file.name,
     }));
     toast.success("Attachment uploaded!");
     setUploading(false);
@@ -306,17 +306,22 @@ function AssessmentFields({ form, setForm }) {
     <SectionBox>
       <div>
         <FieldLabel>Assignment Instructions</FieldLabel>
-        <Textarea value={form.assessment_instructions || ""} onChange={e => setForm(f => ({ ...f, assessment_instructions: e.target.value }))}
-          rows={4} placeholder="Describe what students need to submit, how to complete the assessment…" className="text-sm resize-none" />
+        <Textarea
+          value={form.assignment_instructions || ""}
+          onChange={e => setForm(f => ({ ...f, assignment_instructions: e.target.value }))}
+          rows={4}
+          placeholder="Describe what students need to submit and how to complete the assignment"
+          className="text-sm resize-none"
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Due Days (from enrollment)</FieldLabel>
-          <Input type="number" min={0} value={form.assessment_due_days || ""} onChange={e => setForm(f => ({ ...f, assessment_due_days: Number(e.target.value) }))} placeholder="0 = no deadline" className="text-sm" />
+          <Input type="number" min={0} value={form.assignment_due_days || ""} onChange={e => setForm(f => ({ ...f, assignment_due_days: Number(e.target.value) }))} placeholder="0 = no deadline" className="text-sm" />
         </div>
         <div>
           <FieldLabel>Maximum Marks</FieldLabel>
-          <Input type="number" min={1} value={form.assessment_max_marks || ""} onChange={e => setForm(f => ({ ...f, assessment_max_marks: Number(e.target.value) }))} placeholder="e.g. 100" className="text-sm" />
+          <Input type="number" min={1} value={form.assignment_max_marks || ""} onChange={e => setForm(f => ({ ...f, assignment_max_marks: Number(e.target.value) }))} placeholder="e.g. 100" className="text-sm" />
         </div>
       </div>
       <div>
@@ -324,9 +329,9 @@ function AssessmentFields({ form, setForm }) {
         <label className={`flex items-center gap-3 cursor-pointer border-2 border-dashed border-border/50 rounded-xl px-4 py-4 hover:border-harvest/40 hover:bg-harvest/5 transition-all ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
           <Upload className="w-5 h-5 text-slate_mist flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            {form.assessment_file_name ? (
+            {form.assignment_file_name ? (
               <>
-                <p className="text-sm font-semibold text-ink truncate">{form.assessment_file_name}</p>
+                <p className="text-sm font-semibold text-ink truncate">{form.assignment_file_name}</p>
                 <p className="text-xs text-green-600 font-medium">✓ Uploaded — click to replace</p>
               </>
             ) : (
@@ -351,7 +356,7 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
     video_url: "", video_duration_mins: "", content: "",
     reading_file_url: "", reading_file_name: "", reading_duration_mins: "",
     quiz_questions: [], time_limit_mins: "", passing_marks: "", total_marks: "",
-    assessment_instructions: "", assessment_due_days: "", assessment_max_marks: "", assessment_file_url: "", assessment_file_name: "",
+    assignment_instructions: "", assignment_due_days: "", assignment_max_marks: "", assignment_file_url: "", assignment_file_name: "", assignment_id: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -362,78 +367,122 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
 
   const toNum = (v) => (v === "" || v === null || v === undefined) ? null : Number(v);
 
+  useEffect(() => {
+    let alive = true;
+    const loadLinkedAssignment = async () => {
+      const topicId = topic?.id || topic?._id;
+      if (!topicId || form.type !== "assignment") return;
+      try {
+        let linked = null;
+        if (topic?.assignment_id) {
+          linked = await base44.entities.Assignment.get(topic.assignment_id).catch(() => null);
+        }
+        if (!linked) {
+          const matches = await base44.entities.Assignment.filter({ source_topic_id: topicId }).catch(() => []);
+          linked = matches?.[0] || null;
+        }
+        if (!alive || !linked) return;
+        setForm(f => ({
+          ...f,
+          assignment_id: linked.id || linked._id || f.assignment_id,
+          assignment_instructions: linked.instructions || f.assignment_instructions || "",
+          assignment_due_days: linked.duration_days ?? f.assignment_due_days ?? "",
+          assignment_max_marks: linked.max_marks ?? f.assignment_max_marks ?? "",
+          assignment_file_url: linked.brief_file_url || f.assignment_file_url || "",
+          assignment_file_name: linked.brief_file_name || f.assignment_file_name || "",
+          passing_marks: linked.passing_marks ?? f.passing_marks ?? "",
+        }));
+      } catch {
+        // Best-effort hydration only.
+      }
+    };
+    loadLinkedAssignment();
+    return () => { alive = false; };
+  }, [topic?.id, topic?.assignment_id, form.type]);
+
+  const buildAssignmentPayload = () => ({
+    course_id: form.course_id || courseId || topic?.course_id,
+    module_id: form.module_id || moduleId || topic?.module_id,
+    title: form.title.trim(),
+    instructions: form.assignment_instructions || "",
+    duration_days: toNum(form.assignment_due_days) || 0,
+    max_marks: toNum(form.assignment_max_marks) || 100,
+    passing_marks: toNum(form.passing_marks) || 50,
+    brief_file_url: form.assignment_file_url || "",
+    brief_file_name: form.assignment_file_name || "",
+    allowed_file_types: ["pdf", "docx", "zip", "jpg", "png"],
+    is_published: true,
+  });
+
+  const persistAssignment = async (topicId) => {
+    if (form.type !== "assignment") return null;
+    const assignmentId = form.assignment_id || topic?.assignment_id || null;
+    const payload = { ...buildAssignmentPayload(), source_topic_id: topicId };
+    if (assignmentId) {
+      const updated = await base44.entities.Assignment.update(assignmentId, payload);
+      return updated?.id || updated?._id || assignmentId;
+    }
+    const created = await base44.entities.Assignment.create(payload);
+    return created?.id || created?._id || null;
+  };
+
+  const buildTopicData = (assignmentId = null) => ({
+    ...form,
+    type: form.type === "assignment" ? "assignment" : form.type,
+    assignment_id: form.type === "assignment" ? (assignmentId || null) : null,
+    video_duration_mins: toNum(form.video_duration_mins),
+    reading_duration_mins: toNum(form.reading_duration_mins),
+    time_limit_mins: toNum(form.time_limit_mins),
+    passing_marks: toNum(form.passing_marks),
+    total_marks: form.type === "quiz"
+      ? (form.quiz_questions || []).reduce((s, q) => s + (Number(q.marks) || 1), 0)
+      : toNum(form.total_marks),
+    assignment_due_days: toNum(form.assignment_due_days),
+    assignment_max_marks: toNum(form.assignment_max_marks),
+  });
+
   const save = async () => {
     if (!form.title.trim()) { toast.error("Topic title is required"); return; }
     if (form.type === "quiz" && (!form.quiz_questions || form.quiz_questions.length === 0)) {
       toast.error("Please add at least one question"); return;
     }
     setSaving(true);
-    const data = {
-      ...form,
-      video_duration_mins: toNum(form.video_duration_mins),
-      reading_duration_mins: toNum(form.reading_duration_mins),
-      time_limit_mins: toNum(form.time_limit_mins),
-      passing_marks: toNum(form.passing_marks),
-      total_marks: form.type === "quiz"
-        ? (form.quiz_questions || []).reduce((s, q) => s + (Number(q.marks) || 1), 0)
-        : toNum(form.total_marks),
-      assessment_due_days: toNum(form.assessment_due_days),
-      assessment_max_marks: toNum(form.assessment_max_marks),
-    };
-    let savedTopic;
-    if (topic?.id) {
-      savedTopic = await base44.entities.CourseTopic.update(topic.id, data);
-    } else {
-      savedTopic = await base44.entities.CourseTopic.create(data);
-    }
-
-    // Keep an Assignment record in sync so assessment topics show up in the
-    // student & admin "Assignments" tabs (which read the Assignment entity,
-    // not CourseTopic). Best-effort: never block the topic save on this.
-    await syncAssignment(savedTopic || { ...data, id: topic?.id });
-
-    toast.success("Topic saved.");
-    onClose();
-    await onSave();
-    setSaving(false);
-  };
-
-  // Mirror an "assessment" topic into the Assignment entity (create/update),
-  // and tear the mirror down if the topic is no longer an assessment.
-  const syncAssignment = async (t) => {
-    const topicId = t?.id || topic?.id;
-    if (!topicId) return;
     try {
-      const existing = await base44.entities.Assignment
-        .filter({ source_topic_id: topicId })
-        .catch(() => []);
-      const linked = existing?.[0];
-
-      if (form.type !== "assessment") {
-        // Type changed away from assessment — remove any stale mirror.
-        if (linked) await base44.entities.Assignment.delete(linked.id);
-        return;
+      const topicId = topic?.id || topic?._id || null;
+      let assignmentId = null;
+      if (form.type === "assignment") {
+        assignmentId = await persistAssignment(topicId);
       }
 
-      const payload = {
-        source_topic_id: topicId,
-        course_id: form.course_id,
-        module_id: form.module_id,
-        title: form.title.trim(),
-        instructions: form.assessment_instructions || "",
-        duration_days: toNum(form.assessment_due_days) || 0,
-        max_marks: toNum(form.assessment_max_marks) || 100,
-        passing_marks: toNum(form.passing_marks) || 50,
-        brief_file_url: form.assessment_file_url || "",
-        brief_file_name: form.assessment_file_name || "",
-        is_published: true,
-      };
+      const data = buildTopicData(assignmentId);
+      let savedTopic;
+      if (topicId) {
+        savedTopic = await base44.entities.CourseTopic.update(topicId, data);
+        if (form.type !== "assignment" && topic?.assignment_id) {
+          await base44.entities.Assignment.delete(topic.assignment_id).catch(() => {});
+          await base44.entities.CourseTopic.update(topicId, { assignment_id: null });
+        }
+      } else {
+        savedTopic = await base44.entities.CourseTopic.create(data);
+      }
 
-      if (linked) await base44.entities.Assignment.update(linked.id, payload);
-      else await base44.entities.Assignment.create(payload);
+      if (form.type === "assignment") {
+        const finalTopicId = savedTopic?.id || savedTopic?._id || topicId;
+        if (assignmentId && finalTopicId) {
+          await base44.entities.Assignment.update(assignmentId, { source_topic_id: finalTopicId });
+          if (!data.assignment_id || data.assignment_id !== assignmentId) {
+            await base44.entities.CourseTopic.update(finalTopicId, { assignment_id: assignmentId });
+          }
+        }
+      }
+
+      toast.success("Topic saved.");
+      onClose();
+      await onSave();
     } catch (err) {
-      // The topic itself already saved — surface a soft warning only.
-      toast.warning("Topic saved, but syncing it to the Assignments list failed.");
+      toast.error(err?.response?.data?.message || "Failed to save topic.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -499,7 +548,7 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
           {form.type === "video"      && <VideoFields form={form} setForm={setForm} />}
           {form.type === "reading"    && <ReadingFields form={form} setForm={setForm} />}
           {form.type === "quiz"       && <QuizFields form={form} setForm={setForm} />}
-          {form.type === "assessment" && <AssessmentFields form={form} setForm={setForm} />}
+          {form.type === "assignment" && <AssignmentFields form={form} setForm={setForm} />}
 
           {/* Free Preview */}
           <div

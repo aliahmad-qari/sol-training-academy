@@ -30,7 +30,7 @@ export const PAGE_PERMISSION_GROUPS = [
       { id: "modules",     label: "Module Management", icon: Layers,       description: "Manage course modules" },
       { id: "videos",      label: "Video Library",     icon: Video,        description: "Upload & manage videos" },
       { id: "quizzes",     label: "Quiz Management",   icon: HelpCircle,   description: "Create & manage quizzes" },
-      { id: "assessments", label: "Assessments",       icon: ClipboardList,description: "Assignments & grading" },
+      { id: "assessments", label: "Assignments",       icon: ClipboardList,description: "Assignments & grading" },
       { id: "gradebook",   label: "Gradebook",         icon: Users2,       description: "View student grades" },
     ]
   },
