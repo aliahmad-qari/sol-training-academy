@@ -229,6 +229,8 @@ function QuizModal({ topic, courses, modules, onClose, onSave }) {
     const data = {
       ...form,
       total_marks: totalMarks,
+      time_limit_mins: Number(form.time_limit_mins) || 0,   // always a number, never null/string
+      passing_marks: Number(form.passing_marks) || 0,
       // Convert datetime-local strings → ISO or null (never send empty string for Date fields)
       available_from: form.available_from ? new Date(form.available_from).toISOString() : null,
       available_until: form.available_until ? new Date(form.available_until).toISOString() : null,

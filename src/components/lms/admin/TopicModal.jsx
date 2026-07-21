@@ -357,7 +357,7 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
     module_id: moduleId, course_id: courseId,
     video_url: "", video_duration_mins: "", content: "",
     reading_file_url: "", reading_file_name: "", reading_duration_mins: "",
-    quiz_questions: [], time_limit_mins: "", passing_marks: "", total_marks: "",
+    quiz_questions: [], time_limit_mins: 0, passing_marks: "", total_marks: "",
     assignment_instructions: "", assignment_due_days: "", assignment_max_marks: "", assignment_file_url: "", assignment_file_name: "", assignment_id: "",
   });
   const [saving, setSaving] = useState(false);
@@ -378,7 +378,11 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
     }
   };
 
-  const toNum = (v) => (v === "" || v === null || v === undefined) ? null : Number(v);
+  const toNum = (v) => {
+    if (v === "" || v === null || v === undefined) return 0;  // Always return 0 for empties, not null
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
 
   const loadAssignmentLookup = async () => {
     const courseTarget = form.course_id || courseId || topic?.course_id;
@@ -496,7 +500,7 @@ export default function TopicModal({ topic, moduleId, courseId, onClose, onSave 
     assignment_id: form.type === "assignment" ? (assignmentId || null) : null,
     video_duration_mins: toNum(form.video_duration_mins),
     reading_duration_mins: toNum(form.reading_duration_mins),
-    time_limit_mins: toNum(form.time_limit_mins),
+    time_limit_mins: toNum(form.time_limit_mins),   // 0 = unlimited, never null
     passing_marks: toNum(form.passing_marks),
     total_marks: form.type === "quiz"
       ? (form.quiz_questions || []).reduce((s, q) => s + (Number(q.marks) || 1), 0)

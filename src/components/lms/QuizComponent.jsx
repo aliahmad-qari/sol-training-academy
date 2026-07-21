@@ -46,6 +46,8 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
   const [secsLeft, setSecsLeft] = useState(null);
   const timerRef = useRef(null);
   const autoSubmitStartedRef = useRef(false);
+  // Always hold the latest sessionId in a ref so doSubmit never closes over a stale value
+  const sessionIdRef = useRef(null);
 
   const now = new Date();
   const availFrom = topic.available_from ? new Date(topic.available_from) : null;
@@ -65,7 +67,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
       const res = await apiClient.post('/quizzes/attempts', {
         course_id: courseId,
         topic_id: topicId,
-        session_id: sessionId,
+        session_id: sessionIdRef.current,   // always use ref — never stale
         answers: currentAnswers,
         timed_out: isAutoSubmit,
       });
@@ -88,29 +90,54 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, submitted, topicId, sessionId, courseId, grandTotal, onPass]);
+  }, [submitting, submitted, topicId, courseId, grandTotal, onPass]);
   useEffect(() => {
-    if (!quizStarted || !sessionExpiresAt || submitted) return undefined;
+    if (!quizStarted || submitted) return undefined;
 
-    const deadlineMs = new Date(sessionExpiresAt).getTime();
-    const tick = () => {
-      const next = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
-      setSecsLeft(next);
-      if (next <= 0) {
-        clearInterval(timerRef.current);
-        if (!autoSubmitStartedRef.current) {
-          autoSubmitStartedRef.current = true;
-          setAnswers(latestAnswers => {
-            void doSubmit(latestAnswers, true);
-            return latestAnswers;
-          });
+    // If server gave us an absolute deadline, count down to it (skew-safe)
+    if (sessionExpiresAt) {
+      const deadlineMs = new Date(sessionExpiresAt).getTime();
+      const tick = () => {
+        const next = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
+        setSecsLeft(next);
+        if (next <= 0) {
+          clearInterval(timerRef.current);
+          if (!autoSubmitStartedRef.current) {
+            autoSubmitStartedRef.current = true;
+            setAnswers(latestAnswers => {
+              void doSubmit(latestAnswers, true);
+              return latestAnswers;
+            });
+          }
         }
-      }
-    };
+      };
+      tick();
+      timerRef.current = setInterval(tick, 1000);
+      return () => clearInterval(timerRef.current);
+    }
 
-    tick();
-    timerRef.current = setInterval(tick, 1000);
-    return () => clearInterval(timerRef.current);
+    // Fallback: count down from secsLeft as a simple countdown (no server deadline)
+    if (secsLeft !== null && secsLeft > 0) {
+      timerRef.current = setInterval(() => {
+        setSecsLeft(prev => {
+          const next = Math.max(0, (prev ?? 0) - 1);
+          if (next <= 0) {
+            clearInterval(timerRef.current);
+            if (!autoSubmitStartedRef.current) {
+              autoSubmitStartedRef.current = true;
+              setAnswers(latestAnswers => {
+                void doSubmit(latestAnswers, true);
+                return latestAnswers;
+              });
+            }
+          }
+          return next;
+        });
+      }, 1000);
+      return () => clearInterval(timerRef.current);
+    }
+
+    return undefined;
   }, [quizStarted, sessionExpiresAt, submitted, doSubmit]);
 
   const handleAnswer = (qIdx, value) => {
@@ -150,6 +177,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
     setTimedOut(false);
     setSecsLeft(null);
     setSessionId(null);
+    sessionIdRef.current = null;         // clear ref on retry
     setSessionExpiresAt(null);
     setStartError("");
     autoSubmitStartedRef.current = false;
@@ -167,11 +195,19 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
         topic_id: topicId,
       });
       const session = res.data?.data || {};
-      setSessionId(session.session_id || session.id || null);
+      const sid = session.session_id || session.id || null;
+      sessionIdRef.current = sid;        // keep ref in sync before state update
+      setSessionId(sid);
       setSessionExpiresAt(session.expires_at || null);
       if (session.attempt_number) setAttempt(session.attempt_number);
+      // Initialise countdown from server-provided seconds_left
+      // (works even when expires_at is set, avoiding client clock skew)
       if (session.seconds_left !== null && session.seconds_left !== undefined) {
         setSecsLeft(Number(session.seconds_left));
+      } else if (session.expires_at) {
+        // Fallback: compute from expires_at
+        const secs = Math.max(0, Math.floor((new Date(session.expires_at).getTime() - Date.now()) / 1000));
+        setSecsLeft(secs > 0 ? secs : null);
       } else {
         setSecsLeft(null);
       }
