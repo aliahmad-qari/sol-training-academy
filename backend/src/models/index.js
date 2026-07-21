@@ -29,3 +29,4 @@ export { default as CourseFeedback } from './CourseFeedback.js';
 
 export { default as AssessmentAccess } from './AssessmentAccess.js';
 export { default as QuizSession } from './QuizSession.js';
+export { default as DirectMessage } from './DirectMessage.js';

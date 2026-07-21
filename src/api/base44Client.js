@@ -275,9 +275,13 @@ const entities = {
       },
     },
   }),
+
+  // Direct peer-to-peer messages between students (course-scoped).
+  // Threads are fetched via ?course_id=&other_user_id= query params.
+  DirectMessage: restEntity('/direct-messages', { updateMethod: 'patch' }),
 };
 
-// Orphaned entities (no backend yet): leftovers from Base44 / deleted Client
+  // Orphaned entities (no backend yet): leftovers from Base44 / deleted Client
 // Portal. Listed explicitly so a typo elsewhere surfaces as undefined, not a
 // silent stub. Implement a backend + move into `entities` above to enable.
 const ORPHANED = [

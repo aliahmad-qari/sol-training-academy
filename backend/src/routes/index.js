@@ -28,6 +28,8 @@ import announcementRoutes from './announcement.routes.js';
 import studentDocumentRoutes from './studentDocument.routes.js';
 import notificationRoutes from './notification.routes.js';
 
+import directMessageRoutes from './directMessage.routes.js';
+
 /**
  * Central API v1 router. Every feature module is registered here.
  */
@@ -63,6 +65,7 @@ router.use('/feedback', courseFeedbackRoutes);
 router.use('/announcements', announcementRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/student-documents', studentDocumentRoutes);
+router.use('/direct-messages',   directMessageRoutes);
 
 export default router;
 
