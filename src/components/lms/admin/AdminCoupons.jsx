@@ -132,7 +132,6 @@ export default function AdminCoupons({ courses }) {
       toast.error(err?.response?.data?.message || "Failed to update coupon.");
     }
   };
-  };
 
   const filtered = coupons.filter(c => {
     if (!search) return true;
