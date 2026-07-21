@@ -1,4 +1,4 @@
-﻿import { AssignmentSubmission, Assignment, CourseTopic, CourseEnrollment } from '../models/index.js';
+﻿import { AssignmentSubmission, Assignment, CourseTopic, CourseEnrollment, AssessmentAccess } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -11,7 +11,7 @@ const ensureActiveEnrollment = async ({ userId, courseId }) => {
   const enrollment = await CourseEnrollment.findOne({
     user_id: userId,
     course_id: courseId,
-    status: { $ne: 'expired' },
+    status: { $in: ['active', 'completed'] },
     $or: [{ expiry_date: null }, { expiry_date: { $exists: false } }, { expiry_date: { $gt: new Date() } }],
   }).lean();
 
@@ -35,6 +35,7 @@ const resolveSubmissionTarget = async (assignmentId) => {
       max_marks: assignment.max_marks,
       passing_marks: assignment.passing_marks,
       allowed_file_types: assignment.allowed_file_types || [],
+      duration_days: assignment.duration_days || 0,
     };
   }
 
@@ -50,11 +51,91 @@ const resolveSubmissionTarget = async (assignmentId) => {
       max_marks: topic.assessment_max_marks || 100,
       passing_marks: undefined,
       allowed_file_types: [],
+      duration_days: topic.assessment_due_days || 0,
     };
   }
 
   throw ApiError.notFound('Assignment not found.');
 };
+
+const getTargetKey = (target) => {
+  if (target.assignment_id) return `assignment:${target.assignment_id}`;
+  return `${target.kind}:${target.topic_id}`;
+};
+
+const getOrCreateAssessmentAccess = async ({ userId, target }) => {
+  const durationDays = Number(target.duration_days || 0);
+  if (!durationDays) {
+    return {
+      access: null,
+      started_at: null,
+      expires_at: null,
+      duration_days: 0,
+      expired: false,
+    };
+  }
+
+  const targetId = target.assignment_id || target.topic_id;
+  if (!targetId) throw ApiError.badRequest('Assessment target is not linked correctly.');
+
+  const now = new Date();
+  const target_key = getTargetKey(target);
+  let access = await AssessmentAccess.findOne({ user_id: userId, target_key });
+
+  if (!access) {
+    try {
+      access = await AssessmentAccess.create({
+        user_id: userId,
+        course_id: target.course_id,
+        target_key,
+        target_type: target.kind,
+        target_id: targetId,
+        assignment_id: target.assignment_id,
+        topic_id: target.topic_id,
+        duration_days: durationDays,
+        started_at: now,
+        expires_at: new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000),
+      });
+    } catch (err) {
+      if (err?.code !== 11000) throw err;
+      access = await AssessmentAccess.findOne({ user_id: userId, target_key });
+    }
+  }
+
+  const expired = access?.expires_at ? access.expires_at.getTime() <= Date.now() : false;
+  return {
+    access,
+    started_at: access?.started_at || null,
+    expires_at: access?.expires_at || null,
+    duration_days: access?.duration_days ?? durationDays,
+    expired,
+  };
+};
+
+
+/**
+ * POST /api/v1/submissions/access   (protected; student)
+ * Body: { assignment_id }
+ * Starts/returns the server-owned assessment deadline for this student.
+ */
+export const getSubmissionAccess = asyncHandler(async (req, res) => {
+  const assignmentId = req.body.assignment_id || req.query.assignment_id;
+  if (!assignmentId) throw ApiError.badRequest('assignment_id is required.');
+
+  const target = await resolveSubmissionTarget(assignmentId);
+  await ensureActiveEnrollment({ userId: req.user._id, courseId: target.course_id });
+  const accessWindow = await getOrCreateAssessmentAccess({ userId: req.user._id, target });
+
+  return sendOk(res, {
+    assignment_id: target.assignment_id,
+    topic_id: target.topic_id,
+    course_id: target.course_id,
+    started_at: accessWindow.started_at,
+    expires_at: accessWindow.expires_at,
+    duration_days: accessWindow.duration_days,
+    expired: accessWindow.expired,
+  }, 'Assessment access');
+});
 
 /**
  * POST /api/v1/submissions   (protected; student)
@@ -72,6 +153,10 @@ export const createSubmission = asyncHandler(async (req, res) => {
 
   const target = await resolveSubmissionTarget(assignment_id);
   await ensureActiveEnrollment({ userId: req.user._id, courseId: target.course_id });
+  const accessWindow = await getOrCreateAssessmentAccess({ userId: req.user._id, target });
+  if (accessWindow.expired) {
+    throw ApiError.badRequest('The submission deadline has expired.');
+  }
 
   const originalName = req.file ? req.file.originalname : req.body.file_name || 'submission';
   const ext = (originalName.split('.').pop() || '').toLowerCase();

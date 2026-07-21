@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
+const getRecordId = (record) => record?._id || record?.id;
+
 const DOC_TYPES = [
   { value: "id_proof",               label: "ID Proof (Passport / Driver's Licence)" },
   { value: "qualification",          label: "Qualification / Certificate" },
@@ -171,9 +173,14 @@ export default function StudentDocumentUpload({ user }) {
   useEffect(() => { load(); }, [user]);
 
   const handleDelete = async (doc) => {
+    const documentId = getRecordId(doc);
+    if (!documentId) {
+      toast.error("Cannot delete document: missing document ID.");
+      return;
+    }
     if (!window.confirm("Delete this document?")) return;
     try {
-      await apiClient.delete(`/student-documents/${doc.id}`);
+      await apiClient.delete(`/student-documents/${documentId}`);
       toast.success("Document deleted.");
       load();
     } catch (err) {
@@ -259,7 +266,7 @@ export default function StudentDocumentUpload({ user }) {
             const Icon = cfg.icon;
             const isActionable = ["rejected", "resubmit_required"].includes(doc.status);
             return (
-              <motion.div key={doc.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              <motion.div key={getRecordId(doc) || i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                 className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
                   doc.status === "verified" ? "border-emerald-200" :
                   isActionable ? "border-red-200" :

@@ -81,8 +81,6 @@ export default function NDISIntakeFlow({ onEnquirySaved }) {
   });
 
   const [logoPreview, setLogoPreview] = useState(null);
-  const [paymentDone, setPaymentDone] = useState(false);
-  const [paymentWindowOpened, setPaymentWindowOpened] = useState(false);
   const [generatingDocs, setGeneratingDocs] = useState(false);
   const [docsReady, setDocsReady] = useState(false);
 
@@ -173,54 +171,26 @@ export default function NDISIntakeFlow({ onEnquirySaved }) {
     } catch (e) { toast.error("Failed to save. Please try again."); }
     setLoading(false);
   };
-
-  // Stripe Payment Links — replace these URLs with your actual Stripe Payment Links
-  const STRIPE_LINKS = {
-    starter: "https://buy.stripe.com/YOUR_STARTER_LINK",
-    ultimate: "https://buy.stripe.com/YOUR_ULTIMATE_LINK",
-  };
-
-  const handleOpenPayment = () => {
-    const link = STRIPE_LINKS[assessment.selected_package] || STRIPE_LINKS.ultimate;
-    // Append enquiry ID as client_reference_id via URL param for reconciliation
-    const url = `${link}?client_reference_id=${enquiryId || "pending"}&prefilled_email=${encodeURIComponent(assessment.email)}`;
-    window.open(url, "_blank");
-    setPaymentWindowOpened(true);
+  const handleOpenPayment = async () => {
+    setLoading(true);
+    try {
+      const id = await saveEnquiry("awaiting_payment");
+      await base44.entities.Enquiry.update(id, {
+        status: "awaiting_payment",
+        payment_reference: null,
+        documents_generated: false,
+      });
+      toast.success("Invoice requested. Our team will send a secure payment link after review.");
+      if (onEnquirySaved) onEnquirySaved();
+    } catch (e) {
+      toast.error("Unable to request invoice. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleConfirmPayment = async () => {
-    setLoading(true);
-    const ref = "STRIPE-" + Date.now();
-    await base44.entities.Enquiry.update(enquiryId, {
-      status: "paid",
-      payment_reference: ref,
-      documents_generated: false,
-    });
-    setPaymentDone(true);
-    setLoading(false);
-    setStep(3);
-    // Trigger document generation after confirmed payment
-    setGeneratingDocs(true);
-    await new Promise(r => setTimeout(r, 3000));
-    await base44.entities.Enquiry.update(enquiryId, { status: "completed", documents_generated: true });
-
-    // Send document pack email to client
-    base44.integrations.Core.SendEmail({
-      to: assessment.email,
-      subject: `Your NDIS Document Pack is Ready — ${business.company_name}`,
-      body: `Dear ${assessment.full_name},\n\nThank you for your payment. Your branded NDIS document pack for ${business.company_name} (ABN: ${business.abn}) has been generated and is ready for download.\n\n📦 YOUR DOCUMENT PACK INCLUDES:\n${DOCUMENTS.map(d => `  • ${d} — ${business.company_name}`).join('\n')}\n\n📋 ORDER DETAILS:\n  • Package: ${pkg.name}\n  • Amount Paid: $${pkg.price.toLocaleString()} + GST\n  • Audit Pathway: ${recommendation.auditPath}\n\nTo download your documents, please log back into your client portal or reply to this email and we will send them directly.\n\nOur team will be in touch within 24 hours to schedule your consulting session and walk you through your documents.\n\nIf you have any questions in the meantime, please contact us:\n📞 +61 460 003 494\n✉️ info@solbusinessconsultant.com.au\n\nWarm regards,\nThe SOL Business Consultant Team\nwww.solbusinessconsultant.com.au`,
-    }).catch(() => {});
-
-    // Also notify the Sol team
-    base44.integrations.Core.SendEmail({
-      to: "info@solbusinessconsultant.com.au",
-      subject: `✅ Payment Received & Docs Generated — ${business.company_name} (${pkg.name})`,
-      body: `Payment confirmed and documents generated.\n\nClient: ${assessment.full_name}\nEmail: ${assessment.email}\nPhone: ${assessment.phone}\nCompany: ${business.company_name}\nABN: ${business.abn}\nPackage: ${pkg.name} — $${pkg.price.toLocaleString()} + GST\nAudit Pathway: ${recommendation.auditPath}\nEnquiry ID: ${enquiryId}\n\nPlease follow up within 24 hours to arrange the consulting session.`,
-    }).catch(() => {});
-
-    setGeneratingDocs(false);
-    setDocsReady(true);
-    if (onEnquirySaved) onEnquirySaved();
+    toast.error("Payment must be verified by SOL before documents are generated.");
   };
 
   const slideVariants = {
@@ -413,35 +383,18 @@ export default function NDISIntakeFlow({ onEnquirySaved }) {
               <p className="text-xs text-slate_mist mt-1">All documents branded with {business.company_name || "your company"} name, ABN, and logo.</p>
             </div>
             <div className="bg-harvest/5 border border-harvest/20 rounded-xl p-4 text-sm text-ink">
-              <p className="font-semibold mb-1">🔒 Secure Payment via Stripe</p>
-              <p className="text-slate_mist text-xs">You'll be taken to Stripe's secure checkout. Return here after payment to unlock your document pack.</p>
+              <p className="font-semibold mb-1">🔒 Secure Invoice Request</p>
+              <p className="text-slate_mist text-xs">Online payment links are issued by our team after review. Documents are generated only after payment is verified.</p>
             </div>
 
-            {!paymentWindowOpened ? (
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
-                  <ArrowLeft className="w-4 h-4" /> Back
-                </Button>
-                <Button onClick={handleOpenPayment} className="flex-1 bg-ink hover:bg-ink/90 text-white font-display py-6 gap-2">
-                  <CreditCard className="w-4 h-4" /> Pay ${pkg.price.toLocaleString()} + GST via Stripe
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-                  <p className="font-semibold mb-1">✅ Stripe checkout opened in a new tab</p>
-                  <p className="text-xs text-blue-600">Complete your payment there, then click the button below to generate your documents.</p>
-                </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={handleOpenPayment} className="gap-1 text-sm">
-                    <CreditCard className="w-3.5 h-3.5" /> Reopen Checkout
-                  </Button>
-                  <Button onClick={handleConfirmPayment} disabled={loading} className="flex-1 bg-harvest hover:bg-harvest/90 text-white font-display py-6 gap-2">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirming…</> : "I've Completed Payment — Generate My Documents →"}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </Button>
+              <Button onClick={handleOpenPayment} disabled={loading} className="flex-1 bg-ink hover:bg-ink/90 text-white font-display py-6 gap-2">
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Requesting invoice...</> : <><CreditCard className="w-4 h-4" /> Request Secure Invoice</>}
+              </Button>
+            </div>
           </motion.div>
         )}
 

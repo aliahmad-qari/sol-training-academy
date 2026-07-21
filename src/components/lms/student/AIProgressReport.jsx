@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { averageQuizPercent, quizAttemptPercent } from "@/lib/quizScores";
 
 export default function AIProgressReport({ user, enrollments = [], quizAttempts = [] }) {
   const [loading, setLoading] = useState(false);
@@ -23,12 +24,11 @@ export default function AIProgressReport({ user, enrollments = [], quizAttempts 
       const completed = enrollments.filter(e => e.status === "completed").length;
       const passRate = quizAttempts.length > 0
         ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100) : null;
-      const avgScore = quizAttempts.length > 0
-        ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length) : null;
+      const avgScore = averageQuizPercent(quizAttempts);
       const recentAttempts = [...quizAttempts]
         .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
         .slice(0, 5)
-        .map(a => ({ score: a.score_percent, passed: a.passed, topic: a.topic_title || "Quiz" }));
+        .map(a => ({ score: quizAttemptPercent(a), passed: a.passed, topic: a.topic_title || "Quiz" }));
 
       const courseBreakdown = enrollments.map(e => ({
         title: e.course_title,

@@ -22,6 +22,7 @@ const quizAttemptSchema = new Schema(
     },
     topic_id: { type: Schema.Types.ObjectId, ref: 'CourseTopic', index: true },
     quiz_id: { type: Schema.Types.ObjectId, ref: 'Quiz', index: true },
+    session_id: { type: Schema.Types.ObjectId, ref: 'QuizSession', index: true },
 
     // Flexible key/value answer map: { "0": 2, "1": 0, ... }
     answers: { type: Schema.Types.Mixed, default: {} },

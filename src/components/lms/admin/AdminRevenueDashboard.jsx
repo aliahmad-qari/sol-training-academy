@@ -9,7 +9,10 @@ export default function AdminRevenueDashboard({ courses }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.CoursePayment.filter({ payment_status: "completed" }, "-created_date", 500).then(p => { setPayments(p); setLoading(false); });
+    base44.entities.CoursePayment.filter({ payment_status: "completed" }, "-created_date", 500)
+      .then(p => setPayments(p))
+      .catch(() => setPayments([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const totalRevenue = payments.reduce((s, p) => s + (p.amount_paid || p.course_price || 0), 0);

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Trophy, Medal, Award, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { quizAttemptPercentOrZero } from "@/lib/quizScores";
 
 export default function AdminLeaderboard({ courses }) {
   const [enrollments, setEnrollments] = useState([]);
@@ -13,13 +14,19 @@ export default function AdminLeaderboard({ courses }) {
 
   const load = async () => {
     setLoading(true);
-    const [envs, attempts] = await Promise.all([
-      base44.entities.CourseEnrollment.list("-updated_date", 500),
-      base44.entities.QuizAttempt.list("-created_date", 500),
-    ]);
-    setEnrollments(envs);
-    setQuizAttempts(attempts);
-    setLoading(false);
+    try {
+      const [envs, attempts] = await Promise.all([
+        base44.entities.CourseEnrollment.list("-updated_date", 500),
+        base44.entities.QuizAttempt.list("-created_date", 500),
+      ]);
+      setEnrollments(envs);
+      setQuizAttempts(attempts);
+    } catch {
+      setEnrollments([]);
+      setQuizAttempts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -45,7 +52,7 @@ export default function AdminLeaderboard({ courses }) {
 
   quizAttempts.forEach(a => {
     const key = a.user_email || a.user_id;
-    if (studentMap[key]) studentMap[key].quizScores.push(a.score || 0);
+    if (studentMap[key]) studentMap[key].quizScores.push(quizAttemptPercentOrZero(a));
   });
 
   const students = Object.values(studentMap).map(s => ({

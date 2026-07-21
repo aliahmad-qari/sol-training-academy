@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import {
   HelpCircle, FileText, Upload, CheckCircle, XCircle, Clock,
   Award, BarChart2, AlertCircle, X, Timer, Lock,
@@ -10,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { averageQuizPercent, bestQuizAttempt, quizAttemptPercentOrZero } from "@/lib/quizScores";
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function safeDate(val, opts = { day: "numeric", month: "short", year: "numeric" }) {
@@ -27,28 +29,38 @@ function safeDatetime(val) {
     return isNaN(d.getTime()) ? "—" : d.toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   } catch { return "—"; }
 }
-// Stores "first_access_{assignmentId}_{userId}" in localStorage
+// Server-backed assignment deadline countdown.
 function useDeadlineCountdown(assignment, userId) {
-  const storageKey = `asgn_start_${assignment.id}_${userId}`;
-  const durationDays = assignment.duration_days || 0;
+  const assignmentId = assignment?.id || assignment?._id;
+  const durationDays = assignment?.duration_days || 0;
 
   const [deadlineMs, setDeadlineMs] = useState(null);
   const [countdown, setCountdown] = useState(null); // { days, hours, mins, secs, expired }
 
   useEffect(() => {
-    if (!durationDays || !userId) { setDeadlineMs(null); return; }
+    let cancelled = false;
+    setCountdown(null);
 
-    let startTime = localStorage.getItem(storageKey);
-    if (!startTime) {
-      startTime = String(Date.now());
-      localStorage.setItem(storageKey, startTime);
+    if (!durationDays || !assignmentId || !userId) {
+      setDeadlineMs(null);
+      return () => { cancelled = true; };
     }
-    const deadline = parseInt(startTime, 10) + durationDays * 24 * 60 * 60 * 1000;
-    setDeadlineMs(deadline);
-  }, [assignment.id, userId, durationDays]);
+
+    apiClient.post('/submissions/access', { assignment_id: assignmentId })
+      .then((res) => {
+        if (cancelled) return;
+        const expiresAt = res.data?.data?.expires_at;
+        setDeadlineMs(expiresAt ? new Date(expiresAt).getTime() : null);
+      })
+      .catch(() => {
+        if (!cancelled) setDeadlineMs(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [assignmentId, userId, durationDays]);
 
   useEffect(() => {
-    if (!deadlineMs) return;
+    if (!deadlineMs) return undefined;
     const tick = () => {
       const diff = deadlineMs - Date.now();
       if (diff <= 0) {
@@ -72,7 +84,7 @@ function useDeadlineCountdown(assignment, userId) {
   return { countdown, deadlineMs };
 }
 
-// ── Deadline Display ──────────────────────────────────────────────────────────
+// Deadline Display
 function DeadlineCountdown({ countdown, durationDays }) {
   if (!durationDays) return null;
   if (!countdown) return <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />;
@@ -521,9 +533,7 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
 
   useEffect(() => { if (user) load(); }, [user]);
 
-  const totalQuizMarks = quizAttempts.length > 0
-    ? Math.round(quizAttempts.reduce((s, a) => s + (a.score || 0), 0) / quizAttempts.length)
-    : null;
+  const totalQuizMarks = averageQuizPercent(quizAttempts);
 
   const gradedSubs = submissions.filter(s => s.status === "graded" && s.marks_awarded !== undefined);
   const totalAssignmentPct = gradedSubs.length > 0
@@ -621,10 +631,10 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div className={`h-1.5 rounded-full ${a.score >= 70 ? "bg-emerald-500" : "bg-red-400"}`}
-                                style={{ width: `${a.score}%` }} />
+                              <div className={`h-1.5 rounded-full ${quizAttemptPercentOrZero(a) >= 70 ? "bg-emerald-500" : "bg-red-400"}`}
+                                style={{ width: `${quizAttemptPercentOrZero(a)}%` }} />
                             </div>
-                            <span className={`text-xs font-bold ${a.score >= 70 ? "text-emerald-600" : "text-red-500"}`}>{a.score}%</span>
+                            <span className={`text-xs font-bold ${quizAttemptPercentOrZero(a) >= 70 ? "text-emerald-600" : "text-red-500"}`}>{quizAttemptPercentOrZero(a)}%</span>
                             {a.passed ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> : <XCircle className="w-3.5 h-3.5 text-red-400" />}
                           </div>
                         </div>
@@ -690,9 +700,7 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
                   <div className="grid sm:grid-cols-2 gap-4">
                     {quizTopics.map(topic => {
                       const myAttempts = quizAttempts.filter(a => a.topic_id === topic.id);
-                      const bestAttempt = myAttempts.length > 0
-                        ? myAttempts.reduce((best, a) => a.score > best.score ? a : best, myAttempts[0])
-                        : null;
+                      const bestAttempt = bestQuizAttempt(myAttempts);
                       const enrollment = enrollments.find(e => e.course_id === topic.course_id);
                       const isPassed = bestAttempt?.passed;
                       const qCount = topic.quiz_questions?.length || 0;
@@ -719,10 +727,10 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
                             <div className="flex items-center gap-2 mb-3">
                               <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div className={`h-1.5 rounded-full ${isPassed ? "bg-emerald-500" : "bg-red-400"}`}
-                                  style={{ width: `${bestAttempt.score}%` }} />
+                                  style={{ width: `${quizAttemptPercentOrZero(bestAttempt)}%` }} />
                               </div>
                               <span className={`text-xs font-bold ${isPassed ? "text-emerald-600" : "text-red-500"}`}>
-                                Best: {bestAttempt.score}%
+                                Best: {quizAttemptPercentOrZero(bestAttempt)}%
                               </span>
                               {isPassed
                                 ? <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Passed</span>
@@ -778,13 +786,13 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                   <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className={`h-1.5 rounded-full ${attempt.score >= 70 ? "bg-emerald-500" : "bg-red-400"}`}
-                                      style={{ width: `${attempt.score}%` }} />
+                                    <div className={`h-1.5 rounded-full ${quizAttemptPercentOrZero(attempt) >= 70 ? "bg-emerald-500" : "bg-red-400"}`}
+                                      style={{ width: `${quizAttemptPercentOrZero(attempt)}%` }} />
                                   </div>
-                                  <span className={`text-xs font-bold ${attempt.score >= 70 ? "text-emerald-600" : "text-red-500"}`}>{attempt.score}%</span>
+                                  <span className={`text-xs font-bold ${quizAttemptPercentOrZero(attempt) >= 70 ? "text-emerald-600" : "text-red-500"}`}>{quizAttemptPercentOrZero(attempt)}%</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-xs text-slate_mist">{attempt.total_questions} Qs</td>
+                              <td className="px-4 py-3 text-xs text-slate_mist">{attempt.total_questions || 0} Qs</td>
                               <td className="px-4 py-3">
                                 {attempt.passed
                                   ? <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full"><CheckCircle className="w-3 h-3" /> Passed</span>
@@ -869,7 +877,7 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-ink">{a.score}%</span>
+                            <span className="text-sm font-bold text-ink">{quizAttemptPercentOrZero(a)}%</span>
                             {a.passed
                               ? <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Pass</span>
                               : <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">Fail</span>

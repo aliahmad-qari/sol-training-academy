@@ -1,55 +1,14 @@
 import React from "react";
-import { CreditCard, Landmark, Wallet, Apple, DollarSign } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { CreditCard } from "lucide-react";
 
 const PAYMENT_METHODS = [
   {
     id: "stripe",
     name: "Credit/Debit Card",
-    description: "Visa, Mastercard, American Express",
+    description: "Secure Stripe Checkout",
     icon: CreditCard,
-    badge: "Secure",
+    badge: "Recommended",
     color: "text-blue-600",
-  },
-  {
-    id: "apple_pay",
-    name: "Apple Pay",
-    description: "Fast and secure payment",
-    icon: Apple,
-    badge: "Apple",
-    color: "text-gray-800",
-  },
-  {
-    id: "google_pay",
-    name: "Google Pay",
-    description: "Fast and secure payment",
-    icon: Wallet,
-    badge: "Google",
-    color: "text-blue-600",
-  },
-  {
-    id: "paypal",
-    name: "PayPal",
-    description: "Pay with your PayPal account",
-    icon: DollarSign,
-    badge: "PayPal",
-    color: "text-blue-700",
-  },
-  {
-    id: "eway",
-    name: "eWAY",
-    description: "Australian secure payment gateway",
-    icon: CreditCard,
-    badge: "Australia",
-    color: "text-green-600",
-  },
-  {
-    id: "bank_transfer",
-    name: "Bank Transfer",
-    description: "Direct bank transfer (BPAY)",
-    icon: Landmark,
-    badge: "Australia",
-    color: "text-slate-700",
   },
 ];
 

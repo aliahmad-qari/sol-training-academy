@@ -27,3 +27,5 @@ export { default as StudentDocument } from './StudentDocument.js';
 export { default as Referral } from './Referral.js';
 export { default as CourseFeedback } from './CourseFeedback.js';
 
+export { default as AssessmentAccess } from './AssessmentAccess.js';
+export { default as QuizSession } from './QuizSession.js';

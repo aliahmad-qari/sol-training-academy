@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import ProgressRing from "@/components/lms/ProgressRing";
 import { base44 } from "@/api/base44Client";
 import AIProgressReport from "@/components/lms/student/AIProgressReport";
+import { quizAttemptPercentOrZero, quizScoreLabel } from "@/lib/quizScores";
 
 const LEVEL_CONFIG = {
   level1: { bar: "bg-harvest",     pill: "bg-harvest/10 text-harvest",       label: "Level 1" },
@@ -20,33 +21,19 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
     if (!enrollments.length) return;
     const courseIds = [...new Set(enrollments.map(e => String(e.course_id)))];
     const courseLevels = [...new Set(enrollments.map(e => e.course_level).filter(Boolean))];
-    // Assignments carry `duration_days` (deadline is relative to first access,
-    // stored per-user in localStorage), not an absolute `due_date`. We surface
-    // unsubmitted assignments for enrolled courses, computing a deadline from
-    // the same localStorage start key that StudentAssessments writes.
+    // Assignment deadlines are server-owned and start when the student opens
+    // the assignment. The overview lists unsubmitted work without starting timers.
     Promise.all([
       base44.entities.Assignment.filter({ is_published: true }, "-created_date", 50).catch(() => []),
       user ? base44.entities.AssignmentSubmission.filter({ user_id: user.id }).catch(() => []) : Promise.resolve([]),
     ]).then(([all, subs]) => {
       const submittedIds = new Set(subs.map(s => s.assignment_id));
-      const now = Date.now();
       const mine = all
         .filter(a => (courseIds.includes(String(a.course_id)) || (a.course_level && courseLevels.includes(a.course_level))) && !submittedIds.has(a.id))
-        .map(a => {
-          let dueMs = null;
-          if (a.duration_days > 0 && user) {
-            const start = localStorage.getItem(`asgn_start_${a.id}_${user.id}`);
-            if (start) dueMs = parseInt(start, 10) + a.duration_days * 24 * 60 * 60 * 1000;
-          }
-          return { ...a, dueMs };
-        })
-        // Drop assignments whose deadline has already passed.
-        .filter(a => a.dueMs === null || a.dueMs >= now)
-        // Soonest deadlines first; assignments with no active deadline last.
-        .sort((a, b) => (a.dueMs ?? Infinity) - (b.dueMs ?? Infinity))
+        .map(a => ({ ...a, dueMs: null }))
         .slice(0, 5);
       setAssignments(mine);
-    });
+    }).catch(() => setAssignments([]));
   }, [enrollments, user]);
 
   const completed   = enrollments.filter(e => e.status === "completed").length;
@@ -134,7 +121,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         <div className="bg-harvest/20 border-t border-white/10 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
           <Clock className="w-3.5 h-3.5 text-harvest" />
           <p className="text-harvest/80 text-xs">
-            <strong>Upcoming:</strong> New NDIS Practice Standards update â€” content reviewed June 2026
+            <strong>Upcoming:</strong> New NDIS Practice Standards update — content reviewed June 2026
           </p>
         </div>
       </div>
@@ -157,7 +144,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         ))}
       </div>
 
-      {/* â”€â”€ Course Progress Bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Course Progress Bars ───────────────────────────────── */}
       {enrollments.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -208,10 +195,10 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         </div>
       )}
 
-      {/* â”€â”€ AI Progress Report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── AI Progress Report ─────────────────────────────────── */}
       <AIProgressReport user={user} enrollments={enrollments} quizAttempts={quizAttempts} />
 
-      {/* â”€â”€ Upcoming Deadlines + Continue Learning â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Upcoming Deadlines + Continue Learning ─────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* Upcoming Assignment Deadlines */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
@@ -318,7 +305,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
           ) : (
             <div className="space-y-2">
               {quizAttempts.slice(0, 4).map(attempt => {
-                const pct = attempt.total_questions > 0 ? Math.round((attempt.score / attempt.total_questions) * 100) : 0;
+                const pct = quizAttemptPercentOrZero(attempt);
                 return (
                   <div key={attempt.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-xs
@@ -327,7 +314,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-medium text-[#0d2348]">Attempt #{attempt.attempt_number || 1}</p>
-                      <p className="text-[10px] text-slate-400">{attempt.score}/{attempt.total_questions} correct Â· {new Date(attempt.created_date).toLocaleDateString("en-AU")}</p>
+                      <p className="text-[10px] text-slate-400">{quizScoreLabel(attempt)} marks · {new Date(attempt.created_date).toLocaleDateString("en-AU")}</p>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
                       ${attempt.passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>

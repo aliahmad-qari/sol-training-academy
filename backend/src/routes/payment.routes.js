@@ -6,7 +6,7 @@ import {
   listPayments,
   getPayment,
 } from '../controllers/payment.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -15,7 +15,7 @@ router.use(protect);
 router.post('/checkout', createCheckout);
 router.post('/verify', verifyPayment);
 router.post('/preview-coupon', previewCoupon);
-router.get('/', listPayments);
-router.get('/:id', getPayment);
+router.get('/', authorizePage('payments', 'revenue'), listPayments);
+router.get('/:id', authorizePage('payments', 'revenue'), getPayment);
 
 export default router;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { HelpCircle, CheckCircle, XCircle, Target, TrendingUp, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
+import { averageQuizPercent, bestQuizAttempt, quizAttemptPercentOrZero, quizScoreLabel } from "@/lib/quizScores";
 
 export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
   const [filter, setFilter] = useState("all");
@@ -63,9 +64,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
   const passed   = quizAttempts.filter(q => q.passed).length;
   const failed   = quizAttempts.length - passed;
   const passRate = Math.round((passed / quizAttempts.length) * 100);
-  const avgScore = Math.round(
-    quizAttempts.reduce((s, q) => s + (q.score || 0), 0) / quizAttempts.length
-  );
+  const avgScore = averageQuizPercent(quizAttempts) ?? 0;
 
   const filtered = quizAttempts.filter(q => {
     if (filter === "passed") return q.passed;
@@ -125,8 +124,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map(attempt => {
-                const pct = attempt.total_questions > 0
-                  ? Math.round((attempt.score / attempt.total_questions) * 100) : 0;
+                const pct = quizAttemptPercentOrZero(attempt);
                 return (
                   <tr key={attempt.id} className="hover:bg-blue-50/30 transition-colors">
                     <td className="px-5 py-3.5 text-slate-500 text-xs whitespace-nowrap">
@@ -147,7 +145,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-xs text-slate-500 font-medium">
-                      {attempt.score}/{attempt.total_questions} correct
+                      {quizScoreLabel(attempt)} marks
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border
@@ -195,7 +193,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
             {availableQuizzes.map(q => {
               const course = courses.find(c => c.id === q.course_id);
               const attempts = quizAttempts.filter(a => a.topic_id === q.id);
-              const bestAttempt = attempts.find(a => a.passed) || attempts[0];
+              const bestAttempt = bestQuizAttempt(attempts);
               return (
                 <div key={q.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
@@ -207,7 +205,7 @@ export default function StudentQuizzes({ quizAttempts, enrollments, courses }) {
                   </div>
                   {bestAttempt ? (
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${bestAttempt.passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-                      {bestAttempt.passed ? "✓ Passed" : "Retry"}
+                      {bestAttempt.passed ? "Passed" : "Retry"}
                     </span>
                   ) : (
                     <span className="text-xs text-slate_mist bg-slate-200 px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">Not attempted</span>

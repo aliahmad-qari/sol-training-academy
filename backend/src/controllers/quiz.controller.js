@@ -1,9 +1,11 @@
-﻿import { Quiz, QuizAttempt, CourseTopic, CourseEnrollment } from '../models/index.js';
+﻿import { Quiz, QuizAttempt, QuizSession, CourseTopic, CourseEnrollment } from '../models/index.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { buildQuery, paginationMeta } from '../helpers/queryFeatures.js';
 import { applyTopicProgress } from '../services/enrollmentProgress.service.js';
+
+const QUIZ_SUBMIT_GRACE_MS = 15 * 1000;
 
 /**
  * Remove answer keys before returning a quiz to a student.
@@ -143,20 +145,12 @@ const gradeAnswers = (questions, answers) => {
   return { score, totalMarks, totalQuestions: questions.length, correctCount, review };
 };
 
-/**
- * POST /api/v1/quizzes/attempts   (protected; student)
- * Body: { topic_id?, quiz_id?, course_id, answers }
- */
-export const submitAttempt = asyncHandler(async (req, res) => {
-  const { topic_id, quiz_id, course_id, answers = {} } = req.body;
-  if (!course_id || (!topic_id && !quiz_id)) {
-    throw ApiError.badRequest('course_id and (topic_id or quiz_id) are required.');
-  }
 
+const ensureActiveEnrollment = async ({ userId, courseId }) => {
   const enrollment = await CourseEnrollment.findOne({
-    user_id: req.user._id,
-    course_id,
-    status: { $ne: 'expired' },
+    user_id: userId,
+    course_id: courseId,
+    status: { $in: ['active', 'completed'] },
     $or: [{ expiry_date: null }, { expiry_date: { $exists: false } }, { expiry_date: { $gt: new Date() } }],
   }).lean();
 
@@ -164,45 +158,191 @@ export const submitAttempt = asyncHandler(async (req, res) => {
     throw ApiError.forbidden('You are not enrolled in this course, or your access has expired.');
   }
 
-  let questions;
-  let passingMarksInput = 0;
-  let completionTopicId = topic_id;
+  return enrollment;
+};
 
+const resolveQuizTarget = async ({ topic_id, quiz_id, course_id }) => {
   if (topic_id) {
     const topic = await CourseTopic.findById(topic_id).lean();
     if (!topic || topic.type !== 'quiz') throw ApiError.badRequest('Invalid quiz topic.');
     if (String(topic.course_id) !== String(course_id)) {
       throw ApiError.badRequest('Quiz topic does not belong to this course.');
     }
-    questions = topic.quiz_questions || [];
-    passingMarksInput = topic.passing_marks || 0;
-  } else {
-    const quiz = await Quiz.findById(quiz_id).lean();
-    if (!quiz) throw ApiError.notFound('Quiz not found.');
-    if (String(quiz.course_id) !== String(course_id)) {
-      throw ApiError.badRequest('Quiz does not belong to this course.');
-    }
-    questions = quiz.questions || [];
-    passingMarksInput = quiz.passing_marks || 0;
-    completionTopicId = quiz.topic_id;
+    return {
+      target_type: 'topic',
+      topic_id: topic._id,
+      quiz_id: undefined,
+      course_id: topic.course_id,
+      questions: topic.quiz_questions || [],
+      passing_marks: topic.passing_marks || 0,
+      time_limit_mins: Number(topic.time_limit_mins || 0),
+      max_attempts: 0,
+      completionTopicId: topic._id,
+      available_from: topic.available_from,
+      available_until: topic.available_until,
+    };
   }
 
+  const quiz = await Quiz.findById(quiz_id).lean();
+  if (!quiz) throw ApiError.notFound('Quiz not found.');
+  if (String(quiz.course_id) !== String(course_id)) {
+    throw ApiError.badRequest('Quiz does not belong to this course.');
+  }
+  return {
+    target_type: 'quiz',
+    topic_id: quiz.topic_id,
+    quiz_id: quiz._id,
+    course_id: quiz.course_id,
+    questions: quiz.questions || [],
+    passing_marks: quiz.passing_marks || 0,
+    time_limit_mins: Number(quiz.time_limit_mins || 0),
+    max_attempts: Number(quiz.max_attempts || 0),
+    completionTopicId: quiz.topic_id,
+  };
+};
+
+const assertQuizWindow = (target) => {
+  const now = Date.now();
+  if (target.available_from && new Date(target.available_from).getTime() > now) {
+    throw ApiError.badRequest('This quiz is not open yet.');
+  }
+  if (target.available_until && new Date(target.available_until).getTime() < now) {
+    throw ApiError.badRequest('This quiz has closed.');
+  }
+};
+
+const targetAttemptFilter = (target) => (
+  target.target_type === 'topic' ? { topic_id: target.topic_id } : { quiz_id: target.quiz_id }
+);
+
+const sessionTargetFilter = (target) => (
+  target.target_type === 'topic' ? { topic_id: target.topic_id } : { quiz_id: target.quiz_id }
+);
+
+/**
+ * POST /api/v1/quizzes/attempts/start   (protected; student)
+ * Body: { topic_id?, quiz_id?, course_id }
+ * Starts or resumes a server-owned quiz session.
+ */
+export const startAttempt = asyncHandler(async (req, res) => {
+  const { topic_id, quiz_id, course_id } = req.body;
+  if (!course_id || (!topic_id && !quiz_id)) {
+    throw ApiError.badRequest('course_id and (topic_id or quiz_id) are required.');
+  }
+
+  await ensureActiveEnrollment({ userId: req.user._id, courseId: course_id });
+  const target = await resolveQuizTarget({ topic_id, quiz_id, course_id });
+  assertQuizWindow(target);
+  if (target.questions.length === 0) throw ApiError.badRequest('This quiz has no questions.');
+
+  const now = new Date();
+  const sessionFilter = { user_id: req.user._id, ...sessionTargetFilter(target) };
+  await QuizSession.updateMany(
+    { ...sessionFilter, status: 'in_progress', expires_at: { $lte: now } },
+    { $set: { status: 'expired' } }
+  );
+
+  let session = await QuizSession.findOne({
+    ...sessionFilter,
+    status: 'in_progress',
+    $or: [{ expires_at: null }, { expires_at: { $exists: false } }, { expires_at: { $gt: now } }],
+  }).sort('-createdAt');
+
+  if (!session) {
+    const prior = await QuizAttempt.countDocuments({ user_id: req.user._id, ...targetAttemptFilter(target) });
+    if (target.max_attempts > 0 && prior >= target.max_attempts) {
+      throw ApiError.forbidden('Maximum quiz attempts reached.');
+    }
+    const expiresAt = target.time_limit_mins > 0
+      ? new Date(now.getTime() + target.time_limit_mins * 60 * 1000)
+      : null;
+    session = await QuizSession.create({
+      user_id: req.user._id,
+      course_id,
+      topic_id: target.topic_id,
+      quiz_id: target.quiz_id,
+      attempt_number: prior + 1,
+      time_limit_mins: target.time_limit_mins,
+      started_at: now,
+      expires_at: expiresAt,
+      status: 'in_progress',
+    });
+  }
+
+  const secondsLeft = session.expires_at
+    ? Math.max(0, Math.floor((session.expires_at.getTime() - Date.now()) / 1000))
+    : null;
+
+  return sendOk(res, {
+    session_id: session._id,
+    attempt_number: session.attempt_number,
+    started_at: session.started_at,
+    expires_at: session.expires_at,
+    seconds_left: secondsLeft,
+    time_limit_mins: session.time_limit_mins,
+  }, 'Quiz session started');
+});
+
+/**
+ * POST /api/v1/quizzes/attempts   (protected; student)
+ * Body: { topic_id?, quiz_id?, course_id, session_id?, answers }
+ */
+export const submitAttempt = asyncHandler(async (req, res) => {
+  const { topic_id, quiz_id, course_id, session_id, answers = {} } = req.body;
+  if (!course_id || (!topic_id && !quiz_id)) {
+    throw ApiError.badRequest('course_id and (topic_id or quiz_id) are required.');
+  }
+
+  await ensureActiveEnrollment({ userId: req.user._id, courseId: course_id });
+  const target = await resolveQuizTarget({ topic_id, quiz_id, course_id });
+  assertQuizWindow(target);
+
+  const questions = target.questions;
+  const passingMarksInput = target.passing_marks;
+  const completionTopicId = target.completionTopicId;
   if (questions.length === 0) throw ApiError.badRequest('This quiz has no questions.');
+
+  let session = null;
+  if (target.time_limit_mins > 0 || session_id) {
+    if (!session_id) throw ApiError.badRequest('A quiz session is required for timed quizzes.');
+    session = await QuizSession.findById(session_id);
+    if (!session) throw ApiError.notFound('Quiz session not found.');
+    if (String(session.user_id) !== String(req.user._id) || String(session.course_id) !== String(course_id)) {
+      throw ApiError.forbidden('Quiz session does not belong to this user.');
+    }
+    if (target.target_type === 'topic' && String(session.topic_id) !== String(target.topic_id)) {
+      throw ApiError.badRequest('Quiz session does not match this topic.');
+    }
+    if (target.target_type === 'quiz' && String(session.quiz_id) !== String(target.quiz_id)) {
+      throw ApiError.badRequest('Quiz session does not match this quiz.');
+    }
+    if (session.status !== 'in_progress' || session.submitted_at) {
+      throw ApiError.badRequest('This quiz session has already been submitted.');
+    }
+    if (session.expires_at && session.expires_at.getTime() + QUIZ_SUBMIT_GRACE_MS < Date.now()) {
+      session.status = 'expired';
+      await session.save();
+      throw ApiError.badRequest('Quiz time has expired.');
+    }
+  }
+
+  const prior = session
+    ? session.attempt_number - 1
+    : await QuizAttempt.countDocuments({ user_id: req.user._id, ...targetAttemptFilter(target) });
+  if (!session && target.max_attempts > 0 && prior >= target.max_attempts) {
+    throw ApiError.forbidden('Maximum quiz attempts reached.');
+  }
 
   const { score, totalMarks, totalQuestions, correctCount, review } = gradeAnswers(questions, answers);
   const passingMarks = normalizePassingMarks(passingMarksInput, totalMarks);
   const passed = score >= passingMarks;
 
-  const prior = await QuizAttempt.countDocuments({
-    user_id: req.user._id,
-    ...(topic_id ? { topic_id } : { quiz_id }),
-  });
-
   const attempt = await QuizAttempt.create({
     user_id: req.user._id,
     course_id,
-    topic_id,
-    quiz_id,
+    topic_id: target.topic_id,
+    quiz_id: target.quiz_id,
+    session_id: session?._id,
     answers,
     score,
     total_marks: totalMarks,
@@ -210,6 +350,13 @@ export const submitAttempt = asyncHandler(async (req, res) => {
     passed,
     attempt_number: prior + 1,
   });
+
+  if (session) {
+    session.status = 'submitted';
+    session.submitted_at = new Date();
+    session.attempt_id = attempt._id;
+    await session.save();
+  }
 
   let progress = null;
   if (passed && completionTopicId) {

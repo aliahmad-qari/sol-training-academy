@@ -7,7 +7,7 @@ import {
   deleteModule,
   reorderModules,
 } from '../controllers/module.controller.js';
-import { protect, authorize, optionalAuth } from '../middleware/auth.js';
+import { protect, authorize, optionalAuth, authorizePage } from '../middleware/auth.js';
 import { checkCourseAccess } from '../middleware/checkCourseAccess.js';
 
 const router = Router();
@@ -17,9 +17,9 @@ const router = Router();
 router.get('/', optionalAuth, checkCourseAccess, listModules);
 router.get('/:id', optionalAuth, getModule);
 
-router.post('/', protect, authorize('admin', 'team_member'), createModule);
-router.patch('/reorder', protect, authorize('admin', 'team_member'), reorderModules);
-router.put('/:id', protect, authorize('admin', 'team_member'), updateModule);
-router.delete('/:id', protect, authorize('admin', 'team_member'), deleteModule);
+router.post('/', protect, authorize('admin', 'team_member'), authorizePage('modules', 'courses'), createModule);
+router.patch('/reorder', protect, authorize('admin', 'team_member'), authorizePage('modules', 'courses'), reorderModules);
+router.put('/:id', protect, authorize('admin', 'team_member'), authorizePage('modules', 'courses'), updateModule);
+router.delete('/:id', protect, authorize('admin', 'team_member'), authorizePage('modules', 'courses'), deleteModule);
 
 export default router;

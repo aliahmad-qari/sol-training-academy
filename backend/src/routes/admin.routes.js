@@ -6,7 +6,7 @@ import {
   topCourses,
   catalogueSummary,
 } from '../controllers/analytics.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -17,9 +17,9 @@ router.get('/overview', adminOverview);
 router.get('/recent', adminRecent);
 
 // Analytics live under /admin/analytics as well as the top-level /analytics.
-router.get('/analytics/revenue', revenueByMonth);
-router.get('/analytics/enrollments', enrollmentsByCourse);
-router.get('/analytics/top-courses', topCourses);
-router.get('/analytics/summary', catalogueSummary);
+router.get('/analytics/revenue', authorizePage('analytics', 'revenue'), revenueByMonth);
+router.get('/analytics/enrollments', authorizePage('analytics'), enrollmentsByCourse);
+router.get('/analytics/top-courses', authorizePage('analytics'), topCourses);
+router.get('/analytics/summary', authorizePage('analytics'), catalogueSummary);
 
 export default router;

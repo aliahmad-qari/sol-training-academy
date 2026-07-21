@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   User,
@@ -29,6 +29,7 @@ import apiClient from "@/api/apiClient";
 import { uploadFile } from "@/api/uploadClient";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
+import { quizAttemptPercent } from "@/lib/quizScores";
 
 const LEVEL_COLORS = {
   level1: "bg-harvest/10 text-harvest border-harvest/30",
@@ -52,29 +53,6 @@ const safeDate = (value) => {
     month: "short",
     year: "numeric",
   });
-};
-
-/**
- * Normalise a quiz attempt to a 0–100 percentage.
- * The backend stores `score` as RAW marks (not a percentage), alongside
- * `total_marks` / `total_questions`. If a percentage-style field is ever
- * present we honour it; otherwise we derive one — matching how the rest of
- * the app (StudentOverview, AdminGradebook, AdminAnalytics) reads scores.
- * Returns null when the attempt carries no usable score data.
- */
-const attemptPercent = (attempt) => {
-  if (!attempt) return null;
-
-  const explicitPercent = Number(attempt.score_percent);
-  if (Number.isFinite(explicitPercent)) return explicitPercent;
-
-  const score = Number(attempt.score);
-  if (!Number.isFinite(score)) return null;
-
-  const denominator = Number(attempt.total_marks) || Number(attempt.total_questions) || 0;
-  if (denominator > 0) return Math.round((score / denominator) * 100);
-
-  return null;
 };
 
 export default function StudentProfile({ user, enrollments = [], quizAttempts = [], onOpenCourse, setActiveTab }) {
@@ -158,7 +136,7 @@ export default function StudentProfile({ user, enrollments = [], quizAttempts = 
   const submittedAssignmentsCount = submissions.length;
 
   const scoredPercents = quizAttempts
-    .map(attemptPercent)
+    .map(quizAttemptPercent)
     .filter((percent) => percent !== null);
 
   const avgQuizGrade = scoredPercents.length > 0

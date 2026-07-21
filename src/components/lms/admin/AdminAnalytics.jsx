@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { averageQuizPercent, quizAttemptPercentOrZero } from "@/lib/quizScores";
 
 const PIE_COLORS = ["#D97706", "#3B82F6", "#10B981", "#8B5CF6", "#F43F5E"];
 const LEVEL_COLORS = { level1: "#3B82F6", level2: "#F59E0B", level3: "#8B5CF6" };
@@ -39,8 +40,10 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
     ]).then(([mods, tops]) => {
       setModules(mods);
       setTopics(tops);
-      setLoading(false);
-    });
+    }).catch(() => {
+      setModules([]);
+      setTopics([]);
+    }).finally(() => setLoading(false));
   }, []);
 
   // ── Shared derived data ─────────────────────────────────────────────────────
@@ -48,9 +51,7 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
   const totalAttempts = quizAttempts.length;
   const passedAttempts = quizAttempts.filter(q => q.passed).length;
   const passRate = totalAttempts > 0 ? Math.round((passedAttempts / totalAttempts) * 100) : 0;
-  const avgScore = totalAttempts > 0
-    ? Math.round(quizAttempts.reduce((s, q) => s + (q.score || 0), 0) / totalAttempts)
-    : 0;
+  const avgScore = averageQuizPercent(quizAttempts) ?? 0;
   const overallCompletionRate = enrollments.length > 0
     ? Math.round((enrollments.filter(e => e.status === "completed").length / enrollments.length) * 100)
     : 0;
@@ -104,9 +105,7 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
       ? Math.round(envs.reduce((sum, e) => sum + (e.progress_percent || 0), 0) / envs.length)
       : 0;
     const studentAttempts = quizAttempts.filter(a => a.user_id === s.id);
-    const avgQuiz = studentAttempts.length > 0
-      ? Math.round(studentAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / studentAttempts.length)
-      : null;
+    const avgQuiz = averageQuizPercent(studentAttempts);
     return { ...s, completedCourses, avgProgress, avgQuiz, totalEnrolled: envs.length };
   });
 
@@ -565,12 +564,7 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
           const totalAtts = attempts.length;
           const passed = attempts.filter(a => a.passed).length;
           const passRatePct = totalAtts > 0 ? Math.round((passed / totalAtts) * 100) : 0;
-          // score from QuizAttempt is percentage (0-100) based on how it's stored
-          // total_marks and score are stored; percentage = score/total_marks*100 if score is raw
-          const scores = attempts.map(a => {
-            if (a.total_marks && a.total_marks > 0) return Math.round((a.score / a.total_marks) * 100);
-            return a.score || 0; // fallback: assume score is already %
-          });
+          const scores = attempts.map(quizAttemptPercentOrZero);
           const avgPct = scores.length > 0 ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
           const highestPct = scores.length > 0 ? Math.max(...scores) : 0;
           const courseIds = [...new Set(attempts.map(a => a.course_id))];

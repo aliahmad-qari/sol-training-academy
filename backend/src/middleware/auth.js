@@ -47,6 +47,34 @@ export const authorize = (...roles) => (req, res, next) => {
   return next();
 };
 
+
+const BASELINE_TEAM_PAGES = new Set(['dashboard']);
+
+export const hasPageAccess = (user, ...pages) => {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (user.role !== 'team_member') return true;
+
+  const requestedPages = pages.flat().filter(Boolean);
+  if (requestedPages.length === 0) return true;
+
+  const allowed = new Set([...(user.page_permissions || []), ...BASELINE_TEAM_PAGES]);
+  return requestedPages.some((page) => allowed.has(page) || allowed.has('*'));
+};
+
+/**
+ * Page-level RBAC for team_member accounts. Use after protect.
+ * Admins are unrestricted; students rely on owner-scoped controllers.
+ */
+export const authorizePage = (...pages) => (req, res, next) => {
+  if (!req.user) {
+    return next(ApiError.unauthorized('Authentication required.'));
+  }
+  if (!hasPageAccess(req.user, ...pages)) {
+    return next(ApiError.forbidden('You do not have access to this admin page.'));
+  }
+  return next();
+};
 /**
  * `optionalAuth` — attach req.user if a valid token is present, but never
  * reject the request. Useful for endpoints with public + enriched views.

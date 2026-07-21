@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { quizAttemptPercent, quizScoreLabel } from "@/lib/quizScores";
 
 const STATUS_CONFIG = {
   graded: { color: "bg-emerald-100 text-emerald-700", label: "Graded" },
@@ -14,19 +15,6 @@ const STATUS_CONFIG = {
 };
 
 const getId = (item) => String(item?._id || item?.id || "");
-
-const attemptPercent = (attempt) => {
-  const explicit = Number(attempt.score_percent);
-  if (Number.isFinite(explicit) && explicit >= 0) return Math.round(explicit);
-
-  const score = Number(attempt.score);
-  if (!Number.isFinite(score)) return null;
-
-  const total = Number(attempt.total_marks) || Number(attempt.total_questions) || 0;
-  if (total > 0) return Math.round((score / total) * 100);
-  if (score >= 0 && score <= 100) return Math.round(score);
-  return null;
-};
 
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "-";
 
@@ -114,15 +102,14 @@ export default function AdminGradebook({ courses = [] }) {
           const enrollment = getAttemptStudent(a);
           const course = getAttemptCourse(a);
           const topic = getAttemptTopic(a);
-          const pct = attemptPercent(a);
+          const pct = quizAttemptPercent(a);
           return [
             enrollment.user_name || "",
             enrollment.user_email || "",
             course.title || a.course_id || "",
             topic.title || a.topic_id || "",
             a.attempt_number || 1,
-            a.score ?? "",
-            a.total_marks || a.total_questions || "",
+            quizScoreLabel(a),
             pct != null ? `${pct}%` : "",
             a.passed ? "Pass" : "Fail",
             dateLabel(a.created_date || a.createdAt),
@@ -135,7 +122,7 @@ export default function AdminGradebook({ courses = [] }) {
         ]);
 
     const headers = tab === "quizzes"
-      ? ["Student Name", "Email", "Course", "Quiz", "Attempt", "Score", "Total", "Percent", "Result", "Date"]
+      ? ["Student Name", "Email", "Course", "Quiz", "Attempt", "Marks", "Percent", "Result", "Date"]
       : ["Student Name", "Email", "Course", "Assignment", "Status", "Marks", "Max Marks", "Result", "Feedback", "Submitted"];
 
     const csv = [headers, ...rows]
@@ -289,8 +276,7 @@ export default function AdminGradebook({ courses = [] }) {
                 const enrollment = getAttemptStudent(a);
                 const course = getAttemptCourse(a);
                 const topic = getAttemptTopic(a);
-                const pct = attemptPercent(a);
-                const total = Number(a.total_marks) || Number(a.total_questions) || 0;
+                const pct = quizAttemptPercent(a);
                 return (
                   <tr key={a.id || a._id} className="border-b border-border/20 hover:bg-slate-50">
                     <td className="px-4 py-3">
@@ -301,7 +287,7 @@ export default function AdminGradebook({ courses = [] }) {
                     <td className="px-4 py-3 text-xs text-ink font-medium max-w-[180px] truncate">{topic.title || a.topic_id || "Quiz"}</td>
                     <td className="px-4 py-3 text-xs font-bold text-ink">#{a.attempt_number || 1}</td>
                     <td className="px-4 py-3">
-                      <span className="font-bold text-ink">{a.score ?? 0}{total > 0 && <span className="text-slate-400 font-normal">/{total}</span>}</span>
+                      <span className="font-bold text-ink">{quizScoreLabel(a)}</span>
                       {pct != null && <span className="text-xs text-slate-400 ml-1">({pct}%)</span>}
                       {a.total_questions > 0 && <p className="text-[10px] text-slate-400">{a.total_questions} question{a.total_questions === 1 ? "" : "s"}</p>}
                     </td>

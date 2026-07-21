@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { CreditCard, Download, CheckCircle, Clock, XCircle, Receipt, Search } from "lucide-react";
 import { motion } from "framer-motion";
@@ -17,10 +17,10 @@ export default function StudentPayments({ user }) {
 
   useEffect(() => {
     if (!user?.id) return;
-    base44.entities.CoursePayment.filter({ user_id: user.id }, "-created_date").then(data => {
-      setPayments(data || []);
-      setLoading(false);
-    });
+    base44.entities.CoursePayment.filter({ user_id: user.id }, "-created_date")
+      .then(data => setPayments(data || []))
+      .catch(() => setPayments([]))
+      .finally(() => setLoading(false));
   }, [user?.id]);
 
   const query = search.trim().toLowerCase();

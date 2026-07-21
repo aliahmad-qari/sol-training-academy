@@ -3,7 +3,6 @@ import { CheckCircle, XCircle, RotateCcw, Trophy, Clock, AlertTriangle, ChevronR
 import { Button } from "@/components/ui/button";
 import apiClient from "@/api/apiClient";
 
-const STORAGE_KEY = (topicId, attempt) => `quiz_timer_${topicId}_${attempt}`;
 
 const questionMarks = (question) => {
   const marks = Number(question?.marks ?? 1);
@@ -38,10 +37,15 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
   const [attempt, setAttempt] = useState(1);
   const [timedOut, setTimedOut] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState("");
 
   const timeLimitSecs = topic.time_limit_mins ? topic.time_limit_mins * 60 : null;
   const [secsLeft, setSecsLeft] = useState(null);
   const timerRef = useRef(null);
+  const autoSubmitStartedRef = useRef(false);
 
   const now = new Date();
   const availFrom = topic.available_from ? new Date(topic.available_from) : null;
@@ -53,7 +57,6 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
   const doSubmit = useCallback(async (currentAnswers, isAutoSubmit = false) => {
     if (submitting || submitted) return;
     if (timerRef.current) clearInterval(timerRef.current);
-    localStorage.removeItem(STORAGE_KEY(topicId, attempt));
     setSubmitting(true);
     setSubmitError("");
     if (isAutoSubmit) setTimedOut(true);
@@ -62,6 +65,7 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
       const res = await apiClient.post('/quizzes/attempts', {
         course_id: courseId,
         topic_id: topicId,
+        session_id: sessionId,
         answers: currentAnswers,
         timed_out: isAutoSubmit,
       });
@@ -84,34 +88,30 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, submitted, topicId, attempt, courseId, grandTotal, onPass]);
-
+  }, [submitting, submitted, topicId, sessionId, courseId, grandTotal, onPass]);
   useEffect(() => {
-    if (!quizStarted || !timeLimitSecs || submitted) return undefined;
+    if (!quizStarted || !sessionExpiresAt || submitted) return undefined;
 
-    const stored = localStorage.getItem(STORAGE_KEY(topicId, attempt));
-    const remaining = stored ? parseInt(stored, 10) : timeLimitSecs;
-    setSecsLeft(remaining);
-
-    timerRef.current = setInterval(() => {
-      setSecsLeft(prev => {
-        const next = prev - 1;
-        if (next <= 0) {
-          clearInterval(timerRef.current);
-          localStorage.removeItem(STORAGE_KEY(topicId, attempt));
+    const deadlineMs = new Date(sessionExpiresAt).getTime();
+    const tick = () => {
+      const next = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
+      setSecsLeft(next);
+      if (next <= 0) {
+        clearInterval(timerRef.current);
+        if (!autoSubmitStartedRef.current) {
+          autoSubmitStartedRef.current = true;
           setAnswers(latestAnswers => {
             void doSubmit(latestAnswers, true);
             return latestAnswers;
           });
-          return 0;
         }
-        localStorage.setItem(STORAGE_KEY(topicId, attempt), String(next));
-        return next;
-      });
-    }, 1000);
+      }
+    };
 
+    tick();
+    timerRef.current = setInterval(tick, 1000);
     return () => clearInterval(timerRef.current);
-  }, [quizStarted, timeLimitSecs, submitted, topicId, attempt, doSubmit]);
+  }, [quizStarted, sessionExpiresAt, submitted, doSubmit]);
 
   const handleAnswer = (qIdx, value) => {
     if (!quizStarted || submitted) return;
@@ -139,7 +139,6 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
   const passed = submitted ? serverPassed : isCompleted;
 
   const handleRetry = () => {
-    localStorage.removeItem(STORAGE_KEY(topicId, attempt));
     setAnswers({});
     setSubmitted(false);
     setSubmitting(false);
@@ -150,8 +149,38 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
     setSubmitError("");
     setTimedOut(false);
     setSecsLeft(null);
+    setSessionId(null);
+    setSessionExpiresAt(null);
+    setStartError("");
+    autoSubmitStartedRef.current = false;
     setQuizStarted(false);
     setAttempt(a => a + 1);
+  };
+
+  const handleStartQuiz = async () => {
+    autoSubmitStartedRef.current = false;
+    setStarting(true);
+    setStartError("");
+    try {
+      const res = await apiClient.post('/quizzes/attempts/start', {
+        course_id: courseId,
+        topic_id: topicId,
+      });
+      const session = res.data?.data || {};
+      setSessionId(session.session_id || session.id || null);
+      setSessionExpiresAt(session.expires_at || null);
+      if (session.attempt_number) setAttempt(session.attempt_number);
+      if (session.seconds_left !== null && session.seconds_left !== undefined) {
+        setSecsLeft(Number(session.seconds_left));
+      } else {
+        setSecsLeft(null);
+      }
+      setQuizStarted(true);
+    } catch (err) {
+      setStartError(err.response?.data?.message || "Unable to start quiz. Please try again.");
+    } finally {
+      setStarting(false);
+    }
   };
 
   const timerMins = secsLeft !== null ? Math.floor(secsLeft / 60) : null;
@@ -244,6 +273,12 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
           </div>
         )}
 
+        {startError && (
+          <div className="bg-red-500/10 border border-red-400/30 rounded-xl px-5 py-3 max-w-sm mx-auto">
+            <p className="text-red-300 text-sm font-medium">{startError}</p>
+          </div>
+        )}
+
         {timeLimitSecs && (
           <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl px-5 py-3 max-w-sm mx-auto">
             <div className="flex items-center gap-2 justify-center">
@@ -256,9 +291,10 @@ export default function QuizComponent({ topic, userId, courseId, onPass, isCompl
         )}
 
         <Button
-          onClick={() => setQuizStarted(true)}
-          className="w-full sm:w-auto gap-2 bg-harvest hover:bg-harvest/90 text-white px-10 py-6 text-base font-display font-semibold">
-          <Play className="w-5 h-5" /> Start Quiz
+          onClick={handleStartQuiz}
+          disabled={starting}
+          className="w-full sm:w-auto gap-2 bg-harvest hover:bg-harvest/90 text-white px-10 py-6 text-base font-display font-semibold disabled:opacity-50">
+          <Play className="w-5 h-5" /> {starting ? "Starting..." : "Start Quiz"}
         </Button>
       </div>
     );

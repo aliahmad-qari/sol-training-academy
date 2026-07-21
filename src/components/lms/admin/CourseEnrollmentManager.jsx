@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format, addDays, differenceInDays } from "date-fns";
+import { averageQuizPercent, quizAttemptPercentOrZero } from "@/lib/quizScores";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getEnrollmentStatus(enr) {
@@ -27,6 +28,40 @@ function getEnrollmentStatus(enr) {
   return (enr.progress_percent || 0) > 0 ? "in_progress" : "active";
 }
 
+const getRecordId = (record) => record?._id || record?.id;
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+
+const findUserByEmail = async (email, localUsers = []) => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return null;
+
+  const local = localUsers.find((user) => normalizeEmail(user.email) === normalized);
+  if (local) return local;
+
+  const matches = await base44.entities.User.filter({ search: normalized, role: "student" }).catch(() => []);
+  return matches.find((user) => normalizeEmail(user.email) === normalized) || null;
+};
+
+const ensureStudentUser = async ({ fullName, email }, localUsers = []) => {
+  const normalizedEmail = normalizeEmail(email);
+  const existing = await findUserByEmail(normalizedEmail, localUsers);
+  if (existing) return { user: existing, created: false };
+
+  try {
+    const user = await base44.entities.User.create({
+      full_name: String(fullName || normalizedEmail).trim(),
+      email: normalizedEmail,
+      role: "student",
+    });
+    return { user, created: true };
+  } catch (err) {
+    if (err.response?.status === 409) {
+      const user = await findUserByEmail(normalizedEmail, []);
+      if (user) return { user, created: false };
+    }
+    throw err;
+  }
+};
 const STATUS_CONFIG = {
   active:        { label: "Active",         color: "bg-blue-100 text-blue-700" },
   in_progress:   { label: "In Progress",    color: "bg-emerald-100 text-emerald-700" },
@@ -54,7 +89,7 @@ function EnrollStudentModal({ course, onClose, onDone }) {
   const [loadingUsers, setLoadingUsers] = useState(true);
 
   useEffect(() => {
-    base44.entities.User.list().then(u => { setAllUsers(u); setLoadingUsers(false); });
+    base44.entities.User.list().then(u => { setAllUsers(u); }).catch(() => setAllUsers([])).finally(() => setLoadingUsers(false));
   }, []);
 
   useEffect(() => {
@@ -92,53 +127,54 @@ function EnrollStudentModal({ course, onClose, onDone }) {
     }
     setSaving(true);
 
-    // Check for existing enrollment
-    if (selectedUser) {
-      const existing = await base44.entities.CourseEnrollment.filter({ user_id: selectedUser.id, course_id: course.id });
+    try {
+      const { user, created } = selectedUser
+        ? { user: selectedUser, created: false }
+        : await ensureStudentUser({ fullName: form.full_name, email: form.email }, allUsers);
+      const userId = getRecordId(user);
+
+      if (!userId) throw new Error("Could not resolve a valid student account ID.");
+
+      const existing = await base44.entities.CourseEnrollment.filter({ user_id: userId, course_id: course.id });
       if (existing.length > 0) {
         toast.error("This student is already enrolled in this course.");
-        setSaving(false); return;
+        return;
       }
-    }
 
-    const enrollmentData = {
-      user_id: selectedUser?.id || `new_${Date.now()}`,
-      user_email: form.email,
-      user_name: form.full_name,
-      course_id: course.id,
-      course_title: course.title,
-      course_level: course.level,
-      status: form.status,
-      progress_percent: 0,
-      completed_topic_ids: [],
-      ...(form.expiry_date ? { expiry_date: form.expiry_date } : {}),
-    };
-
-    if (!selectedUser) {
-      // Invite the new user
-      try {
-        await base44.users.inviteUser(form.email, "user");
-        toast.success(`Invitation sent to ${form.email}`);
-      } catch (e) {
-        // User may already exist or invitation failed silently
-      }
-    }
-
-    await base44.entities.CourseEnrollment.create(enrollmentData);
-
-    // Send welcome/enrollment email
-    try {
-      await base44.integrations.Core.SendEmail({
-        to: form.email,
-        subject: `You've been enrolled in ${course.title}`,
-        body: `Hi ${form.full_name},\n\nYou have been successfully enrolled in ${course.title}.\n\nPlease log in to your student portal to begin learning.\n\nBest regards,\nSOL Training Academy`,
+      const enrollment = await base44.entities.CourseEnrollment.create({
+        user_id: userId,
+        course_id: course.id,
       });
-    } catch (e) { /* non-critical */ }
 
-    toast.success(`${form.full_name} enrolled successfully!`);
-    setSaving(false);
-    onDone();
-    onClose();
+      const enrollmentId = getRecordId(enrollment);
+      const update = {
+        ...(form.status !== "active" ? { status: form.status } : {}),
+        ...(form.expiry_date ? { expiry_date: form.expiry_date } : {}),
+      };
+      if (enrollmentId && Object.keys(update).length > 0) {
+        await base44.entities.CourseEnrollment.update(enrollmentId, update);
+      }
+
+      // Send welcome/enrollment email when an integration becomes available.
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: normalizeEmail(form.email),
+          subject: `You've been enrolled in ${course.title}`,
+          body: `Hi ${form.full_name},\n\nYou have been successfully enrolled in ${course.title}.\n\nPlease log in to your student portal to begin learning.\n\nBest regards,\nSOL Training Academy`,
+        });
+      } catch (e) { /* non-critical */ }
+
+      toast.success(created ? `${form.full_name} account created and enrolled successfully!` : `${form.full_name} enrolled successfully!`);
+      if (created && user.generated_password) {
+        toast.info(`Temporary password: ${user.generated_password}`, { duration: 30000 });
+      }
+      onDone();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Failed to enrol student.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -403,21 +439,21 @@ function StudentProgressModal({ enrollment, topics, modules, onClose }) {
   const [progressTab, setProgressTab] = useState("overview");
 
   useEffect(() => {
+    setLoadingScores(true);
     Promise.all([
       base44.entities.QuizAttempt.filter({ user_id: enrollment.user_id }),
       base44.entities.AssignmentSubmission.filter({ user_id: enrollment.user_id, course_id: enrollment.course_id }),
     ]).then(([qa, subs]) => {
-      // Only keep quiz attempts for topics in this course
       const courseTopicIds = new Set(topics.map(t => t.id));
       setQuizAttempts(qa.filter(a => courseTopicIds.has(a.topic_id)));
       setSubmissions(subs);
-      setLoadingScores(false);
-    });
-  }, [enrollment.user_id, enrollment.course_id]);
+    }).catch(() => {
+      setQuizAttempts([]);
+      setSubmissions([]);
+    }).finally(() => setLoadingScores(false));
+  }, [enrollment.user_id, enrollment.course_id, topics]);
 
-  const avgQuizScore = quizAttempts.length > 0
-    ? Math.round(quizAttempts.reduce((s, a) => s + (a.score || 0), 0) / quizAttempts.length)
-    : null;
+  const avgQuizScore = averageQuizPercent(quizAttempts);
 
   const gradedSubs = submissions.filter(s => s.status === "graded" && s.marks_awarded !== undefined);
   const avgAssignmentPct = gradedSubs.length > 0
@@ -547,10 +583,10 @@ function StudentProgressModal({ enrollment, topics, modules, onClose }) {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-1.5 rounded-full ${a.score >= 70 ? "bg-emerald-500" : "bg-red-400"}`}
-                              style={{ width: `${a.score}%` }} />
+                            <div className={`h-1.5 rounded-full ${quizAttemptPercentOrZero(a) >= 70 ? "bg-emerald-500" : "bg-red-400"}`}
+                              style={{ width: `${quizAttemptPercentOrZero(a)}%` }} />
                           </div>
-                          <span className={`text-sm font-bold ${a.score >= 70 ? "text-emerald-600" : "text-red-500"}`}>{a.score}%</span>
+                          <span className={`text-sm font-bold ${quizAttemptPercentOrZero(a) >= 70 ? "text-emerald-600" : "text-red-500"}`}>{quizAttemptPercentOrZero(a)}%</span>
                         </div>
                       </div>
                     );
@@ -673,33 +709,43 @@ function RowActions({ enrollment, topics, modules, onRefresh }) {
   const [progressModal, setProgressModal] = useState(false);
 
   const suspend = async () => {
-    await base44.entities.CourseEnrollment.update(enrollment.id, { status: "paused" });
-    toast.success("Enrollment suspended."); setOpen(false); onRefresh();
+    try {
+      await base44.entities.CourseEnrollment.update(enrollment.id, { status: "paused" });
+      toast.success("Enrollment suspended."); setOpen(false); onRefresh();
+    } catch { toast.error("Failed to suspend enrollment."); }
   };
   const reactivate = async () => {
-    await base44.entities.CourseEnrollment.update(enrollment.id, { status: "active" });
-    toast.success("Enrollment reactivated."); setOpen(false); onRefresh();
+    try {
+      await base44.entities.CourseEnrollment.update(enrollment.id, { status: "active" });
+      toast.success("Enrollment reactivated."); setOpen(false); onRefresh();
+    } catch { toast.error("Failed to reactivate enrollment."); }
   };
   const resetProgress = async () => {
     if (!confirm(`Reset all progress for ${enrollment.user_name}? This cannot be undone.`)) return;
-    await base44.entities.CourseEnrollment.update(enrollment.id, {
-      progress_percent: 0, completed_topic_ids: [], status: "active", completed_date: null,
-      certificate_issued: false, last_topic_id: null,
-    });
-    toast.success("Progress reset."); setOpen(false); onRefresh();
+    try {
+      await base44.entities.CourseEnrollment.update(enrollment.id, {
+        progress_percent: 0, completed_topic_ids: [], status: "active", completed_date: null,
+        certificate_issued: false, last_topic_id: null,
+      });
+      toast.success("Progress reset."); setOpen(false); onRefresh();
+    } catch { toast.error("Failed to reset progress."); }
   };
   const remove = async () => {
     if (!confirm(`Remove ${enrollment.user_name} from this course? This will delete their enrollment record.`)) return;
-    await base44.entities.CourseEnrollment.delete(enrollment.id);
-    toast.success("Enrollment removed."); setOpen(false); onRefresh();
+    try {
+      await base44.entities.CourseEnrollment.delete(enrollment.id);
+      toast.success("Enrollment removed."); setOpen(false); onRefresh();
+    } catch { toast.error("Failed to remove enrollment."); }
   };
   const sendEmail = async () => {
-    await base44.integrations.Core.SendEmail({
-      to: enrollment.user_email,
-      subject: `Reminder: Continue your ${enrollment.course_title} training`,
-      body: `Hi ${enrollment.user_name},\n\nJust a reminder that you have an ongoing course: ${enrollment.course_title}.\n\nYour current progress is ${enrollment.progress_percent || 0}%. Keep going!\n\nBest regards,\nSOL Training Academy`,
-    });
-    toast.success("Reminder email sent."); setOpen(false);
+    try {
+      await base44.integrations.Core.SendEmail({
+        to: enrollment.user_email,
+        subject: `Reminder: Continue your ${enrollment.course_title} training`,
+        body: `Hi ${enrollment.user_name},\n\nJust a reminder that you have an ongoing course: ${enrollment.course_title}.\n\nYour current progress is ${enrollment.progress_percent || 0}%. Keep going!\n\nBest regards,\nSOL Training Academy`,
+      });
+      toast.success("Reminder email sent."); setOpen(false);
+    } catch { toast.error("Failed to send reminder email."); }
   };
 
   return (
@@ -751,9 +797,14 @@ export default function CourseEnrollmentManager({ course, topics, modules }) {
 
   const load = async () => {
     setLoading(true);
-    const data = await base44.entities.CourseEnrollment.filter({ course_id: course.id }, "-created_date");
-    setEnrollments(data);
-    setLoading(false);
+    try {
+      const data = await base44.entities.CourseEnrollment.filter({ course_id: course.id }, "-created_date");
+      setEnrollments(data);
+    } catch {
+      setEnrollments([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, [course.id]);

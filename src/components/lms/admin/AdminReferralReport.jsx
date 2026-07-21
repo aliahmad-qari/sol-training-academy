@@ -8,7 +8,10 @@ export default function AdminReferralReport() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.Referral.list("-created_date", 500).then(r => { setReferrals(r); setLoading(false); });
+    base44.entities.Referral.list("-created_date", 500)
+      .then(r => setReferrals(r))
+      .catch(() => setReferrals([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const byReferrer = {};

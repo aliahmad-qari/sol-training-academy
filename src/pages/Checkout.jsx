@@ -50,8 +50,11 @@ export default function Checkout() {
     fetchData();
   }, [courseId, navigate]);
 
-  const handlePaymentSuccess = (transactionId) => {
-    navigate(`/payment-success?transactionId=${transactionId}&courseId=${courseId}`);
+  const handlePaymentSuccess = (result = {}) => {
+    if (result.free) {
+      toast.success("Enrollment confirmed.");
+      navigate("/student-dashboard");
+    }
   };
 
   if (loading) {
@@ -106,70 +109,14 @@ export default function Checkout() {
               <Card className="p-6 border-2">
                 {paymentMethod === "stripe" && (
                   <div>
-                    <h3 className="font-display font-bold text-ink mb-4">Credit/Debit Card Payment</h3>
+                    <h3 className="font-display font-bold text-ink mb-4">Secure Stripe Checkout</h3>
                     <PaymentGateway
-                      paymentMethod={paymentMethod}
                       coursePrice={course.price}
                       courseTitle={course.title}
                       courseId={courseId}
                       userId={user.id}
                       onPaymentSuccess={handlePaymentSuccess}
                     />
-                  </div>
-                )}
-
-                {paymentMethod === "bank_transfer" && (
-                  <div>
-                    <h3 className="font-display font-bold text-ink mb-4">Bank Transfer Instructions</h3>
-                    <div className="space-y-3 text-sm text-slate-700">
-                      <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                        <p><strong>Account Name:</strong> SOL Business Consultant Pty Ltd</p>
-                        <p className="mt-2"><strong>BSB:</strong> 123-456</p>
-                        <p className="mt-2"><strong>Account:</strong> 9876543210</p>
-                        <p className="mt-2"><strong>Amount:</strong> A${course.price.toFixed(2)}</p>
-                      </div>
-                      <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">✓ Please include your email as the reference. Your access will be granted within 24 hours of payment.</p>
-                    </div>
-                  </div>
-                )}
-
-                {paymentMethod === "paypal" && (
-                  <div>
-                    <h3 className="font-display font-bold text-ink mb-4">PayPal Payment</h3>
-                    <p className="text-sm text-slate-600 mb-4">PayPal checkout will open in a secure window.</p>
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3">
-                      Proceed to PayPal
-                    </Button>
-                  </div>
-                )}
-
-                {paymentMethod === "eway" && (
-                  <div>
-                    <h3 className="font-display font-bold text-ink mb-4">eWAY Secure Payment</h3>
-                    <p className="text-sm text-slate-600 mb-4">You'll be redirected to eWAY for secure processing.</p>
-                    <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3">
-                      Proceed to eWAY
-                    </Button>
-                  </div>
-                )}
-
-                {paymentMethod === "apple_pay" && (
-                  <div>
-                    <h3 className="font-display font-bold text-ink mb-4">Apple Pay</h3>
-                    <p className="text-sm text-slate-600 mb-4">Fast and secure payment with Apple Pay.</p>
-                    <Button className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3">
-                      Complete with Apple Pay
-                    </Button>
-                  </div>
-                )}
-
-                {paymentMethod === "google_pay" && (
-                  <div>
-                    <h3 className="font-display font-bold text-ink mb-4">Google Pay</h3>
-                    <p className="text-sm text-slate-600 mb-4">Fast and secure payment with Google Pay.</p>
-                    <Button className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3">
-                      Complete with Google Pay
-                    </Button>
                   </div>
                 )}
               </Card>

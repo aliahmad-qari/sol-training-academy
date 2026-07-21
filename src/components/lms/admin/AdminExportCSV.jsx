@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Download, FileText, Users, HelpCircle, Award, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { quizAttemptPercent, quizScoreLabel } from "@/lib/quizScores";
 
 function ExportCard({ icon: Icon, title, desc, color, onExport, loading }) {
   return (
@@ -41,6 +42,8 @@ export default function AdminExportCSV({ courses }) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success(`Exported ${data.length} rows successfully!`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Export failed.");
     } finally {
       setLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -64,8 +67,11 @@ export default function AdminExportCSV({ courses }) {
       desc: "All quiz attempts with scores and pass/fail status",
       color: "bg-purple-100 text-purple-600",
       fetch: () => base44.entities.QuizAttempt.list("-created_date", 2000),
-      headers: ["Student ID", "Course ID", "Topic ID", "Score", "Passed", "Attempt #", "Date"],
-      map: q => [q.user_id, q.course_id, q.topic_id, `${q.score}%`, q.passed ? "Yes" : "No", q.attempt_number || 1, new Date(q.created_date).toLocaleDateString("en-AU")],
+      headers: ["Student ID", "Course ID", "Topic ID", "Marks", "Percent", "Passed", "Attempt #", "Date"],
+      map: q => {
+        const percent = quizAttemptPercent(q);
+        return [q.user_id, q.course_id, q.topic_id, quizScoreLabel(q), percent !== null ? `${percent}%` : "", q.passed ? "Yes" : "No", q.attempt_number || 1, new Date(q.created_date).toLocaleDateString("en-AU")];
+      },
     },
     {
       key: "submissions",

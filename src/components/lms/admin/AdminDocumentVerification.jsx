@@ -23,6 +23,8 @@ const DOC_TYPE_LABELS = {
   other:                  "Other",
 };
 
+const getRecordId = (record) => record?._id || record?.id;
+
 const STATUS_CONFIG = {
   pending:           { label: "Pending",           color: "text-amber-600 bg-amber-50 border-amber-200",   icon: Clock },
   under_review:      { label: "Under Review",       color: "text-blue-600 bg-blue-50 border-blue-200",     icon: Eye },
@@ -44,6 +46,11 @@ function DocumentRow({ doc, onUpdate }) {
 
   // ── Quick-action: one-click verify / reject / resubmit ──────────────────
   const quickAction = async (newStatus) => {
+    const documentId = getRecordId(doc);
+    if (!documentId) {
+      toast.error("Cannot update document: missing document ID.");
+      return;
+    }
     setQuickLoading(newStatus);
     try {
       const defaultMessages = {
@@ -52,7 +59,7 @@ function DocumentRow({ doc, onUpdate }) {
         resubmit_required: `Your document requires some changes before it can be verified. Please review the document requirements and resubmit an updated version through your student portal.`,
       };
       const autoMsg = defaultMessages[newStatus] || "";
-      await apiClient.patch(`/student-documents/${doc.id}`, {
+      await apiClient.patch(`/student-documents/${documentId}`, {
         status: newStatus,
         admin_message: autoMsg,
         reviewed_date: new Date().toISOString(),
@@ -90,9 +97,14 @@ function DocumentRow({ doc, onUpdate }) {
   };
 
   const handleSave = async () => {
+    const documentId = getRecordId(doc);
+    if (!documentId) {
+      toast.error("Cannot update document: missing document ID.");
+      return;
+    }
     setSaving(true);
     try {
-      await apiClient.patch(`/student-documents/${doc.id}`, {
+      await apiClient.patch(`/student-documents/${documentId}`, {
         status,
         admin_message: message,
         reviewed_date: new Date().toISOString(),
@@ -326,7 +338,7 @@ export default function AdminDocumentVerification() {
       ) : (
         <div className="space-y-3">
           {filtered.map((doc, i) => (
-            <motion.div key={doc.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+            <motion.div key={getRecordId(doc) || i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
               <DocumentRow doc={doc} onUpdate={load} />
             </motion.div>
           ))}

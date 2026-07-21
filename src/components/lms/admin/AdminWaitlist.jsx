@@ -12,7 +12,13 @@ export default function AdminWaitlist({ courses }) {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const load = () => base44.entities.CourseWaitlist.list("-created_date", 300).then(w => { setWaitlist(w); setLoading(false); });
+  const load = () => {
+    setLoading(true);
+    base44.entities.CourseWaitlist.list("-created_date", 300)
+      .then(w => setWaitlist(w))
+      .catch(() => setWaitlist([]))
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { load(); }, []);
 
   const notifyStudent = async (entry) => {

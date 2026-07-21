@@ -6,7 +6,7 @@ import {
   listMyDocuments,
   updateDocument,
 } from '../controllers/studentDocument.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -14,8 +14,8 @@ router.use(protect);
 
 router.get('/mine', listMyDocuments);
 router.post('/', createMyDocument);
-router.get('/', authorize('admin', 'team_member'), listDocuments);
-router.patch('/:id', authorize('admin', 'team_member'), updateDocument);
-router.delete('/:id', deleteDocument);
+router.get('/', authorize('admin', 'team_member'), authorizePage('documents'), listDocuments);
+router.patch('/:id', authorize('admin', 'team_member'), authorizePage('documents'), updateDocument);
+router.delete('/:id', authorizePage('documents'), deleteDocument);
 
 export default router;

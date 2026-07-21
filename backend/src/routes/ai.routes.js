@@ -5,7 +5,7 @@ import {
   extractDocument,
   runChatAssistant,
 } from '../controllers/ai.controller.js';
-import { protect, authorize, optionalAuth } from '../middleware/auth.js';
+import { protect, authorize, optionalAuth, authorizePage } from '../middleware/auth.js';
 import { aiLimiter } from '../middleware/rateLimiter.js';
 
 /**
@@ -32,6 +32,6 @@ router.post('/extract', aiLimiter, extractDocument);
 router.post('/student/:toolId', aiLimiter, runStudentTool);
 
 // Admin tools — staff only.
-router.post('/admin/:toolId', authorize('admin', 'team_member'), aiLimiter, runAdminTool);
+router.post('/admin/:toolId', authorize('admin', 'team_member'), authorizePage('aitools'), aiLimiter, runAdminTool);
 
 export default router;

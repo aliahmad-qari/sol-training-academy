@@ -6,7 +6,7 @@ import {
   issue,
   revokeCertificate,
 } from '../controllers/certificate.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -14,9 +14,9 @@ const router = Router();
 router.get('/verify/:code', verifyCertificate);
 
 // Authenticated
-router.get('/', protect, listCertificates);
-router.post('/issue', protect, issue);
-router.get('/:id', protect, getCertificate);
+router.get('/', protect, authorizePage('certificates'), listCertificates);
+router.post('/issue', protect, authorizePage('certificates'), issue);
+router.get('/:id', protect, authorizePage('certificates'), getCertificate);
 router.patch('/:id/revoke', protect, authorize('admin'), revokeCertificate);
 
 export default router;

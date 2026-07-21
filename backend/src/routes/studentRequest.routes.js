@@ -5,15 +5,15 @@ import {
   updateRequest,
   deleteRequest,
 } from '../controllers/studentRequest.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
 router.use(protect);
 
-router.get('/', listRequests);
+router.get('/', authorizePage('requests', 'support'), listRequests);
 router.post('/', createRequest);
-router.patch('/:id', authorize('admin', 'team_member'), updateRequest);
-router.delete('/:id', deleteRequest);
+router.patch('/:id', authorize('admin', 'team_member'), authorizePage('requests', 'support'), updateRequest);
+router.delete('/:id', authorizePage('requests', 'support'), deleteRequest);
 
 export default router;

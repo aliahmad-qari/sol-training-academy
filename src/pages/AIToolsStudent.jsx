@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { averageQuizPercent } from "@/lib/quizScores";
 
 /* ── Tool Card ── */
 function ToolCard({ tool, onClick }) {
@@ -224,7 +225,7 @@ function CourseRecommender({ enrollments, quizAttempts, courses }) {
         status: e.status,
       }));
       const avgScore = quizAttempts.length > 0
-        ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length)
+        ? averageQuizPercent(quizAttempts) ?? 0
         : null;
       const passRate = quizAttempts.length > 0
         ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100)
@@ -253,7 +254,7 @@ function CourseRecommender({ enrollments, quizAttempts, courses }) {
         {[
           { label: "Enrolled Courses", value: enrollments.length },
           { label: "Quiz Attempts", value: quizAttempts.length },
-          { label: "Avg Score", value: quizAttempts.length > 0 ? `${Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length)}%` : "—" },
+          { label: "Avg Score", value: quizAttempts.length > 0 ? `${averageQuizPercent(quizAttempts) ?? 0}%` : "—" },
         ].map(s => (
           <div key={s.label} className="bg-white border border-border/50 rounded-xl p-3 text-center">
             <p className="font-display font-bold text-xl text-ink">{s.value}</p>

@@ -5,11 +5,11 @@ import {
   topCourses,
   catalogueSummary,
 } from '../controllers/analytics.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
-router.use(protect, authorize('admin', 'team_member'));
+router.use(protect, authorize('admin', 'team_member'), authorizePage('analytics', 'revenue'));
 
 router.get('/revenue', revenueByMonth);
 router.get('/enrollments', enrollmentsByCourse);

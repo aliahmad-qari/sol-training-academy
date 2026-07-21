@@ -112,6 +112,10 @@ export const createUser = asyncHandler(async (req, res) => {
     );
   }
 
+  if (req.user.role !== 'admin' && role !== 'student') {
+    throw ApiError.forbidden('Team members may only create student accounts.');
+  }
+
   // A provided password must satisfy the schema minimum; otherwise we generate.
   if (password !== undefined && String(password).length < 8) {
     throw ApiError.badRequest('Password must be at least 8 characters.');

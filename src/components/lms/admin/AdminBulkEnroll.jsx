@@ -7,6 +7,43 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
+const getRecordId = (record) => record?._id || record?.id;
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+
+const findUserByEmail = async (email, userCache) => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return null;
+
+  if (userCache?.has(normalized)) return userCache.get(normalized);
+
+  const matches = await base44.entities.User.filter({ search: normalized, role: "student" }).catch(() => []);
+  const user = matches.find((candidate) => normalizeEmail(candidate.email) === normalized) || null;
+  if (user && userCache) userCache.set(normalized, user);
+  return user;
+};
+
+const ensureStudentUser = async (row, userCache) => {
+  const email = normalizeEmail(row.email);
+  const existing = await findUserByEmail(email, userCache);
+  if (existing) return { user: existing, created: false };
+
+  try {
+    const user = await base44.entities.User.create({
+      full_name: row.name || email,
+      email,
+      role: "student",
+    });
+    if (userCache) userCache.set(email, user);
+    return { user, created: true };
+  } catch (err) {
+    if (err.response?.status === 409) {
+      const user = await findUserByEmail(email, userCache);
+      if (user) return { user, created: false };
+    }
+    throw err;
+  }
+};
+
 export default function AdminBulkEnroll({ courses, onClose, onDone }) {
   const [courseId, setCourseId] = useState("");
   const [csvText, setCsvText] = useState("");
@@ -37,32 +74,41 @@ export default function AdminBulkEnroll({ courses, onClose, onDone }) {
     if (rows.length === 0) { toast.error("No valid emails found. Format: Name,Email (one per line)"); return; }
 
     setEnrolling(true);
-    const course = courses.find(c => c.id === courseId);
-    const success = [], failed = [];
+    const success = [], failed = [], createdUsers = [];
+    const existingUsers = await base44.entities.User.list("-created_date", 2000).catch(() => []);
+    const userCache = new Map(existingUsers.map((user) => [normalizeEmail(user.email), user]));
 
     for (const row of rows) {
       try {
+        const { user, created } = await ensureStudentUser(row, userCache);
+        const userId = getRecordId(user);
+        if (!userId) throw new Error("Could not resolve a valid student account ID.");
+
         await base44.entities.CourseEnrollment.create({
-          user_id: row.email,
-          user_email: row.email,
-          user_name: row.name,
+          user_id: userId,
           course_id: courseId,
-          course_title: course?.title || "",
-          course_level: course?.level || "level1",
-          status: "active",
-          progress_percent: 0,
-          completed_topic_ids: [],
         });
-        success.push(row.email);
-      } catch {
-        failed.push(row.email);
+
+        const email = normalizeEmail(user.email || row.email);
+        success.push(email);
+        if (created) {
+          createdUsers.push({
+            email,
+            generatedPassword: user.generated_password,
+          });
+        }
+      } catch (err) {
+        failed.push({
+          email: normalizeEmail(row.email),
+          reason: err.response?.data?.message || err.message || "Enrollment failed",
+        });
       }
     }
 
-    setResults({ success, failed });
+    setResults({ success, failed, createdUsers });
     setEnrolling(false);
     if (success.length > 0) {
-      toast.success(`${success.length} students enrolled!`);
+      toast.success(`${success.length} student${success.length !== 1 ? "s" : ""} enrolled!`);
       onDone();
     }
   };
@@ -150,10 +196,16 @@ export default function AdminBulkEnroll({ courses, onClose, onDone }) {
                 <p className="text-xs text-red-500">Failed</p>
               </div>
             </div>
+            {results.createdUsers?.some(u => u.generatedPassword) && (
+              <div className="bg-amber-50 rounded-xl p-3">
+                <p className="text-xs font-bold text-amber-700 mb-1">New account temporary passwords:</p>
+                {results.createdUsers.filter(u => u.generatedPassword).map(u => <p key={u.email} className="text-xs text-amber-700 font-mono">{u.email}: {u.generatedPassword}</p>)}
+              </div>
+            )}
             {results.failed.length > 0 && (
               <div className="bg-red-50 rounded-xl p-3">
                 <p className="text-xs font-bold text-red-700 mb-1">Failed emails:</p>
-                {results.failed.map(e => <p key={e} className="text-xs text-red-600">{e}</p>)}
+                {results.failed.map(item => <p key={item.email || item} className="text-xs text-red-600">{item.email || item}{item.reason ? ` - ${item.reason}` : ""}</p>)}
               </div>
             )}
             <Button onClick={onClose} className="w-full bg-harvest text-white">Done</Button>

@@ -4,14 +4,14 @@ import {
   createReferral,
   deleteReferral,
 } from '../controllers/referral.controller.js';
-import { protect } from '../middleware/auth.js';
+import { protect, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
 router.use(protect);
 
-router.get('/', listReferrals);
+router.get('/', authorizePage('referrals'), listReferrals);
 router.post('/', createReferral);
-router.delete('/:id', deleteReferral);
+router.delete('/:id', authorizePage('referrals'), deleteReferral);
 
 export default router;

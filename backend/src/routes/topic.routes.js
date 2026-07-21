@@ -7,7 +7,7 @@ import {
   deleteTopic,
   reorderTopics,
 } from '../controllers/topic.controller.js';
-import { protect, authorize, optionalAuth } from '../middleware/auth.js';
+import { protect, authorize, optionalAuth, authorizePage } from '../middleware/auth.js';
 import { checkCourseAccess } from '../middleware/checkCourseAccess.js';
 
 const router = Router();
@@ -17,9 +17,9 @@ const router = Router();
 router.get('/', optionalAuth, checkCourseAccess, listTopics);
 router.get('/:id', optionalAuth, getTopic);
 
-router.post('/', protect, authorize('admin', 'team_member'), createTopic);
-router.patch('/reorder', protect, authorize('admin', 'team_member'), reorderTopics);
-router.put('/:id', protect, authorize('admin', 'team_member'), updateTopic);
-router.delete('/:id', protect, authorize('admin', 'team_member'), deleteTopic);
+router.post('/', protect, authorize('admin', 'team_member'), authorizePage('courses', 'modules', 'videos', 'quizzes', 'assessments'), createTopic);
+router.patch('/reorder', protect, authorize('admin', 'team_member'), authorizePage('courses', 'modules'), reorderTopics);
+router.put('/:id', protect, authorize('admin', 'team_member'), authorizePage('courses', 'modules', 'videos', 'quizzes', 'assessments'), updateTopic);
+router.delete('/:id', protect, authorize('admin', 'team_member'), authorizePage('courses', 'modules', 'videos', 'quizzes', 'assessments'), deleteTopic);
 
 export default router;

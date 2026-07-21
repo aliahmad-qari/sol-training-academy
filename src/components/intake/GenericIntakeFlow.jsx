@@ -164,8 +164,6 @@ export default function GenericIntakeFlow({ serviceType }) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [enquiryId, setEnquiryId] = useState(null);
-  const [paymentDone, setPaymentDone] = useState(false);
-  const [paymentWindowOpened, setPaymentWindowOpened] = useState(false);
   const [generatingDocs, setGeneratingDocs] = useState(false);
   const [docsReady, setDocsReady] = useState(false);
 
@@ -272,80 +270,40 @@ export default function GenericIntakeFlow({ serviceType }) {
     setLoading(false);
     setStep(3);
   };
-
-  // Stripe Payment Links per service & package — replace with your actual Stripe Payment Links
-  const STRIPE_LINKS = {
-    website_development: {
-      web_starter: "https://buy.stripe.com/YOUR_WEB_STARTER_LINK",
-      web_pro: "https://buy.stripe.com/YOUR_WEB_PRO_LINK",
-      web_enterprise: "https://buy.stripe.com/YOUR_WEB_ENTERPRISE_LINK",
-    },
-    software_automation: {
-      auto_basic: "https://buy.stripe.com/YOUR_AUTO_BASIC_LINK",
-      auto_pro: "https://buy.stripe.com/YOUR_AUTO_PRO_LINK",
-      auto_custom: null,
-    },
-    accountancy: {
-      acc_monthly: "https://buy.stripe.com/YOUR_ACC_MONTHLY_LINK",
-      acc_fullservice: "https://buy.stripe.com/YOUR_ACC_FULLSERVICE_LINK",
-      acc_ndis: "https://buy.stripe.com/YOUR_ACC_NDIS_LINK",
-    },
-    support_coordination_training: {
-      training_individual: "https://buy.stripe.com/YOUR_TRAINING_INDIVIDUAL_LINK",
-      training_team: "https://buy.stripe.com/YOUR_TRAINING_TEAM_LINK",
-      training_enterprise: null,
-    },
-  };
-
-  const handleOpenPayment = () => {
-    const serviceLinks = STRIPE_LINKS[serviceType] || {};
-    const link = serviceLinks[form.selected_package];
-    if (!link) {
-      // Custom pricing — no Stripe link, just confirm enquiry
-      handleConfirmEnquiry();
+  const handleOpenPayment = async () => {
+    if (!selectedPkg || selectedPkg.price <= 0) {
+      await handleConfirmEnquiry();
       return;
     }
-    const url = `${link}?client_reference_id=${enquiryId || "pending"}&prefilled_email=${encodeURIComponent(form.email)}`;
-    window.open(url, "_blank");
-    setPaymentWindowOpened(true);
+
+    setLoading(true);
+    try {
+      const id = await saveEnquiry("awaiting_payment");
+      await base44.entities.Enquiry.update(id, {
+        status: "awaiting_payment",
+        payment_reference: null,
+        documents_generated: false,
+      });
+      toast.success("Invoice requested. Our team will send a secure payment link after review.");
+      setStep(4);
+      setDocsReady(true);
+    } catch (e) {
+      toast.error("Unable to request invoice. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleConfirmEnquiry = async () => {
-    // For custom-priced packages (price = 0), skip payment and confirm enquiry
     setLoading(true);
-    await base44.entities.Enquiry.update(enquiryId, { status: "in_progress" });
+    await saveEnquiry("in_progress");
     setLoading(false);
     setStep(4);
     setDocsReady(true);
   };
 
   const handleConfirmPayment = async () => {
-    setLoading(true);
-    const ref = "STRIPE-" + Date.now();
-    await base44.entities.Enquiry.update(enquiryId || "tmp", { status: "paid", payment_reference: ref });
-    setPaymentDone(true);
-    setLoading(false);
-    setStep(4);
-    setGeneratingDocs(true);
-    await new Promise(r => setTimeout(r, 3000));
-    if (enquiryId) await base44.entities.Enquiry.update(enquiryId, { status: "completed", documents_generated: true });
-
-    // Send document pack confirmation email to client
-    base44.integrations.Core.SendEmail({
-      to: form.email,
-      subject: `Your ${config.title} Pack is Ready — ${business.company_name || form.full_name}`,
-      body: `Dear ${form.full_name},\n\nThank you for your payment. Your ${config.title} deliverables for ${business.company_name || "your business"} are now ready.\n\n📦 YOUR DELIVERABLES INCLUDE:\n${config.deliverables.map(d => `  • ${d}`).join('\n')}\n\n📋 ORDER DETAILS:\n  • Service: ${config.title}\n  • Package: ${selectedPkg?.name}\n  • Amount Paid: $${selectedPkg?.price?.toLocaleString()} + GST\n${business.abn ? `  • ABN: ${business.abn}` : ''}\n\nOur team will be in touch within 1 business day to deliver your materials and confirm next steps.\n\nIf you have any questions, please contact us:\n📞 +61 460 003 494\n✉️ info@solbusinessconsultant.com.au\n\nWarm regards,\nThe SOL Business Consultant Team\nwww.solbusinessconsultant.com.au`,
-    }).catch(() => {});
-
-    // Notify Sol team of confirmed payment
-    base44.integrations.Core.SendEmail({
-      to: "info@solbusinessconsultant.com.au",
-      subject: `✅ Payment Confirmed — ${config.title} | ${business.company_name || form.full_name} (${selectedPkg?.name})`,
-      body: `Payment confirmed for a new ${config.title} order.\n\nClient: ${form.full_name}\nEmail: ${form.email}\nPhone: ${form.phone || '—'}\nCompany: ${business.company_name || '—'}\nABN: ${business.abn || '—'}\nPackage: ${selectedPkg?.name} — $${selectedPkg?.price?.toLocaleString()} + GST\nEnquiry ID: ${enquiryId}\n\nPlease action delivery within 1 business day.`,
-    }).catch(() => {});
-
-    setGeneratingDocs(false);
-    setDocsReady(true);
+    toast.error("Payment must be verified by SOL before deliverables are released.");
   };
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
@@ -585,42 +543,25 @@ export default function GenericIntakeFlow({ serviceType }) {
             </div>
 
             <div className="bg-harvest/5 border border-harvest/20 rounded-xl p-4 text-sm">
-              <p className="font-semibold text-ink mb-1">🔒 Secure Payment via Stripe</p>
+              <p className="font-semibold text-ink mb-1">🔒 Secure Invoice Request</p>
               <p className="text-xs text-slate_mist">
                 {selectedPkg?.price > 0
-                  ? "You'll be taken to Stripe's secure checkout. Return here after payment to confirm and unlock your deliverables."
+                  ? "Online payment links are issued by our team after review. Deliverables are released only after payment is verified."
                   : "This package requires a custom quote — we'll confirm your enquiry and contact you with an invoice."}
               </p>
             </div>
 
-            {!paymentWindowOpened ? (
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep(2)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Back</Button>
-                <Button onClick={handleOpenPayment} disabled={loading} className="flex-1 bg-ink hover:bg-ink/90 text-white font-display py-6 gap-2">
-                  {loading
-                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Please wait…</>
-                    : selectedPkg?.price > 0
-                      ? <><CreditCard className="w-4 h-4" /> Pay ${selectedPkg.price.toLocaleString()} + GST via Stripe</>
-                      : "Confirm Enquiry — We'll Send an Invoice"
-                  }
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-                  <p className="font-semibold mb-1">✅ Stripe checkout opened in a new tab</p>
-                  <p className="text-xs text-blue-600">Complete your payment there, then click below to confirm and generate your deliverables.</p>
-                </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={handleOpenPayment} className="gap-1 text-sm flex-shrink-0">
-                    <CreditCard className="w-3.5 h-3.5" /> Reopen Checkout
-                  </Button>
-                  <Button onClick={handleConfirmPayment} disabled={loading} className="flex-1 bg-harvest hover:bg-harvest/90 text-white font-display py-6 gap-2">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirming…</> : "I've Completed Payment — Unlock My Deliverables →"}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep(2)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Back</Button>
+              <Button onClick={handleOpenPayment} disabled={loading} className="flex-1 bg-ink hover:bg-ink/90 text-white font-display py-6 gap-2">
+                {loading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Please wait...</>
+                  : selectedPkg?.price > 0
+                    ? <><CreditCard className="w-4 h-4" /> Request Secure Invoice</>
+                    : "Confirm Enquiry - We will Send an Invoice"
+                }
+              </Button>
+            </div>
           </motion.div>
         )}
 
@@ -644,7 +585,7 @@ export default function GenericIntakeFlow({ serviceType }) {
               <>
                 <div className="py-4">
                   <CheckCircle className="w-16 h-16 text-harvest mx-auto mb-4" />
-                  <h3 className="font-display font-bold text-2xl text-ink">Payment Confirmed — You're All Set!</h3>
+                  <h3 className="font-display font-bold text-2xl text-ink">Request Received — You're All Set!</h3>
                   <p className="text-slate_mist mt-2 max-w-md mx-auto text-sm">{config.confirmMsg}</p>
                 </div>
 

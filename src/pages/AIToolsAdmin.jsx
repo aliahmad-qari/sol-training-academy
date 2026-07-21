@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { runAdminTool } from "@/api/aiClient";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { averageQuizPercent } from "@/lib/quizScores";
 
 /* ── Shared: Result Box ── */
 function ResultBox({ content }) {
@@ -107,7 +108,7 @@ function StudentProgressSummariser({ enrollments, quizAttempts, courses }) {
         ? Math.round((quizAttempts.filter(a => a.passed).length / quizAttempts.length) * 100)
         : 0;
       const avgQuizScore = quizAttempts.length > 0
-        ? Math.round(quizAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / quizAttempts.length)
+        ? averageQuizPercent(quizAttempts) ?? 0
         : 0;
       const courseBreakdown = courses.map(c => {
         const cEnvs = enrollments.filter(e => e.course_id === c.id);
@@ -263,9 +264,9 @@ function QuizAnalyser({ quizAttempts, courses }) {
     try {
       const filtered = selectedCourse === "all" ? quizAttempts : quizAttempts.filter(a => a.course_id === selectedCourse);
       const passRate = filtered.length > 0 ? Math.round((filtered.filter(a => a.passed).length / filtered.length) * 100) : 0;
-      const avgScore = filtered.length > 0 ? Math.round(filtered.reduce((s, a) => s + (a.score_percent || 0), 0) / filtered.length) : 0;
+      const avgScore = filtered.length > 0 ? averageQuizPercent(filtered) ?? 0 : 0;
       const failedAttempts = filtered.filter(a => !a.passed);
-      const failedAvg = failedAttempts.length > 0 ? Math.round(failedAttempts.reduce((s, a) => s + (a.score_percent || 0), 0) / failedAttempts.length) : 0;
+      const failedAvg = failedAttempts.length > 0 ? averageQuizPercent(failedAttempts) ?? 0 : 0;
       const courseLabel = selectedCourse === "all" ? "All courses" : (courses.find(c => c.id === selectedCourse)?.title || "Unknown");
       const stats = { total: filtered.length, passRate, avgScore, failedAttempts: failedAttempts.length, failedAvg, courseLabel };
       const res = await runAdminTool("quizanalyser", { stats });

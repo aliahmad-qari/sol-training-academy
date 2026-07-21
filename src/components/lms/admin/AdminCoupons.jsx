@@ -16,10 +16,15 @@ function CouponModal({ courses, onClose, onSaved }) {
   const save = async () => {
     if (!form.code || !form.discount_value) { toast.error("Code and discount value required."); return; }
     setSaving(true);
-    await base44.entities.Coupon.create({ ...form, used_count: 0 });
-    toast.success("Coupon created!");
-    setSaving(false);
-    onSaved(); onClose();
+    try {
+      await base44.entities.Coupon.create({ ...form, used_count: 0 });
+      toast.success("Coupon created!");
+      onSaved(); onClose();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to create coupon.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -90,7 +95,13 @@ export default function AdminCoupons({ courses }) {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [search, setSearch] = useState("");
 
-  const load = () => base44.entities.Coupon.list("-created_date", 100).then(c => { setCoupons(c); setLoading(false); });
+  const load = () => {
+    setLoading(true);
+    base44.entities.Coupon.list("-created_date", 100)
+      .then(c => setCoupons(c))
+      .catch(() => setCoupons([]))
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { load(); }, []);
 
   const totalRevenueSaved = coupons.reduce((s, c) => s + (c.used_count || 0) * (c.discount_type === "fixed" ? c.discount_value : 0), 0);
@@ -104,14 +115,23 @@ export default function AdminCoupons({ courses }) {
   }));
 
   const deleteCoupon = async (id) => {
-    await base44.entities.Coupon.delete(id);
-    setCoupons(prev => prev.filter(c => c.id !== id));
-    toast.success("Coupon deleted.");
+    try {
+      await base44.entities.Coupon.delete(id);
+      setCoupons(prev => prev.filter(c => c.id !== id));
+      toast.success("Coupon deleted.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete coupon.");
+    }
   };
 
   const toggleActive = async (coupon) => {
-    await base44.entities.Coupon.update(coupon.id, { is_active: !coupon.is_active });
-    setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, is_active: !c.is_active } : c));
+    try {
+      await base44.entities.Coupon.update(coupon.id, { is_active: !coupon.is_active });
+      setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, is_active: !c.is_active } : c));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update coupon.");
+    }
+  };
   };
 
   const filtered = coupons.filter(c => {

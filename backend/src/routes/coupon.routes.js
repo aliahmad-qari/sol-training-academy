@@ -7,7 +7,7 @@ import {
   deleteCoupon,
   validateCoupon,
 } from '../controllers/coupon.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -17,10 +17,10 @@ router.use(protect);
 router.post('/validate', validateCoupon);
 
 // Management is staff-only.
-router.get('/', authorize('admin', 'team_member'), listCoupons);
-router.post('/', authorize('admin', 'team_member'), createCoupon);
-router.get('/:id', authorize('admin', 'team_member'), getCoupon);
-router.put('/:id', authorize('admin', 'team_member'), updateCoupon);
-router.delete('/:id', authorize('admin', 'team_member'), deleteCoupon);
+router.get('/', authorize('admin', 'team_member'), authorizePage('coupons'), listCoupons);
+router.post('/', authorize('admin', 'team_member'), authorizePage('coupons'), createCoupon);
+router.get('/:id', authorize('admin', 'team_member'), authorizePage('coupons'), getCoupon);
+router.put('/:id', authorize('admin', 'team_member'), authorizePage('coupons'), updateCoupon);
+router.delete('/:id', authorize('admin', 'team_member'), authorizePage('coupons'), deleteCoupon);
 
 export default router;

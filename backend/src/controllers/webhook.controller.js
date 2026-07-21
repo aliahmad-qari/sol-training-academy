@@ -8,9 +8,8 @@ import { fulfillCheckout } from '../services/payment.service.js';
  * Stripe webhook handler. Receives the RAW request body (see webhook.routes.js).
  * Verifies the signature, then fulfills or fails the payment.
  *
- * Always responds 2xx quickly once the event is accepted, so Stripe doesn't
- * retry. Processing errors are logged but still acked to avoid retry storms;
- * fulfillment is idempotent so a manual re-drive is safe.
+ * Returns a non-2xx response when processing fails so Stripe retries the event.
+ * Fulfillment is idempotent, so retries are safe.
  */
 export const handleStripeWebhook = async (req, res) => {
   if (!env.stripe.webhookSecret) {
@@ -66,8 +65,8 @@ export const handleStripeWebhook = async (req, res) => {
         logger.debug(`[webhook] Unhandled event type: ${event.type}`);
     }
   } catch (err) {
-    // Log but still 200 so Stripe stops retrying; fulfillment is idempotent.
     logger.error(`[webhook] Error processing ${event.type}: ${err.message}`);
+    return res.status(500).json({ error: 'Webhook processing failed' });
   }
 
   return res.status(200).json({ received: true });

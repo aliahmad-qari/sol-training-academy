@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { uploadFile, uploadFileAsStudent, signUpload } from '../controllers/upload.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, authorizePage } from '../middleware/auth.js';
 import {
   uploadResource,
   uploadSingleFile,
@@ -21,6 +21,7 @@ router.get(
   '/sign-cloudinary',
   protect,
   authorize('admin', 'team_member'),
+  authorizePage('courses', 'modules', 'videos', 'resources'),
   signUpload
 );
 
@@ -40,6 +41,7 @@ router.post(
   '/:kind',
   protect,
   authorize('admin', 'team_member'),
+  authorizePage('courses', 'modules', 'videos', 'resources'),
   withMulter(uploadResource),
   uploadFile
 );

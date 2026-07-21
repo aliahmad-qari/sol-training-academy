@@ -1,154 +1,73 @@
 import React, { useState } from "react";
-import { Loader2, AlertCircle, Lock } from "lucide-react";
+import { ArrowRight, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 
-export default function PaymentGateway({ paymentMethod, coursePrice, courseTitle, courseId, userId, onPaymentSuccess }) {
+export default function PaymentGateway({ coursePrice, courseTitle, courseId, onPaymentSuccess }) {
   const [loading, setLoading] = useState(false);
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-    cardholderName: "",
-  });
 
-  const handleInputChange = (field, value) => {
-    // Format card number with spaces
-    if (field === "cardNumber") {
-      value = value.replace(/\s/g, "").replace(/(\d{4})/g, "$1 ").trim();
-    }
-    // Format expiry date
-    if (field === "expiryDate") {
-      value = value.replace(/\D/g, "");
-      if (value.length >= 2) {
-        value = value.slice(0, 2) + "/" + value.slice(2, 4);
-      }
-    }
-    // Limit CVV to 4 digits
-    if (field === "cvv") {
-      value = value.replace(/\D/g, "").slice(0, 4);
-    }
-
-    setCardDetails(prev => ({ ...prev, [field]: value }));
-  };
-
-  const processPayment = async () => {
-    if (!cardDetails.cardNumber || !cardDetails.expiryDate || !cardDetails.cvv || !cardDetails.cardholderName) {
-      toast.error("Please fill in all card details");
+  const startStripeCheckout = async () => {
+    if (!courseId) {
+      toast.error("Course is missing from checkout.");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await base44.functions.invoke("processPayment", {
-        paymentMethod,
-        courseId,
-        courseTitle,
-        coursePrice,
-        userId,
-        cardDetails: {
-          ...cardDetails,
-          cardNumber: cardDetails.cardNumber.replace(/\s/g, ""),
-        },
-      });
+      const response = await apiClient.post("/payments/checkout", { course_id: courseId });
+      const data = response.data?.data || {};
 
-      if (response.data.success) {
-        onPaymentSuccess(response.data.transactionId);
-        toast.success("Payment processed successfully");
-      } else {
-        toast.error(response.data.error || "Payment failed");
+      if (data.free) {
+        toast.success("Enrollment confirmed.");
+        onPaymentSuccess?.({ free: true, enrollmentId: data.enrollment?._id || data.enrollment?.id });
+        return;
       }
+
+      if (!data.url) throw new Error("Stripe checkout URL was not returned.");
+      window.location.assign(data.url);
     } catch (error) {
-      toast.error("Payment processing error: " + error.message);
+      toast.error(error.response?.data?.message || error.message || "Unable to start Stripe checkout.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !loading) {
-      processPayment();
-    }
-  };
-
   return (
     <Card className="p-6 space-y-6">
-      <div className="flex items-center gap-2 text-sm text-slate-600 bg-blue-50 border border-blue-200 p-3 rounded-lg">
-        <Lock className="w-4 h-4 text-blue-600" />
-        <span>Your payment information is encrypted and secure</span>
+      <div className="flex items-start gap-3 text-sm text-slate-700 bg-blue-50 border border-blue-200 p-4 rounded-lg">
+        <Lock className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+        <span>Card details are entered only on Stripe's secure checkout. SOL Training Academy does not collect or store card numbers or CVV.</span>
       </div>
 
-      <div>
-        <Label className="text-sm font-semibold text-ink mb-2 block">Cardholder Name</Label>
-        <Input
-          placeholder="John Smith"
-          value={cardDetails.cardholderName}
-          onChange={(e) => handleInputChange("cardholderName", e.target.value)}
-          disabled={loading}
-          onKeyPress={handleKeyPress}
-        />
-      </div>
-
-      <div>
-        <Label className="text-sm font-semibold text-ink mb-2 block">Card Number</Label>
-        <Input
-          placeholder="4242 4242 4242 4242"
-          value={cardDetails.cardNumber}
-          onChange={(e) => handleInputChange("cardNumber", e.target.value)}
-          maxLength="19"
-          disabled={loading}
-          onKeyPress={handleKeyPress}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm font-semibold text-ink mb-2 block">Expiry Date</Label>
-          <Input
-            placeholder="MM/YY"
-            value={cardDetails.expiryDate}
-            onChange={(e) => handleInputChange("expiryDate", e.target.value)}
-            maxLength="5"
-            disabled={loading}
-            onKeyPress={handleKeyPress}
-          />
-        </div>
-        <div>
-          <Label className="text-sm font-semibold text-ink mb-2 block">CVV</Label>
-          <Input
-            placeholder="123"
-            type="password"
-            value={cardDetails.cvv}
-            onChange={(e) => handleInputChange("cvv", e.target.value)}
-            maxLength="4"
-            disabled={loading}
-            onKeyPress={handleKeyPress}
-          />
-        </div>
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-ink">{courseTitle}</p>
+        <p className="text-2xl font-display font-bold text-harvest">A${Number(coursePrice || 0).toFixed(2)}</p>
       </div>
 
       <Button
-        onClick={processPayment}
+        onClick={startStripeCheckout}
         disabled={loading}
         className="w-full bg-harvest hover:bg-harvest/90 text-white font-bold py-3 rounded-lg gap-2"
       >
         {loading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Processing Payment...
+            Opening Stripe Checkout...
           </>
         ) : (
-          `Pay A$${coursePrice.toFixed(2)}`
+          <>
+            Continue to Secure Checkout
+            <ArrowRight className="w-4 h-4" />
+          </>
         )}
       </Button>
 
-      <p className="text-xs text-slate-500 text-center">
-        By proceeding, you agree to our Terms of Service and Privacy Policy
-      </p>
+      <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+        <ShieldCheck className="w-3.5 h-3.5" />
+        <span>Payment and entitlement are confirmed by Stripe webhook/server verification.</span>
+      </div>
     </Card>
   );
 }
