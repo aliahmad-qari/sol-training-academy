@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { HelpCircle, Mail, Phone, MessageSquare, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const FAQS = [
-  { q: "How long does NDIS registration take?", a: "NDIS registration typically takes 3–12 months depending on the complexity of your registration group and the readiness of your documentation." },
+  { q: "How long does NDIS registration take?", a: "NDIS registration typically takes 3-12 months depending on the complexity of your registration group and the readiness of your documentation." },
   { q: "What documents do I need to upload?", a: "You'll need policies, procedures, incident management evidence, worker screening clearances, and insurance certificates. Our team will guide you through each requirement." },
-  { q: "When will my consultant contact me?", a: "A consultant will reach out within 1–2 business days of submitting your enquiry. You can also email us directly for urgent queries." },
+  { q: "When will my consultant contact me?", a: "A consultant will reach out within 1-2 business days of submitting your enquiry. You can also email us directly for urgent queries." },
   { q: "Can I upgrade my service package?", a: "Yes, you can upgrade your package at any time by contacting our team or submitting a new enquiry. Pricing is pro-rated." },
   { q: "How do I track my NDIS registration progress?", a: "Use the 'NDIS Progress' tab in your portal sidebar. This shows your real-time registration pipeline updated by your assigned consultant." },
 ];
@@ -25,8 +25,8 @@ export default function PortalSupport() {
       <div className="grid sm:grid-cols-3 gap-4">
         {[
           { icon: Mail,         label: "Email Us",       value: "info@solbusinessconsultant.com.au", href: "mailto:info@solbusinessconsultant.com.au", color: "bg-blue-50 text-blue-600" },
-          { icon: Phone,        label: "Call Us",         value: "+61 (0) 400 000 000",               href: "tel:+61400000000",                         color: "bg-emerald-50 text-emerald-600" },
-          { icon: Clock,        label: "Business Hours",  value: "Mon–Fri, 9am–5pm AEST",             href: null,                                       color: "bg-amber-50 text-amber-600" },
+          { icon: Phone,        label: "Call Us",         value: "+61 460 003 494",               href: "tel:+61460003494",                         color: "bg-emerald-50 text-emerald-600" },
+          { icon: Clock,        label: "Business Hours",  value: "Mon-Fri, 9am-5pm AEST",             href: null,                                       color: "bg-amber-50 text-amber-600" },
         ].map(c => (
           <Card key={c.label} className="p-5">
             <div className={`w-10 h-10 rounded-xl ${c.color} flex items-center justify-center mb-3`}>

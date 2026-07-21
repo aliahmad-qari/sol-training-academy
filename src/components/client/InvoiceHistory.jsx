@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Download, Eye, Calendar, DollarSign, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { FileText, Download, Eye, Calendar, DollarSign, CheckCircle2, Clock, AlertCircle, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
@@ -18,9 +18,9 @@ export default function InvoiceHistory({ userId, invoices: propInvoices, loading
   const [invoices, setInvoices] = useState(propInvoices || []);
   const [loading, setLoading] = useState(propLoading ?? true);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    // If invoices were passed as props, use those directly
     if (propInvoices !== undefined) {
       setInvoices(propInvoices);
       setLoading(propLoading ?? false);
@@ -33,17 +33,26 @@ export default function InvoiceHistory({ userId, invoices: propInvoices, loading
       .finally(() => setLoading(false));
   }, [userId, propInvoices, propLoading]);
 
+  const query = search.trim().toLowerCase();
   const filteredInvoices = invoices.filter(inv => {
-    if (filter === "all") return true;
-    if (filter === "paid") return inv.status === "paid";
-    if (filter === "pending") return ["sent", "viewed", "overdue", "draft"].includes(inv.status);
-    return true;
+    if (filter === "paid" && inv.status !== "paid") return false;
+    if (filter === "pending" && !["sent", "viewed", "overdue", "draft"].includes(inv.status)) return false;
+    if (!query) return true;
+    const statusLabel = STATUS_CONFIG[inv.status]?.label || inv.status;
+    return [
+      inv.invoice_number,
+      inv.business_name,
+      inv.service_type,
+      inv.package_name,
+      inv.status,
+      statusLabel,
+      inv.total,
+      inv.invoice_date,
+      inv.due_date,
+    ].some(value => String(value || "").toLowerCase().includes(query));
   });
 
-  const totalRevenue = invoices
-    .filter(inv => inv.status === "paid")
-    .reduce((sum, inv) => sum + (inv.total || 0), 0);
-
+  const totalRevenue = invoices.filter(inv => inv.status === "paid").reduce((sum, inv) => sum + (inv.total || 0), 0);
   const paidCount = invoices.filter(inv => inv.status === "paid").length;
   const pendingCount = invoices.filter(inv => ["sent", "viewed", "overdue", "draft"].includes(inv.status)).length;
 
@@ -67,7 +76,6 @@ export default function InvoiceHistory({ userId, invoices: propInvoices, loading
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4 text-center hover:shadow-md transition-shadow">
           <DollarSign className="w-6 h-6 text-harvest mx-auto mb-2" />
@@ -86,7 +94,16 @@ export default function InvoiceHistory({ userId, invoices: propInvoices, loading
         </Card>
       </div>
 
-      {/* Filter Tabs */}
+      <div className="relative max-w-md">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search invoices..."
+          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-harvest/25 focus:border-harvest"
+        />
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {[
           { id: "all", label: "All Invoices" },
@@ -97,9 +114,7 @@ export default function InvoiceHistory({ userId, invoices: propInvoices, loading
             key={tab.id}
             onClick={() => setFilter(tab.id)}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-              filter === tab.id
-                ? "bg-harvest text-white"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              filter === tab.id ? "bg-harvest text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
             {tab.label}
@@ -107,15 +122,15 @@ export default function InvoiceHistory({ userId, invoices: propInvoices, loading
         ))}
       </div>
 
-      {/* Invoice List */}
       <div className="space-y-3">
         {filteredInvoices.length === 0 ? (
           <Card className="p-8 text-center">
             <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">No invoices in this category</p>
+            <p className="text-slate-500">No invoices match your filters</p>
           </Card>
         ) : (
           filteredInvoices
+            .slice()
             .sort((a, b) => new Date(b.invoice_date) - new Date(a.invoice_date))
             .map(invoice => {
               const statusCfg = STATUS_CONFIG[invoice.status] || STATUS_CONFIG.draft;
@@ -154,21 +169,21 @@ export default function InvoiceHistory({ userId, invoices: propInvoices, loading
                             <p className="font-bold text-ink mt-1">A${(invoice.total || 0).toFixed(2)}</p>
                           </div>
                           {invoice.due_date && invoice.status !== "paid" && (
-                              <div>
-                                <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Due</p>
-                                <p className={`font-semibold mt-1 ${invoice.status === "overdue" ? "text-red-600" : "text-amber-600"}`}>
-                                  {new Date(invoice.due_date).toLocaleDateString("en-AU")}
-                                </p>
-                              </div>
-                            )}
+                            <div>
+                              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Due</p>
+                              <p className={`font-semibold mt-1 ${invoice.status === "overdue" ? "text-red-600" : "text-amber-600"}`}>
+                                {new Date(invoice.due_date).toLocaleDateString("en-AU")}
+                              </p>
+                            </div>
+                          )}
                           {invoice.paid_date && (
-                                <div>
-                                  <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Paid</p>
-                                  <p className="text-emerald-600 font-semibold mt-1">
-                                    {new Date(invoice.paid_date).toLocaleDateString("en-AU")}
-                                  </p>
-                                </div>
-                              )}
+                            <div>
+                              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Paid</p>
+                              <p className="text-emerald-600 font-semibold mt-1">
+                                {new Date(invoice.paid_date).toLocaleDateString("en-AU")}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

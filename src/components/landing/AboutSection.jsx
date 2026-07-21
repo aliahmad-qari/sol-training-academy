@@ -1,20 +1,25 @@
-import React from "react";
+﻿import React from "react";
 import { motion } from "framer-motion";
 
 const ABOUT_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/47fbe6fb5_generated_7c663069.png";
 
 const values = [
-  { num: "01", title: "Precision", desc: "Every policy, every document, every system — built with meticulous accuracy." },
-  { num: "02", title: "Partnership", desc: "We don't just consult. We walk beside you at every milestone of your journey." },
-  { num: "03", title: "Innovation", desc: "AI-powered compliance, cloud-first thinking, and future-ready strategies." },
-  { num: "04", title: "Integrity", desc: "Transparent pricing, honest consulting, and a 98% first-time pass rate to prove it." },
+  { num: "01", title: "Precision", desc: "Every policy, document, and system is prepared with careful attention to business context and compliance detail." },
+  { num: "02", title: "Partnership", desc: "We work beside you at each milestone, from first enquiry through implementation and follow-up." },
+  { num: "03", title: "Practical Innovation", desc: "We use cloud tools, automation, and clear workflows to reduce manual administration where it makes sense." },
+  { num: "04", title: "Integrity", desc: "Transparent pricing, honest guidance, and no unsupported guarantees about audit or registration outcomes." },
+];
+
+const focusAreas = [
+  { value: "NDIS", label: "Registration & Compliance" },
+  { value: "BAS", label: "Bookkeeping & Reporting" },
+  { value: "CRM", label: "Systems & Automation" },
 ];
 
 export default function AboutSection() {
   return (
     <section id="about" className="py-32 relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -31,7 +36,6 @@ export default function AboutSection() {
           <div className="w-20 h-[2px] bg-harvest mt-6" />
         </motion.div>
 
-        {/* Image + Content */}
         <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -42,7 +46,7 @@ export default function AboutSection() {
           >
             <img
               src={ABOUT_IMAGE}
-              alt="Modern architectural facade representing structural excellence"
+              alt="Modern architectural facade representing structured business support"
               className="w-full h-[400px] object-cover"
             />
           </motion.div>
@@ -53,37 +57,24 @@ export default function AboutSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
             className="space-y-6"
-            style={{color: 'inherit'}}
           >
-            <p className="text-lg leading-relaxed" style={{color: '#64748B'}}>
-              SOL Business Consultant is Australia's trusted partner for business consulting, 
-              NDIS registration, and compliance. We empower businesses and elevate success — 
-              helping you streamline finances, optimise operations, and plan for long-term growth.
+            <p className="text-lg leading-relaxed text-slate_mist">
+              SOL Business Consultant supports Australian businesses with NDIS registration guidance, compliance preparation, bookkeeping, digital systems, websites, and growth services.
             </p>
-            <p className="text-lg leading-relaxed" style={{color: '#64748B'}}>
-              With <strong style={{color: '#0F172A'}}>Easy Compliance</strong> integrated into our ecosystem, 
-              we've transformed how NDIS providers manage audits — turning months of stress into 
-              weeks of structured, AI-powered preparation. From sole traders to established enterprises, 
-              we build the systems that let you focus on what matters.
+            <p className="text-lg leading-relaxed text-slate_mist">
+              With Easy Compliance in our ecosystem, we help providers organise documents, prepare operational evidence, and build workflows that are easier to maintain. We focus on practical systems, clear advice, and responsible claims.
             </p>
-            <div className="flex gap-8 pt-4">
-              <div>
-                <div className="font-display font-bold text-3xl text-harvest">300+</div>
-                <div className="text-xs text-slate_mist mt-1 uppercase tracking-wide">Providers Registered</div>
-              </div>
-              <div>
-                <div className="font-display font-bold text-3xl text-harvest">100+</div>
-                <div className="text-xs text-slate_mist mt-1 uppercase tracking-wide">Businesses Served</div>
-              </div>
-              <div>
-                <div className="font-display font-bold text-3xl text-harvest">98%</div>
-                <div className="text-xs text-slate_mist mt-1 uppercase tracking-wide">Pass Rate</div>
-              </div>
+            <div className="flex flex-wrap gap-8 pt-4">
+              {focusAreas.map((item) => (
+                <div key={item.label}>
+                  <div className="font-display font-bold text-3xl text-harvest">{item.value}</div>
+                  <div className="text-xs text-slate_mist mt-1 uppercase tracking-wide">{item.label}</div>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>
 
-        {/* Values */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {values.map((v, i) => (
             <motion.div

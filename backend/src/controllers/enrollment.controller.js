@@ -1,4 +1,5 @@
-﻿import { CourseEnrollment, User } from '../models/index.js';
+import { CourseEnrollment, User } from '../models/index.js';
+import { safeCreateNotification } from '../services/notification.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -127,7 +128,7 @@ export const updateProgress = asyncHandler(async (req, res) => {
  * PATCH /api/v1/enrollments/:id   (staff) -> update status / expiry
  */
 export const updateEnrollment = asyncHandler(async (req, res) => {
-  const allowed = ['status', 'expiry_date', 'progress_percent'];
+  const allowed = ['status', 'expiry_date', 'progress_percent', 'reminder_sent_days'];
   const update = {};
   for (const k of allowed) if (req.body[k] !== undefined) update[k] = req.body[k];
 
@@ -139,6 +140,72 @@ export const updateEnrollment = asyncHandler(async (req, res) => {
   return sendOk(res, enrollment, 'Enrollment updated');
 });
 
+const DAY_MS = 1000 * 60 * 60 * 24;
+const REMINDER_DAYS = [30, 15, 7];
+
+const startOfDay = (date = new Date()) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+/**
+ * POST /api/v1/enrollments/expiry-reminders   (staff)
+ * Marks expired access and creates in-app notifications for 30/15/7 day reminders.
+ */
+export const runExpiryReminders = asyncHandler(async (req, res) => {
+  const today = startOfDay();
+  const enrollments = await CourseEnrollment.find({ expiry_date: { $exists: true, $ne: null } });
+
+  let remindersSent = 0;
+  let expiredCount = 0;
+
+  for (const enrollment of enrollments) {
+    const expiry = startOfDay(enrollment.expiry_date);
+    const daysRemaining = Math.round((expiry - today) / DAY_MS);
+
+    if (daysRemaining < 0 && enrollment.status !== 'expired') {
+      enrollment.status = 'expired';
+      expiredCount += 1;
+    }
+
+    if (
+      REMINDER_DAYS.includes(daysRemaining) &&
+      !enrollment.reminder_sent_days.includes(daysRemaining) &&
+      enrollment.status !== 'completed'
+    ) {
+      await safeCreateNotification({
+        recipientId: enrollment.user_id,
+        senderId: req.user._id,
+        type: 'course_expiry_reminder',
+        title: `Course access expires in ${daysRemaining} days`,
+        message: `Your access to ${enrollment.course_title || 'this course'} expires on ${expiry.toLocaleDateString('en-AU')}. Please complete any remaining training before that date.`,
+        priority: daysRemaining <= 7 ? 'high' : 'normal',
+        category: 'course',
+        actionUrl: '/student-dashboard',
+        metadata: {
+          enrollment_id: String(enrollment._id),
+          course_id: String(enrollment.course_id),
+          days_remaining: daysRemaining,
+          expiry_date: expiry.toISOString(),
+        },
+        eventKey: `course-expiry:${enrollment._id}:${daysRemaining}`,
+      });
+      enrollment.reminder_sent_days.addToSet(daysRemaining);
+      remindersSent += 1;
+    }
+
+    if (enrollment.isModified()) {
+      await enrollment.save();
+    }
+  }
+
+  return sendOk(
+    res,
+    { reminders_sent: remindersSent, expired_count: expiredCount },
+    'Expiry reminders processed'
+  );
+});
 /**
  * DELETE /api/v1/enrollments/:id   (staff)
  */

@@ -207,10 +207,10 @@ const ACCOUNTANCY_PACKAGES = [
 ];
 
 const PACKAGE_MAP = {
-  registration: { packages: NDIS_PACKAGES, cols: "md:grid-cols-2", note: "All prices exclude GST. 100% audit support guarantee. Terms apply." },
-  training: { packages: TRAINING_PACKAGES, cols: "md:grid-cols-3", note: "All prices exclude GST. Enterprise custom pricing on request. Group discounts for 10+ staff." },
-  software: { packages: SOFTWARE_PACKAGES, cols: "md:grid-cols-3", note: "All prices exclude GST. Custom pricing confirmed after free scoping session." },
-  accountancy: { packages: ACCOUNTANCY_PACKAGES, cols: "md:grid-cols-3", note: "Monthly retainer, cancel anytime. All prices exclude GST." },
+  registration: { packages: NDIS_PACKAGES, cols: "md:grid-cols-2", note: "Prices are in AUD and exclude GST (for GST-registered businesses); GST is added at checkout. Audit support is included — registration and audit outcomes are not guaranteed. Terms apply." },
+  training: { packages: TRAINING_PACKAGES, cols: "md:grid-cols-3", note: "Prices are in AUD and exclude GST; GST is added at checkout. Enterprise custom pricing on request. Group discounts for 10+ staff." },
+  software: { packages: SOFTWARE_PACKAGES, cols: "md:grid-cols-3", note: "Prices are in AUD and exclude GST; GST is added at checkout. Custom pricing confirmed after a free scoping session." },
+  accountancy: { packages: ACCOUNTANCY_PACKAGES, cols: "md:grid-cols-3", note: "Prices are in AUD and exclude GST; GST is added at checkout. Monthly retainer, cancel anytime." },
 };
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
@@ -243,7 +243,7 @@ function PricingCard({ pkg, delay = 0 }) {
       <div className="flex items-end gap-1.5 mb-6">
         <span className="font-display font-bold text-4xl text-harvest">{pkg.price}</span>
         {pkg.price !== "Custom" && (
-          <span className={`text-sm mb-1 ${pkg.popular ? "text-white/50" : "text-slate_mist"}`}>+GST</span>
+          <span className={`text-sm mb-1 ${pkg.popular ? "text-white/70" : "text-slate_mist"}`}>+GST</span>
         )}
       </div>
 
@@ -332,7 +332,7 @@ export default function PricingSection() {
           className="mt-16 bg-ink rounded-3xl p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <h3 className="font-display font-bold text-2xl md:text-3xl text-white">Not sure which package is right for you?</h3>
-            <p className="text-white/50 mt-2">Book a free 30-minute consultation — we'll assess your needs and recommend the best fit.</p>
+            <p className="text-white/70 mt-2">Book a free 30-minute consultation — we'll assess your needs and recommend the best fit.</p>
           </div>
           <a href="/#contact"
             className="flex-shrink-0 inline-flex items-center gap-2 bg-harvest hover:bg-harvest/90 text-white font-display font-semibold px-8 py-4 rounded-xl transition-colors whitespace-nowrap">

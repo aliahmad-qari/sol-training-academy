@@ -86,7 +86,10 @@ export default function Navbar() {
             ))}
             {/* Mega-menu Services dropdown */}
             <div className="relative" onMouseEnter={() => setServicesOpen(true)} onMouseLeave={() => setServicesOpen(false)}>
-              <button className={`text-sm font-medium transition-colors flex items-center gap-1 ${servicesOpen ? "text-harvest" : "text-slate_mist hover:text-ink"}`}>
+              <button
+                aria-haspopup="true"
+                aria-expanded={servicesOpen}
+                className={`text-sm font-medium transition-colors flex items-center gap-1 ${servicesOpen ? "text-harvest" : "text-slate_mist hover:text-ink"}`}>
                 Services <ChevronDown className={`w-3.5 h-3.5 transition-transform ${servicesOpen ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -152,7 +155,12 @@ export default function Navbar() {
             </a>
           </div>
 
-          <button className="lg:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
+          <button
+            className="lg:hidden p-2"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileOpen}
+          >
             {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </nav>

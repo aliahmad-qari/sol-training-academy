@@ -127,7 +127,7 @@ export default function NDISSection() {
           className="mb-8"
         >
           <h3 className="font-display font-bold text-3xl text-white mb-2">Simple, Transparent Pricing</h3>
-          <p className="text-white/50">Choose the level of support that matches your needs.</p>
+          <p className="text-white/70">Choose the level of support that matches your needs.</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6 max-w-4xl">
@@ -154,7 +154,7 @@ export default function NDISSection() {
               </div>
               <div className="font-display font-bold text-4xl text-harvest mb-1">
                 {pkg.price}
-                <span className="text-base font-normal text-white/40 ml-2">+GST</span>
+                <span className="text-base font-normal text-white/70 ml-2">+GST</span>
               </div>
               <ul className="space-y-3 my-6">
                 {pkg.features.map((f) => (
@@ -179,7 +179,7 @@ export default function NDISSection() {
             </motion.div>
           ))}
         </div>
-        <p className="text-xs text-white/30 mt-6">*100% audit support guarantee. Terms apply.</p>
+        <p className="text-xs text-white/60 mt-6">*Audit support included. Registration and audit outcomes depend on your circumstances and the independent auditor; individual results are not guaranteed. Terms apply.</p>
       </div>
     </section>
   );

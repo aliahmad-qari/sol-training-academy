@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Tag, Plus, Trash2, X, Save, CheckCircle, XCircle, BarChart3 } from "lucide-react";
+import { Tag, Plus, Trash2, X, Save, CheckCircle, XCircle, BarChart3, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,6 +88,7 @@ export default function AdminCoupons({ courses }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = () => base44.entities.Coupon.list("-created_date", 100).then(c => { setCoupons(c); setLoading(false); });
   useEffect(() => { load(); }, []);
@@ -112,6 +113,13 @@ export default function AdminCoupons({ courses }) {
     await base44.entities.Coupon.update(coupon.id, { is_active: !coupon.is_active });
     setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, is_active: !c.is_active } : c));
   };
+
+  const filtered = coupons.filter(c => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const courseTitle = courses.find(cr => cr.id === c.course_id)?.title || "";
+    return (c.code || "").toLowerCase().includes(q) || courseTitle.toLowerCase().includes(q);
+  });
 
   return (
     <div className="space-y-5">
@@ -174,13 +182,25 @@ export default function AdminCoupons({ courses }) {
           <p className="text-slate_mist text-sm">No coupons yet. Create your first discount code!</p>
         </div>
       ) : (
+        <>
+        <div className="relative max-w-sm">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate_mist" />
+          <Input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by code or course…" className="pl-9 h-9 text-sm" />
+        </div>
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border/50 p-10 text-center">
+            <Tag className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-slate_mist text-sm">No coupons match “{search}”.</p>
+          </div>
+        ) : (
         <div className="bg-white rounded-2xl border border-border/50 overflow-hidden">
           <table className="w-full text-sm">
             <thead><tr className="bg-slate-50 border-b border-border/30">
               {["Code", "Discount", "Course", "Used/Max", "Expires", "Status", ""].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate_mist uppercase tracking-wider">{h}</th>)}
             </tr></thead>
             <tbody>
-              {coupons.map(c => {
+              {filtered.map(c => {
                 const expired = c.expires_at && new Date(c.expires_at) < new Date();
                 const course = courses.find(cr => cr.id === c.course_id);
                 return (
@@ -205,6 +225,8 @@ export default function AdminCoupons({ courses }) {
             </tbody>
           </table>
         </div>
+        )}
+        </>
       )}
     </div>
   );

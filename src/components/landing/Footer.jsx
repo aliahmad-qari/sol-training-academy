@@ -52,7 +52,7 @@ export default function Footer() {
             <h3 className="font-display font-bold text-3xl md:text-4xl text-white leading-tight">
               Let's Build Your<br />Business Foundation
             </h3>
-            <p className="text-white/50 mt-2 text-lg">Start with a free consultation today.</p>
+            <p className="text-white/70 mt-2 text-lg">Start with a free consultation today.</p>
           </div>
           <a
             href="#contact"
@@ -75,7 +75,7 @@ export default function Footer() {
                 <span className="text-[10px] tracking-[0.15em] uppercase text-white/40 leading-tight">Business Consultant</span>
               </div>
             </div>
-            <p className="text-sm text-white/40 leading-relaxed max-w-xs">
+            <p className="text-sm text-white/70 leading-relaxed max-w-xs">
               Australia's trusted partner for business consulting, NDIS registration, and compliance solutions.
             </p>
           </div>
@@ -88,7 +88,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {solServices.map((s) => (
                 <li key={s}>
-                  <a href="#services" className="text-sm text-white/40 hover:text-harvest transition-colors">{s}</a>
+                  <a href="#services" className="text-sm text-white/70 hover:text-harvest transition-colors">{s}</a>
                 </li>
               ))}
             </ul>
@@ -102,7 +102,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {complianceLinks.map((s) => (
                 <li key={s}>
-                  <a href="#compliance" className="text-sm text-white/40 hover:text-harvest transition-colors">{s}</a>
+                  <a href="#compliance" className="text-sm text-white/70 hover:text-harvest transition-colors">{s}</a>
                 </li>
               ))}
             </ul>
@@ -116,7 +116,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {ndisLinks.map((s) => (
                 <li key={s}>
-                  <a href="#ndis" className="text-sm text-white/40 hover:text-harvest transition-colors">{s}</a>
+                  <a href="#ndis" className="text-sm text-white/70 hover:text-harvest transition-colors">{s}</a>
                 </li>
               ))}
             </ul>
@@ -131,8 +131,8 @@ export default function Footer() {
               {companyLinks.map((s) => (
                 <li key={s.label}>
                   {s.href.startsWith("/") && !s.href.startsWith("/#")
-                    ? <Link to={s.href} className="text-sm text-white/40 hover:text-harvest transition-colors">{s.label}</Link>
-                    : <a href={s.href} className="text-sm text-white/40 hover:text-harvest transition-colors">{s.label}</a>
+                    ? <Link to={s.href} className="text-sm text-white/70 hover:text-harvest transition-colors">{s.label}</Link>
+                    : <a href={s.href} className="text-sm text-white/70 hover:text-harvest transition-colors">{s.label}</a>
                   }
                 </li>
               ))}
@@ -146,7 +146,7 @@ export default function Footer() {
         </div>
 
         {/* Contact Bar */}
-        <div className="border-t border-white/10 pt-8 mb-4 flex flex-wrap gap-6 text-xs text-white/40">
+        <div className="border-t border-white/10 pt-8 mb-4 flex flex-wrap gap-6 text-xs text-white/70">
           <span>📞 <a href="tel:+61460003494" className="hover:text-harvest transition-colors">+61 460 003 494</a></span>
           <span>✉️ <a href="mailto:info@solbusinessconsultant.com.au" className="hover:text-harvest transition-colors">info@solbusinessconsultant.com.au</a></span>
           <span>🌐 <a href="https://www.solbusinessconsultant.com.au" target="_blank" rel="noopener noreferrer" className="hover:text-harvest transition-colors">www.solbusinessconsultant.com.au</a></span>
@@ -155,7 +155,7 @@ export default function Footer() {
         </div>
         {/* Bottom Bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-white/30">
+          <p className="text-xs text-white/60">
             © {new Date().getFullYear()} SOL Business Consultant — NDIS registration & compliance support across Australia. Not affiliated with NDIS Commission.
           </p>
         </div>

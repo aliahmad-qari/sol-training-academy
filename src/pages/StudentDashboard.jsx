@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import apiClient from "@/api/apiClient";
@@ -6,7 +6,7 @@ import {
   BookOpen, Award, Settings, LogOut,
   Home, HelpCircle, LifeBuoy, ChevronRight, Menu, X, Clock,
   TrendingUp, FileText, Megaphone, Video, Target, Calendar, UserCircle, ClipboardList, Gift,
-  StickyNote, MessageSquare, Flame, Map, Star, CreditCard, Sparkles, Inbox, Plus
+  StickyNote, MessageSquare, Flame, Map, Star, CreditCard, Sparkles, Inbox, Plus, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -43,9 +43,9 @@ import NotificationCenter from "@/components/lms/NotificationCenter";
 
 
 const LEVEL_CONFIG = {
-  level1: { bar: "bg-harvest",         pill: "bg-harvest/10 text-harvest border border-harvest/30",       label: "Level 1 â€” Foundation" },
-  level2: { bar: "bg-emerald-500",     pill: "bg-emerald-50 text-emerald-700 border border-emerald-200",  label: "Level 2 â€” Professional" },
-  level3: { bar: "bg-amber-600",       pill: "bg-amber-50 text-amber-700 border border-amber-200",        label: "Level 3 â€” Advanced" },
+  level1: { bar: "bg-harvest",         pill: "bg-harvest/10 text-harvest border border-harvest/30",       label: "Level 1 - Foundation" },
+  level2: { bar: "bg-emerald-500",     pill: "bg-emerald-50 text-emerald-700 border border-emerald-200",  label: "Level 2 - Professional" },
+  level3: { bar: "bg-amber-600",       pill: "bg-amber-50 text-amber-700 border border-amber-200",        label: "Level 3 - Advanced" },
 };
 
 const NAV_SECTIONS = [
@@ -89,7 +89,7 @@ const NAV_SECTIONS = [
   ]},
 ];
 
-/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Sidebar */
 function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLogout, mobileOpen, setMobileOpen }) {
   // On mobile the sidebar is never in the "collapsed rail" state — it's either a
   // full-width drawer (open) or slid completely off-screen (closed).
@@ -186,7 +186,7 @@ function Sidebar({ activeTab, setActiveTab, user, collapsed, setCollapsed, onLog
   );
 }
 
-/* â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Main */
 export default function StudentDashboard() {
   const { user, logout }              = useAuth();
   const [enrollments, setEnrollments]     = useState([]);
@@ -323,7 +323,7 @@ export default function StudentDashboard() {
     return enrollmentDaysLeft(enr) < 0;
   };
 
-  /* â”€â”€ Course Player â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Course Player */
   if (activeCourse) {
     // Block expired access
     if (isExpired(activeCourse) && activeCourse.status !== "completed") {
@@ -341,7 +341,7 @@ export default function StudentDashboard() {
             </p>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => { setActiveCourse(null); setActiveTopicId(null); setModules([]); setTopics([]); }}
-                className="flex-1 text-white border-white/20 hover:bg-white/10">â† Back</Button>
+                className="flex-1 text-white border-white/20 hover:bg-white/10">Back</Button>
               <Button onClick={() => { setActiveCourse(null); setActiveTopicId(null); setModules([]); setTopics([]); setActiveTab("support"); }}
                 className="flex-1 bg-harvest text-white">Contact Support</Button>
             </div>
@@ -366,7 +366,7 @@ export default function StudentDashboard() {
     );
   }
 
-  /* â”€â”€ Dashboard Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Dashboard Shell */
   // Content margin follows the desktop rail width; on mobile the sidebar is an
   // overlay drawer, so no margin is applied (content stays full-width).
   const ml = sidebarCollapsed ? "lg:ml-16" : "lg:ml-64";
@@ -482,14 +482,19 @@ export default function StudentDashboard() {
   );
 }
 
-/* â”€â”€ My Courses tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* My Courses tab */
 function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, onEnroll, enrollmentDaysLeft }) {
+  const [availableSearch, setAvailableSearch] = useState("");
   const enrolledCourseIds = new Set(enrollments.map(e => String(e.course_id)));
-  const availableCourses  = courses.filter(c => !enrolledCourseIds.has(String(c._id || c.id)));
+  const availableCourses = courses.filter(c => !enrolledCourseIds.has(String(c._id || c.id)));
+  const query = availableSearch.trim().toLowerCase();
+  const filteredAvailableCourses = query
+    ? availableCourses.filter(course => [course.title, course.description, course.level, course.duration, course.price]
+        .some(value => String(value || "").toLowerCase().includes(query)))
+    : availableCourses;
 
   return (
     <div className="space-y-8">
-      {/* Enrolled courses */}
       <div>
         <p className="text-sm font-semibold text-ink mb-3">
           My Enrolled Courses <span className="text-slate_mist font-normal">({enrollments.length})</span>
@@ -497,53 +502,67 @@ function CoursesTab({ enrollments, courses, onOpenCourse, setActiveTab, user, on
         <StudentMyCourses enrollments={enrollments} courses={courses} onOpenCourse={onOpenCourse} />
       </div>
 
-      {/* Available courses to enrol */}
       {availableCourses.length > 0 && (
         <div>
-          <p className="text-sm font-semibold text-ink mb-3">
-            Available Courses <span className="text-slate_mist font-normal">({availableCourses.length} new)</span>
-          </p>
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            {availableCourses.map((course, i) => {
-              const cfg = LEVEL_CONFIG[course.level] || LEVEL_CONFIG.level1;
-              return (
-                <motion.div key={course.id}
-                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                  className="bg-white rounded-2xl border-2 border-dashed border-border/60 overflow-hidden shadow-sm hover:shadow-md hover:border-harvest/40 transition-all flex flex-col">
-                  <div className={`h-2 ${cfg.bar} opacity-40`} />
-                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
-                    {course.thumbnail_url ? (
-                      <img src={course.thumbnail_url} alt={course.title}
-                        className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <BookOpen className="w-8 h-8 text-slate-400" />
-                      </div>
-                    )}
-                    <span className="absolute top-2 left-2 text-[10px] font-bold bg-white border border-border/50 text-slate_mist px-2 py-0.5 rounded-full">New</span>
-                  </div>
-                  <div className="p-4 flex flex-col flex-1">
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full w-fit mb-2 ${cfg.pill}`}>{cfg.label}</span>
-                    <h3 className="font-display font-semibold text-ink text-sm leading-snug mb-1">{course.title}</h3>
-                    {course.description && <p className="text-xs text-slate_mist mb-3 line-clamp-2">{course.description}</p>}
-                    <div className="flex items-center gap-3 text-xs text-slate_mist mb-4">
-                      {course.duration && <span>â± {course.duration}</span>}
-                      {course.price > 0 && <span className="font-semibold text-harvest">${course.price}</span>}
-                    </div>
-                    <div className="mt-auto">
-                      <Button onClick={() => onEnroll(course)}
-                        className="w-full bg-harvest text-white gap-2 text-sm">
-                        Enrol Now
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <p className="text-sm font-semibold text-ink">
+              Available Courses <span className="text-slate_mist font-normal">({availableCourses.length} new)</span>
+            </p>
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                value={availableSearch}
+                onChange={e => setAvailableSearch(e.target.value)}
+                placeholder="Search available courses..."
+                className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-harvest/25 focus:border-harvest"
+              />
+            </div>
           </div>
+
+          {filteredAvailableCourses.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+              No available courses match your search.
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filteredAvailableCourses.map((course, i) => {
+                const cfg = LEVEL_CONFIG[course.level] || LEVEL_CONFIG.level1;
+                return (
+                  <motion.div key={course.id || course._id}
+                    initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                    className="bg-white rounded-2xl border-2 border-dashed border-border/60 overflow-hidden shadow-sm hover:shadow-md hover:border-harvest/40 transition-all flex flex-col">
+                    <div className={`h-2 ${cfg.bar} opacity-40`} />
+                    <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                      {course.thumbnail_url ? (
+                        <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen className="w-8 h-8 text-slate-400" />
+                        </div>
+                      )}
+                      <span className="absolute top-2 left-2 text-[10px] font-bold bg-white border border-border/50 text-slate_mist px-2 py-0.5 rounded-full">New</span>
+                    </div>
+                    <div className="p-4 flex flex-col flex-1">
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full w-fit mb-2 ${cfg.pill}`}>{cfg.label}</span>
+                      <h3 className="font-display font-semibold text-ink text-sm leading-snug mb-1">{course.title}</h3>
+                      {course.description && <p className="text-xs text-slate_mist mb-3 line-clamp-2">{course.description}</p>}
+                      <div className="flex items-center gap-3 text-xs text-slate_mist mb-4">
+                        {course.duration && <span>{course.duration}</span>}
+                        {course.price > 0 && <span className="font-semibold text-harvest">${course.price}</span>}
+                      </div>
+                      <div className="mt-auto">
+                        <Button onClick={() => onEnroll(course)} className="w-full bg-harvest text-white gap-2 text-sm">
+                          Enrol Now
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
-

@@ -1,23 +1,21 @@
-import React from "react";
+﻿import React from "react";
 import { motion } from "framer-motion";
 
-const LOGOS = [
+const PLATFORMS = [
   { name: "NDIS Commission", abbr: "NDIS\nCommission" },
   { name: "PRODA", abbr: "PRODA" },
   { name: "Services Australia", abbr: "Services\nAustralia" },
   { name: "Xero", abbr: "Xero" },
   { name: "MYOB", abbr: "MYOB" },
   { name: "Easy Compliance", abbr: "Easy\nCompliance" },
-  { name: "CPA Australia", abbr: "CPA\nAustralia" },
-  { name: "Fair Work", abbr: "Fair Work\nCommission" },
+  { name: "Fair Work", abbr: "Fair Work" },
   { name: "ASIC", abbr: "ASIC" },
   { name: "ATO", abbr: "ATO" },
   { name: "AHPRA", abbr: "AHPRA" },
   { name: "Safe Work Australia", abbr: "Safe Work\nAustralia" },
 ];
 
-// Duplicate for seamless infinite scroll
-const DUPLICATED = [...LOGOS, ...LOGOS];
+const DUPLICATED = [...PLATFORMS, ...PLATFORMS];
 
 function LogoPill({ item }) {
   return (
@@ -35,66 +33,47 @@ export default function LogoCarousel() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-10 text-center">
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-3 block">
-            Trusted Partners & Platforms
+            Australian Compliance Context
           </span>
           <h3 className="font-display font-bold text-2xl md:text-3xl text-ink">
-            Working With Australia's Leading Compliance Bodies
+            Built Around the Systems Australian Providers Use
           </h3>
           <p className="text-slate_mist text-sm mt-3 max-w-lg mx-auto">
-            Sol Business Consultant works across NDIS, government, and accounting platforms to deliver seamless, compliant outcomes for every client.
+            We help clients navigate common government, accounting, compliance, and business platforms. Platform names are shown for context only and do not imply endorsement or partnership.
           </p>
         </motion.div>
       </div>
 
-      {/* Row 1 — scrolls left */}
       <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to right, white, transparent)" }} />
-        <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to left, white, transparent)" }} />
-        <motion.div
-          className="flex"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
-        >
-          {DUPLICATED.map((item, i) => (
-            <LogoPill key={i} item={item} />
-          ))}
+        <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
+        <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
+        <motion.div className="flex" animate={{ x: ["0%", "-50%"] }} transition={{ duration: 28, repeat: Infinity, ease: "linear" }}>
+          {DUPLICATED.map((item, i) => <LogoPill key={i} item={item} />)}
         </motion.div>
       </div>
 
-      {/* Row 2 — scrolls right */}
       <div className="relative mt-4">
-        <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to right, white, transparent)" }} />
-        <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to left, white, transparent)" }} />
-        <motion.div
-          className="flex"
-          animate={{ x: ["-50%", "0%"] }}
-          transition={{ duration: 32, repeat: Infinity, ease: "linear" }}
-        >
-          {DUPLICATED.map((item, i) => (
-            <LogoPill key={i} item={item} />
-          ))}
+        <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
+        <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
+        <motion.div className="flex" animate={{ x: ["-50%", "0%"] }} transition={{ duration: 32, repeat: Infinity, ease: "linear" }}>
+          {DUPLICATED.map((item, i) => <LogoPill key={i} item={item} />)}
         </motion.div>
       </div>
 
-      {/* Trust badges */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="flex flex-wrap justify-center gap-6 mt-12 px-6"
+        className="flex flex-wrap justify-center gap-4 mt-12 px-6"
       >
         {[
-          { label: "300+ Providers Registered", icon: "🏢" },
-          { label: "98% First-Time Audit Pass Rate", icon: "✅" },
-          { label: "NDIS Commission Aligned", icon: "🛡️" },
-          { label: "CPA-Partnered Accounting", icon: "📊" },
-        ].map((b) => (
-          <div key={b.label} className="flex items-center gap-2 px-5 py-2.5 bg-chalk rounded-full border border-border/50 text-sm text-slate_mist font-medium">
-            <span>{b.icon}</span> {b.label}
+          "ABN-backed Australian business",
+          "NDIS-aware service guidance",
+          "Clear pricing before paid work",
+          "Privacy-conscious enquiry handling",
+        ].map((label) => (
+          <div key={label} className="px-5 py-2.5 bg-chalk rounded-full border border-border/50 text-sm text-slate_mist font-medium">
+            {label}
           </div>
         ))}
       </motion.div>

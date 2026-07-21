@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "@/api/apiClient";
-import { Megaphone, Plus, Edit2, Trash2, Send, X, Save, RefreshCw } from "lucide-react";
+import { Megaphone, Plus, Edit2, Trash2, Send, X, Save, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,6 +98,7 @@ export default function AdminAnnouncements() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading]             = useState(true);
   const [modal, setModal]                 = useState(null);
+  const [search, setSearch]               = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -142,6 +143,14 @@ export default function AdminAnnouncements() {
     }
   };
 
+  const filtered = announcements.filter(a => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (a.title || "").toLowerCase().includes(q) ||
+      (a.body || "").toLowerCase().includes(q) ||
+      (a.badge || "").toLowerCase().includes(q);
+  });
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
@@ -177,13 +186,28 @@ export default function AdminAnnouncements() {
         </div>
       </div>
 
+      {/* Search */}
+      {announcements.length > 0 && (
+        <div className="relative max-w-sm mb-4">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate_mist" />
+          <Input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by title, content or badge…" className="pl-9 h-9 text-sm" />
+        </div>
+      )}
+
       {loading ? (
         <div className="bg-white rounded-2xl border border-border/50 p-12 text-center text-slate_mist text-sm">
           Loading announcements…
         </div>
       ) : (
         <div className="space-y-3">
-          {announcements.map(a => (
+          {announcements.length > 0 && filtered.length === 0 && (
+            <div className="bg-white rounded-2xl border border-border/50 p-10 text-center">
+              <Megaphone className="w-8 h-8 mx-auto mb-2 text-slate_mist/30" />
+              <p className="text-slate_mist text-sm">No announcements match “{search}”.</p>
+            </div>
+          )}
+          {filtered.map(a => (
             <div key={a._id || a.id} className="bg-white rounded-2xl border border-border/50 p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">

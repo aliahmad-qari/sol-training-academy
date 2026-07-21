@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Clock, Bell, Users, Trash2, Send } from "lucide-react";
+import { Clock, Bell, Users, Trash2, Send, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
@@ -9,6 +10,7 @@ export default function AdminWaitlist({ courses }) {
   const [waitlist, setWaitlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   const load = () => base44.entities.CourseWaitlist.list("-created_date", 300).then(w => { setWaitlist(w); setLoading(false); });
   useEffect(() => { load(); }, []);
@@ -30,7 +32,14 @@ export default function AdminWaitlist({ courses }) {
     toast.success("Removed from waitlist.");
   };
 
-  const filtered = filter === "all" ? waitlist : waitlist.filter(w => w.course_id === filter);
+  const byCourse = filter === "all" ? waitlist : waitlist.filter(w => w.course_id === filter);
+  const filtered = byCourse.filter(w => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (w.user_name || "").toLowerCase().includes(q) ||
+      (w.user_email || "").toLowerCase().includes(q) ||
+      (w.course_title || "").toLowerCase().includes(q);
+  });
   const notifiedCount = waitlist.filter(w => w.notified).length;
 
   return (
@@ -52,13 +61,20 @@ export default function AdminWaitlist({ courses }) {
         ))}
       </div>
 
-      <Select value={filter} onValueChange={setFilter}>
-        <SelectTrigger className="w-48 h-9 text-sm"><SelectValue placeholder="All Courses" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Courses</SelectItem>
-          {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
-        </SelectContent>
-      </Select>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate_mist" />
+          <Input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, email or course…" className="pl-9 h-9 text-sm" />
+        </div>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-48 h-9 text-sm"><SelectValue placeholder="All Courses" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Courses</SelectItem>
+            {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
 
       {loading ? <div className="text-center py-10 text-slate_mist text-sm">Loading…</div> : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-border/40 p-12 text-center">

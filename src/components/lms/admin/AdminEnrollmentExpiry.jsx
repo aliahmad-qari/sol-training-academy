@@ -105,20 +105,30 @@ export default function AdminEnrollmentExpiry() {
 
   const load = async () => {
     setLoading(true);
-    const all = await base44.entities.CourseEnrollment.list("-created_date", 500);
-    // Only show enrollments with an expiry date OR expired status
-    setEnrollments(all);
-    setLoading(false);
+    try {
+      const all = await base44.entities.CourseEnrollment.list("-created_date", 500);
+      setEnrollments(all);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load enrollments.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
 
   const runReminders = async () => {
     setRunning(true);
-    const res = await base44.functions.invoke("courseExpiryReminders", {});
-    toast.success(`Done: ${res.data.reminders_sent} reminders sent, ${res.data.expired_count} courses expired.`);
-    setRunning(false);
-    load();
+    try {
+      const res = await base44.functions.invoke("courseExpiryReminders", {});
+      const data = res.data || {};
+      toast.success(`Done: ${data.reminders_sent || 0} reminders sent, ${data.expired_count || 0} courses expired.`);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Failed to run expiry reminders.");
+    } finally {
+      setRunning(false);
+    }
   };
 
   const bulkExtend = async (addDays) => {

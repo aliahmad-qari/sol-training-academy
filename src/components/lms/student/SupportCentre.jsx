@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import {
   LifeBuoy, Mail, Phone, MessageSquare, ChevronDown, ChevronUp,
-  Send, Plus, X
+  Send, Plus, X, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -254,6 +254,7 @@ export default function SupportCentre({ user }) {
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [openTicket, setOpenTicket] = useState(null);
+  const [search, setSearch] = useState("");
 
   const loadTickets = async () => {
     if (!user?.id) return;
@@ -276,6 +277,17 @@ export default function SupportCentre({ user }) {
     setShowForm(false);
     loadTickets();
   };
+
+  const query = search.trim().toLowerCase();
+  const filteredTickets = query
+    ? tickets.filter(ticket => [
+        ticket.subject,
+        ticket.message,
+        ticket.category,
+        ticket.status?.replace("_", " "),
+        ...(ticket.messages || []).map(msg => msg.message),
+      ].some(value => String(value || "").toLowerCase().includes(query)))
+    : tickets;
 
   return (
     <div>
@@ -327,6 +339,18 @@ export default function SupportCentre({ user }) {
           )}
         </AnimatePresence>
 
+        {!loadingTickets && tickets.length > 0 && (
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate_mist" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search tickets..."
+              className="h-11 rounded-xl border-border/60 bg-white pl-10 text-sm shadow-sm focus-visible:ring-harvest/20"
+            />
+          </div>
+        )}
+
         {loadingTickets ? (
           <div className="bg-white rounded-2xl border border-border/50 p-8 text-center text-slate_mist text-sm">Loading tickets…</div>
         ) : tickets.length === 0 ? (
@@ -337,9 +361,14 @@ export default function SupportCentre({ user }) {
               <Plus className="w-3.5 h-3.5" /> Submit a Request
             </Button>
           </div>
+        ) : filteredTickets.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border/50 p-10 text-center">
+            <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate_mist">No tickets match your search.</p>
+          </div>
         ) : (
           <div className="space-y-2">
-            {tickets.map(t => {
+            {filteredTickets.map(t => {
               const unread = (t.messages || []).filter(m => m.sender_role === "admin").length;
               return (
                 <button key={t.id} onClick={() => setOpenTicket(t)}

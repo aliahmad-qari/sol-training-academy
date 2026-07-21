@@ -7,16 +7,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 
 const STATUS_CONFIG = {
-  graded:             { color: "bg-emerald-100 text-emerald-700", label: "Graded" },
-  submitted:          { color: "bg-amber-100 text-amber-700",    label: "Submitted" },
-  under_review:       { color: "bg-blue-100 text-blue-700",      label: "Under Review" },
-  resubmit_requested: { color: "bg-red-100 text-red-700",        label: "Resubmit" },
+  graded: { color: "bg-emerald-100 text-emerald-700", label: "Graded" },
+  submitted: { color: "bg-amber-100 text-amber-700", label: "Submitted" },
+  under_review: { color: "bg-blue-100 text-blue-700", label: "Under Review" },
+  resubmit_requested: { color: "bg-red-100 text-red-700", label: "Resubmit" },
 };
 
-export default function AdminGradebook({ courses }) {
+const getId = (item) => String(item?._id || item?.id || "");
+
+const attemptPercent = (attempt) => {
+  const explicit = Number(attempt.score_percent);
+  if (Number.isFinite(explicit) && explicit >= 0) return Math.round(explicit);
+
+  const score = Number(attempt.score);
+  if (!Number.isFinite(score)) return null;
+
+  const total = Number(attempt.total_marks) || Number(attempt.total_questions) || 0;
+  if (total > 0) return Math.round((score / total) * 100);
+  if (score >= 0 && score <= 100) return Math.round(score);
+  return null;
+};
+
+const dateLabel = (value) => value ? new Date(value).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "-";
+
+export default function AdminGradebook({ courses = [] }) {
   const [submissions, setSubmissions] = useState([]);
   const [quizAttempts, setQuizAttempts] = useState([]);
-  const [assignments, setAssignments] = useState([]);
+  const [enrollments, setEnrollments] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("assignments");
   const [search, setSearch] = useState("");
@@ -24,61 +42,118 @@ export default function AdminGradebook({ courses }) {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
       base44.entities.AssignmentSubmission.list("-created_date", 300),
-      base44.entities.QuizAttempt.list("-created_date", 300),
-      base44.entities.Assignment.list("sort_order"),
-    ]).then(([subs, attempts, asgns]) => {
-      setSubmissions(subs);
-      setQuizAttempts(attempts);
-      setAssignments(asgns);
-      setLoading(false);
-    });
+      base44.entities.QuizAttempt.list("-created_date", 1000),
+      base44.entities.CourseEnrollment.list("-created_date", 1000),
+      base44.entities.CourseTopic.list("sort_order", 1000),
+    ])
+      .then(([subs, attempts, envs, topicRows]) => {
+        setSubmissions(Array.isArray(subs) ? subs : []);
+        setQuizAttempts(Array.isArray(attempts) ? attempts : []);
+        setEnrollments(Array.isArray(envs) ? envs : []);
+        setTopics(Array.isArray(topicRows) ? topicRows : []);
+      })
+      .catch((err) => {
+        console.error("Failed to load gradebook:", err);
+        toast.error(err.response?.data?.message || "Failed to load gradebook.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
+  const courseMap = new Map(courses.map(c => [getId(c), c]));
+  const topicMap = new Map(topics.map(t => [getId(t), t]));
+  const enrollmentByUserCourse = new Map(enrollments.map(e => [`${String(e.user_id)}:${String(e.course_id)}`, e]));
+
+  const getAttemptStudent = (attempt) => enrollmentByUserCourse.get(`${String(attempt.user_id)}:${String(attempt.course_id)}`) || {};
+  const getAttemptCourse = (attempt) => courseMap.get(String(attempt.course_id)) || {};
+  const getAttemptTopic = (attempt) => topicMap.get(String(attempt.topic_id)) || {};
+
+  const query = search.trim().toLowerCase();
+
   const filteredSubs = submissions.filter(s => {
-    const matchCourse = courseFilter === "all" || s.course_id === courseFilter;
+    const matchCourse = courseFilter === "all" || String(s.course_id) === String(courseFilter);
     const matchStatus = statusFilter === "all" || s.status === statusFilter;
-    const matchSearch = !search || s.user_name?.toLowerCase().includes(search.toLowerCase()) || s.assignment_title?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !query || [s.user_name, s.user_email, s.course_title, s.assignment_title]
+      .some(value => String(value || "").toLowerCase().includes(query));
     return matchCourse && matchStatus && matchSearch;
   });
 
   const filteredQuizzes = quizAttempts.filter(a => {
-    const matchCourse = courseFilter === "all" || a.course_id === courseFilter;
-    const matchSearch = !search || a.user_id?.toLowerCase().includes(search.toLowerCase());
+    const enrollment = getAttemptStudent(a);
+    const course = getAttemptCourse(a);
+    const topic = getAttemptTopic(a);
+    const matchCourse = courseFilter === "all" || String(a.course_id) === String(courseFilter);
+    const matchSearch = !query || [
+      enrollment.user_name,
+      enrollment.user_email,
+      course.title,
+      topic.title,
+      a.user_id,
+      a.course_id,
+      a.topic_id,
+      a.attempt_number,
+    ].some(value => String(value || "").toLowerCase().includes(query));
     return matchCourse && matchSearch;
   });
 
-  const avgMark = submissions.filter(s => s.marks_awarded != null).length > 0
-    ? Math.round(submissions.filter(s => s.marks_awarded != null).reduce((sum, s) => sum + (s.marks_awarded / s.max_marks) * 100, 0) / submissions.filter(s => s.marks_awarded != null).length)
+  const scoredSubs = submissions.filter(s => s.marks_awarded != null && s.max_marks);
+  const avgMark = scoredSubs.length > 0
+    ? Math.round(scoredSubs.reduce((sum, s) => sum + (s.marks_awarded / s.max_marks) * 100, 0) / scoredSubs.length)
     : 0;
 
-  const passRate = submissions.filter(s => s.status === "graded").length > 0
-    ? Math.round((submissions.filter(s => s.passed).length / submissions.filter(s => s.status === "graded").length) * 100)
+  const gradedSubs = submissions.filter(s => s.status === "graded");
+  const passRate = gradedSubs.length > 0
+    ? Math.round((gradedSubs.filter(s => s.passed).length / gradedSubs.length) * 100)
     : 0;
 
   const exportCSV = () => {
-    const rows = filteredSubs.map(s => [
-      s.user_name || "", s.user_email || "", s.course_title || "", s.assignment_title || "",
-      s.status || "", s.marks_awarded ?? "", s.max_marks ?? "", s.passed ? "Pass" : "Fail",
-      s.feedback || "", s.created_date ? new Date(s.created_date).toLocaleDateString("en-AU") : "",
-    ]);
-    const csv = [
-      ["Student Name", "Email", "Course", "Assignment", "Status", "Marks", "Max Marks", "Result", "Feedback", "Submitted"],
-      ...rows
-    ].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const rows = tab === "quizzes"
+      ? filteredQuizzes.map(a => {
+          const enrollment = getAttemptStudent(a);
+          const course = getAttemptCourse(a);
+          const topic = getAttemptTopic(a);
+          const pct = attemptPercent(a);
+          return [
+            enrollment.user_name || "",
+            enrollment.user_email || "",
+            course.title || a.course_id || "",
+            topic.title || a.topic_id || "",
+            a.attempt_number || 1,
+            a.score ?? "",
+            a.total_marks || a.total_questions || "",
+            pct != null ? `${pct}%` : "",
+            a.passed ? "Pass" : "Fail",
+            dateLabel(a.created_date || a.createdAt),
+          ];
+        })
+      : filteredSubs.map(s => [
+          s.user_name || "", s.user_email || "", s.course_title || "", s.assignment_title || "",
+          s.status || "", s.marks_awarded ?? "", s.max_marks ?? "", s.passed ? "Pass" : "Fail",
+          s.feedback || "", dateLabel(s.created_date || s.createdAt),
+        ]);
+
+    const headers = tab === "quizzes"
+      ? ["Student Name", "Email", "Course", "Quiz", "Attempt", "Score", "Total", "Percent", "Result", "Date"]
+      : ["Student Name", "Email", "Course", "Assignment", "Status", "Marks", "Max Marks", "Result", "Feedback", "Submitted"];
+
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href = url; a.download = "gradebook.csv"; a.click();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = tab === "quizzes" ? "quiz-gradebook.csv" : "assignment-gradebook.csv";
+    a.click();
     URL.revokeObjectURL(url);
     toast.success("Gradebook exported.");
   };
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="font-display font-semibold text-lg text-ink">Gradebook</h2>
@@ -89,13 +164,12 @@ export default function AdminGradebook({ courses }) {
         </Button>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total Submissions",  value: submissions.length,                                         color: "text-blue-600 bg-blue-50",    icon: BookOpen },
-          { label: "Pending Grading",    value: submissions.filter(s => s.status === "submitted" || s.status === "under_review").length, color: "text-amber-600 bg-amber-50", icon: Clock },
-          { label: "Average Mark",       value: `${avgMark}%`,                                              color: "text-harvest bg-harvest/10",  icon: TrendingUp },
-          { label: "Pass Rate",          value: `${passRate}%`,                                             color: "text-emerald-600 bg-emerald-50", icon: CheckCircle },
+          { label: "Total Submissions", value: submissions.length, color: "text-blue-600 bg-blue-50", icon: BookOpen },
+          { label: "Pending Grading", value: submissions.filter(s => s.status === "submitted" || s.status === "under_review").length, color: "text-amber-600 bg-amber-50", icon: Clock },
+          { label: "Average Mark", value: `${avgMark}%`, color: "text-harvest bg-harvest/10", icon: TrendingUp },
+          { label: "Pass Rate", value: `${passRate}%`, color: "text-emerald-600 bg-emerald-50", icon: CheckCircle },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-3 shadow-sm">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${s.color}`}>
@@ -109,11 +183,10 @@ export default function AdminGradebook({ courses }) {
         ))}
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
         {[
           { id: "assignments", label: "Assignments" },
-          { id: "quizzes",     label: "Quiz Scores" },
+          { id: "quizzes", label: "Quiz Scores" },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.id ? "bg-white shadow text-ink" : "text-slate-500 hover:text-ink"}`}>
@@ -122,17 +195,21 @@ export default function AdminGradebook({ courses }) {
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search student or assignment…" className="pl-9 h-9 text-sm" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={tab === "quizzes" ? "Search student, course, or quiz..." : "Search student or assignment..."}
+            className="pl-9 h-9 text-sm"
+          />
         </div>
         <Select value={courseFilter} onValueChange={setCourseFilter}>
           <SelectTrigger className="w-48 h-9 text-sm"><SelectValue placeholder="All Courses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
-            {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+            {courses.map(c => <SelectItem key={getId(c)} value={getId(c)}>{c.title}</SelectItem>)}
           </SelectContent>
         </Select>
         {tab === "assignments" && (
@@ -150,7 +227,7 @@ export default function AdminGradebook({ courses }) {
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-2xl border border-border/50 p-12 text-center text-slate-400 text-sm">Loading gradebook…</div>
+        <div className="bg-white rounded-2xl border border-border/50 p-12 text-center text-slate-400 text-sm">Loading gradebook...</div>
       ) : tab === "assignments" ? (
         <div className="bg-white rounded-2xl border border-border/50 overflow-x-auto shadow-sm">
           <table className="w-full text-sm">
@@ -170,24 +247,15 @@ export default function AdminGradebook({ courses }) {
                 return (
                   <tr key={sub.id} className="border-b border-border/20 hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-ink text-xs">{sub.user_name || "—"}</p>
+                      <p className="font-medium text-ink text-xs">{sub.user_name || "-"}</p>
                       <p className="text-[10px] text-slate-400">{sub.user_email}</p>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-500 max-w-[120px] truncate">{sub.course_title || "—"}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500 max-w-[120px] truncate">{sub.course_title || "-"}</td>
+                    <td className="px-4 py-3"><p className="text-xs font-medium text-ink max-w-[140px] truncate">{sub.assignment_title || "-"}</p></td>
+                    <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{dateLabel(sub.created_date || sub.createdAt)}</td>
+                    <td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sc.color}`}>{sc.label}</span></td>
                     <td className="px-4 py-3">
-                      <p className="text-xs font-medium text-ink max-w-[140px] truncate">{sub.assignment_title || "—"}</p>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
-                      {new Date(sub.created_date).toLocaleDateString("en-AU")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sc.color}`}>{sc.label}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {sub.marks_awarded != null
-                        ? <span className="font-bold text-sm text-ink">{sub.marks_awarded}<span className="text-slate-400 font-normal">/{sub.max_marks}</span></span>
-                        : <span className="text-slate-400 text-xs">—</span>
-                      }
+                      {sub.marks_awarded != null ? <span className="font-bold text-sm text-ink">{sub.marks_awarded}<span className="text-slate-400 font-normal">/{sub.max_marks}</span></span> : <span className="text-slate-400 text-xs">-</span>}
                     </td>
                     <td className="px-4 py-3">
                       {pct != null ? (
@@ -195,11 +263,9 @@ export default function AdminGradebook({ courses }) {
                           {sub.passed ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                           {sub.passed ? "Pass" : "Fail"} ({pct}%)
                         </span>
-                      ) : <span className="text-slate-300 text-xs">—</span>}
+                      ) : <span className="text-slate-300 text-xs">-</span>}
                     </td>
-                    <td className="px-4 py-3 max-w-[180px]">
-                      <p className="text-xs text-slate-500 truncate">{sub.feedback || "—"}</p>
-                    </td>
+                    <td className="px-4 py-3 max-w-[180px]"><p className="text-xs text-slate-500 truncate">{sub.feedback || "-"}</p></td>
                   </tr>
                 );
               })}
@@ -208,29 +274,36 @@ export default function AdminGradebook({ courses }) {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-border/50 overflow-x-auto shadow-sm">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[820px]">
             <thead>
               <tr className="bg-slate-50 border-b border-border/30">
-                {["Student", "Course", "Attempt #", "Score", "Result", "Date"].map(h => (
+                {["Student", "Course", "Quiz", "Attempt", "Marks", "Result", "Date"].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filteredQuizzes.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-slate-400 text-sm">No quiz attempts found.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-slate-400 text-sm">No quiz attempts found.</td></tr>
               ) : filteredQuizzes.map(a => {
-                const pct = a.total_questions > 0 ? Math.round((a.score / a.total_questions) * 100) : 0;
+                const enrollment = getAttemptStudent(a);
+                const course = getAttemptCourse(a);
+                const topic = getAttemptTopic(a);
+                const pct = attemptPercent(a);
+                const total = Number(a.total_marks) || Number(a.total_questions) || 0;
                 return (
-                  <tr key={a.id} className="border-b border-border/20 hover:bg-slate-50">
+                  <tr key={a.id || a._id} className="border-b border-border/20 hover:bg-slate-50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-ink text-xs">{a.user_id?.slice(0, 8) || "—"}</p>
+                      <p className="font-medium text-ink text-xs">{enrollment.user_name || String(a.user_id || "-").slice(0, 8)}</p>
+                      <p className="text-[10px] text-slate-400">{enrollment.user_email || ""}</p>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate">{a.course_id || "—"}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500 max-w-[160px] truncate">{course.title || a.course_id || "-"}</td>
+                    <td className="px-4 py-3 text-xs text-ink font-medium max-w-[180px] truncate">{topic.title || a.topic_id || "Quiz"}</td>
                     <td className="px-4 py-3 text-xs font-bold text-ink">#{a.attempt_number || 1}</td>
                     <td className="px-4 py-3">
-                      <span className="font-bold text-ink">{a.score}<span className="text-slate-400 font-normal">/{a.total_questions}</span></span>
-                      <span className="text-xs text-slate-400 ml-1">({pct}%)</span>
+                      <span className="font-bold text-ink">{a.score ?? 0}{total > 0 && <span className="text-slate-400 font-normal">/{total}</span>}</span>
+                      {pct != null && <span className="text-xs text-slate-400 ml-1">({pct}%)</span>}
+                      {a.total_questions > 0 && <p className="text-[10px] text-slate-400">{a.total_questions} question{a.total_questions === 1 ? "" : "s"}</p>}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`flex items-center gap-1 text-xs font-bold w-fit ${a.passed ? "text-emerald-600" : "text-red-500"}`}>
@@ -238,9 +311,7 @@ export default function AdminGradebook({ courses }) {
                         {a.passed ? "Pass" : "Fail"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-400">
-                      {new Date(a.created_date).toLocaleDateString("en-AU")}
-                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{dateLabel(a.created_date || a.createdAt)}</td>
                   </tr>
                 );
               })}

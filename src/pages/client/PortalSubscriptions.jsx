@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Package, ArrowRight, Eye, Calendar, DollarSign } from "lucide-react";
+import { Package, ArrowRight, Eye, Calendar, DollarSign, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 
 const STATUS_CONFIG = {
-  trial:     { label: "Trial",     color: "text-blue-700 bg-blue-50 border-blue-200" },
-  active:    { label: "Active",    color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-  paused:    { label: "Paused",    color: "text-amber-700 bg-amber-50 border-amber-200" },
+  trial: { label: "Trial", color: "text-blue-700 bg-blue-50 border-blue-200" },
+  active: { label: "Active", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  paused: { label: "Paused", color: "text-amber-700 bg-amber-50 border-amber-200" },
   cancelled: { label: "Cancelled", color: "text-slate-600 bg-slate-50 border-slate-200" },
-  expired:   { label: "Expired",   color: "text-red-700 bg-red-50 border-red-200" },
+  expired: { label: "Expired", color: "text-red-700 bg-red-50 border-red-200" },
 };
 
 export default function PortalSubscriptions() {
   const { user } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!user?.email) return;
@@ -26,9 +27,18 @@ export default function PortalSubscriptions() {
       .finally(() => setLoading(false));
   }, [user?.email]);
 
+  const query = search.trim().toLowerCase();
+  const filteredSubscriptions = query
+    ? subscriptions.filter(sub => {
+        const statusLabel = STATUS_CONFIG[sub.status]?.label || sub.status;
+        return [sub.business_name, sub.plan, sub.billing_cycle, statusLabel, sub.notes]
+          .some(value => String(value || "").toLowerCase().includes(query));
+      })
+    : subscriptions;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display font-bold text-2xl text-ink mb-1">Marketing Subscriptions</h1>
           <p className="text-slate-500 text-sm">Your active digital marketing packages.</p>
@@ -38,10 +48,20 @@ export default function PortalSubscriptions() {
         </Link>
       </div>
 
-      {loading ? (
-        <div className="grid md:grid-cols-2 gap-4">
-          {[1,2].map(i => <div key={i} className="h-40 bg-slate-100 rounded-xl animate-pulse" />)}
+      {!loading && subscriptions.length > 0 && (
+        <div className="relative max-w-md">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search subscriptions..."
+            className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-harvest/25 focus:border-harvest"
+          />
         </div>
+      )}
+
+      {loading ? (
+        <div className="grid md:grid-cols-2 gap-4">{[1,2].map(i => <div key={i} className="h-40 bg-slate-100 rounded-xl animate-pulse" />)}</div>
       ) : subscriptions.length === 0 ? (
         <Card className="p-12 text-center border-dashed">
           <Package className="w-12 h-12 text-slate-200 mx-auto mb-4" />
@@ -51,9 +71,14 @@ export default function PortalSubscriptions() {
             <Button className="bg-harvest text-white gap-2">View Packages <ArrowRight className="w-4 h-4" /></Button>
           </Link>
         </Card>
+      ) : filteredSubscriptions.length === 0 ? (
+        <Card className="p-8 text-center border-dashed">
+          <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+          <p className="text-slate-500 text-sm">No subscriptions match your search.</p>
+        </Card>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
-          {subscriptions.map(sub => {
+          {filteredSubscriptions.map(sub => {
             const cfg = STATUS_CONFIG[sub.status] || STATUS_CONFIG.active;
             return (
               <Card key={sub.id} className="p-6 hover:shadow-md transition-shadow">

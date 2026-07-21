@@ -4,7 +4,7 @@ import { uploadFile } from "@/api/uploadClient";
 import { motion } from "framer-motion";
 import {
   Upload, CheckCircle, Clock, XCircle, AlertTriangle,
-  RefreshCw, Eye, Trash2, Plus, X, FolderOpen
+  RefreshCw, Eye, Trash2, Plus, X, FolderOpen, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ const DOC_TYPES = [
 const STATUS_CONFIG = {
   pending:           { label: "Pending Review",    icon: Clock,          color: "text-amber-600 bg-amber-50 border-amber-200",       bar: "bg-amber-400",   barWidth: "w-1/4",  hint: "Your document has been submitted and is waiting for an admin to review it." },
   under_review:      { label: "Under Review",      icon: Eye,            color: "text-blue-600 bg-blue-50 border-blue-200",          bar: "bg-blue-400",    barWidth: "w-2/4",  hint: "An admin is currently reviewing your document." },
-  verified:          { label: "Verified ✓",         icon: CheckCircle,    color: "text-emerald-600 bg-emerald-50 border-emerald-200", bar: "bg-emerald-500", barWidth: "w-full", hint: "Your document has been verified and is on record. No action needed." },
+  verified:          { label: "Verified ",         icon: CheckCircle,    color: "text-emerald-600 bg-emerald-50 border-emerald-200", bar: "bg-emerald-500", barWidth: "w-full", hint: "Your document has been verified and is on record. No action needed." },
   rejected:          { label: "Rejected",           icon: XCircle,        color: "text-red-600 bg-red-50 border-red-200",             bar: "bg-red-400",     barWidth: "w-full", hint: "Your document was not accepted. Please see the admin message below and resubmit." },
   resubmit_required: { label: "Resubmit Required", icon: AlertTriangle,  color: "text-orange-600 bg-orange-50 border-orange-200",    bar: "bg-orange-400",  barWidth: "w-full", hint: "Admin has requested changes. Please resubmit an updated version." },
 };
@@ -113,7 +113,7 @@ function UploadModal({ onClose, onUploaded, userId, user }) {
               {file ? (
                 <div className="text-center">
                   <p className="text-sm font-semibold text-ink break-all">{file.name}</p>
-                  <p className="text-xs text-slate_mist mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB · Click to change</p>
+                  <p className="text-xs text-slate_mist mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB - Click to change</p>
                 </div>
               ) : (
                 <div className="text-center">
@@ -139,7 +139,7 @@ function UploadModal({ onClose, onUploaded, userId, user }) {
           <Button onClick={handleSubmit} disabled={uploading || !docType || !file}
             className="flex-1 bg-harvest text-white gap-2">
             {uploading
-              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Uploading…</>
+              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Uploading...</>
               : <><Upload className="w-4 h-4" /> Submit Document</>}
           </Button>
         </div>
@@ -152,6 +152,7 @@ export default function StudentDocumentUpload({ user }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     if (!user) return;
@@ -179,6 +180,16 @@ export default function StudentDocumentUpload({ user }) {
       toast.error(err.response?.data?.message || "Failed to delete document.");
     }
   };
+
+  const query = search.trim().toLowerCase();
+  const filteredDocuments = query
+    ? documents.filter(doc => {
+        const statusLabel = STATUS_CONFIG[doc.status]?.label || doc.status;
+        const typeLabel = DOC_TYPES.find(d => d.value === doc.document_type)?.label || doc.document_type;
+        return [doc.document_title, doc.file_name, typeLabel, statusLabel, doc.admin_message, doc.notes]
+          .some(value => String(value || "").toLowerCase().includes(query));
+      })
+    : documents;
 
   const stats = [
     { label: "Total Uploaded", value: documents.length,                                          color: "text-ink" },
@@ -210,6 +221,18 @@ export default function StudentDocumentUpload({ user }) {
         ))}
       </div>
 
+      {documents.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate_mist" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search documents..."
+            className="w-full h-11 rounded-xl border border-border/60 bg-white pl-10 pr-3 text-sm text-ink shadow-sm outline-none transition focus:border-harvest focus:ring-2 focus:ring-harvest/20"
+          />
+        </div>
+      )}
+
       {/* Document List */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -224,9 +247,14 @@ export default function StudentDocumentUpload({ user }) {
             <Upload className="w-4 h-4" /> Upload Your First Document
           </Button>
         </div>
+      ) : filteredDocuments.length === 0 ? (
+        <div className="bg-white rounded-2xl border-2 border-dashed border-border/40 p-14 text-center">
+          <Search className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="font-display font-semibold text-ink mb-1">No documents match your search</p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {documents.map((doc, i) => {
+          {filteredDocuments.map((doc, i) => {
             const cfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.pending;
             const Icon = cfg.icon;
             const isActionable = ["rejected", "resubmit_required"].includes(doc.status);
@@ -265,11 +293,11 @@ export default function StudentDocumentUpload({ user }) {
                         </span>
                       </div>
                       <p className="text-xs text-slate_mist">
-                        {DOC_TYPES.find(d => d.value === doc.document_type)?.label} · {doc.file_name}
+                        {DOC_TYPES.find(d => d.value === doc.document_type)?.label} - {doc.file_name}
                       </p>
                       <p className="text-[10px] text-slate_mist/60 mt-0.5">
                         Uploaded {new Date(doc.created_date).toLocaleDateString("en-AU")}
-                        {doc.reviewed_date && ` · Reviewed ${new Date(doc.reviewed_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
+                        {doc.reviewed_date && ` - Reviewed ${new Date(doc.reviewed_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
                       </p>
 
                       {/* Status hint */}
@@ -287,8 +315,8 @@ export default function StudentDocumentUpload({ user }) {
                           : "bg-blue-50 border-blue-200 text-blue-800"
                         }`}>
                           <p className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-70 flex items-center gap-1">
-                            {doc.ai_generated_message ? "🤖 AI-Assisted" : "📩"} Message from Admin
-                            {doc.admin_name && ` — ${doc.admin_name}`}
+                            {doc.ai_generated_message ? "AI AI-Assisted" : "Admin"} Message from Admin
+                            {doc.admin_name && ` - ${doc.admin_name}`}
                           </p>
                           <p className="leading-relaxed">{doc.admin_message}</p>
                         </div>

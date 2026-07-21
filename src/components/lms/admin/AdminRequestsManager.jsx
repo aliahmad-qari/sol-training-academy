@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Inbox, Loader2, ChevronDown, ChevronUp,
-  MessageSquare, BookOpen, Video, FileText, Sparkles, Layers, RefreshCw, Send
+  MessageSquare, BookOpen, Video, FileText, Sparkles, Layers, RefreshCw, Send, Search
 } from "lucide-react";
 
 const TYPE_CONFIG = {
@@ -135,6 +136,7 @@ export default function AdminRequestsManager() {
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -156,10 +158,19 @@ export default function AdminRequestsManager() {
     done:    requests.filter(r => ["completed", "approved", "rejected"].includes(r.status)).length,
   };
 
-  const filtered = filter === "all" ? requests
+  const byStatus = filter === "all" ? requests
     : filter === "pending" ? requests.filter(r => r.status === "pending")
     : filter === "active"  ? requests.filter(r => ["under_review", "in_progress"].includes(r.status))
     : requests.filter(r => ["completed", "approved", "rejected"].includes(r.status));
+
+  const filtered = byStatus.filter(r => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (r.subject || "").toLowerCase().includes(q) ||
+      (r.student_name || "").toLowerCase().includes(q) ||
+      (r.student_email || "").toLowerCase().includes(q) ||
+      (r.description || "").toLowerCase().includes(q);
+  });
 
   const FILTERS = [
     { key: "all",     label: "All" },
@@ -196,16 +207,23 @@ export default function AdminRequestsManager() {
         ))}
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2">
-        {FILTERS.map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-              filter === f.key ? "bg-harvest text-white border-harvest" : "border-border/50 text-slate-500 hover:border-harvest/40"
-            }`}>
-            {f.label} ({counts[f.key]})
-          </button>
-        ))}
+      {/* Search + Filter tabs */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate_mist" />
+          <Input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by subject, student or email…" className="pl-9 h-9 text-sm" />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {FILTERS.map(f => (
+            <button key={f.key} onClick={() => setFilter(f.key)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                filter === f.key ? "bg-harvest text-white border-harvest" : "border-border/50 text-slate-500 hover:border-harvest/40"
+              }`}>
+              {f.label} ({counts[f.key]})
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* List */}

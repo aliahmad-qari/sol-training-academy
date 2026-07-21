@@ -64,8 +64,8 @@ function restEntity(basePath, opts = {}) {
   } = opts;
 
   const api = {
-    async list(sort) {
-      const params = { limit: listLimit };
+    async list(sort, limitOverride) {
+      const params = { limit: limitOverride || listLimit };
       const s = toSortParam(sort);
       if (s) params.sort = s;
       const res = await apiClient.get(basePath, { params });
@@ -225,9 +225,17 @@ const entities = {
 
   // Quiz attempts live under /quizzes/attempts (create) & /attempts/mine (read).
   QuizAttempt: {
-    async list() {
-      const res = await apiClient.get('/quizzes/attempts/mine', { params: { limit: 500 } });
-      return normalizeList(unwrap(res));
+    async list(sort, limit = 500) {
+      const params = { limit };
+      const s = toSortParam(sort);
+      if (s) params.sort = s;
+      try {
+        const res = await apiClient.get('/quizzes/attempts', { params });
+        return normalizeList(unwrap(res));
+      } catch {
+        const res = await apiClient.get('/quizzes/attempts/mine', { params });
+        return normalizeList(unwrap(res));
+      }
     },
     async filter(criteria = {}) {
       // Staff can pass user_id/course_id; try the admin listing, fall back to mine.
@@ -405,9 +413,20 @@ const Core = {
 
 /* ───────────────────── public export ───────────────────── */
 
+const functions = {
+  async invoke(name, payload = {}) {
+    if (name === 'courseExpiryReminders') {
+      const res = await apiClient.post('/enrollments/expiry-reminders', payload);
+      return { data: unwrap(res) || res?.data };
+    }
+    throw new Error(`[base44 adapter] Function "${name}" has no backend endpoint yet.`);
+  },
+};
+
 export const base44 = {
   auth,
   entities,
+  functions,
   integrations: { Core },
 };
 

@@ -4,6 +4,7 @@ import FloatingChatWidget from "@/components/FloatingChatWidget";
 import AccessibilityToolbar from "@/components/AccessibilityToolbar";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
+import LogoCarousel from "@/components/landing/LogoCarousel";
 import ServicesSection from "@/components/landing/ServicesSection";
 import PricingSection from "@/components/landing/PricingSection";
 import ComplianceSection from "@/components/landing/ComplianceSection";
@@ -21,6 +22,7 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
+      <LogoCarousel />
       <ServicesSection />
       <ConsultingPackagesSection />
       <PricingSection />

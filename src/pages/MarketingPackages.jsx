@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 
 const SERVICES = [
   { icon: Search, title: "Search Engine Optimisation (SEO)", desc: "Rank higher on Google with technical SEO, keyword strategy, on-page optimisation, and backlink building." },
-  { icon: Share2, title: "Social Media Marketing", desc: "Professionally managed Facebook, Instagram, LinkedIn & TikTok — content creation, scheduling, and community management included." },
+  { icon: Share2, title: "Social Media Marketing", desc: "Professionally managed Facebook, Instagram, LinkedIn & TikTok - content creation, scheduling, and community management included." },
   { icon: Target, title: "Google & Meta Ads", desc: "Data-driven paid campaigns with precision audience targeting, A/B testing, and monthly ROI reporting." },
   { icon: Mail, title: "Email Marketing & Automation", desc: "Segmented campaigns, automated sequences, and high-converting newsletters designed to nurture leads into sales." },
   { icon: Globe, title: "Website & Landing Page Design", desc: "Conversion-optimised, mobile-first websites and landing pages built for SEO and lead generation." },
@@ -122,7 +122,7 @@ export default function MarketingPackages() {
               Marketing Packages & Services
             </h1>
             <p className="text-white/60 text-lg max-w-2xl mb-8 leading-relaxed">
-              Transparent pricing, no lock-in contracts. Choose the package that fits your business — or build a custom plan with our team.
+              Transparent pricing and flexible plans. Choose a package or build a custom plan with our team.
             </p>
             <div className="flex flex-wrap gap-4">
               <Button asChild className="bg-harvest hover:bg-harvest/90 text-white gap-2 px-6 h-11">
@@ -139,7 +139,7 @@ export default function MarketingPackages() {
       {/* Stats */}
       <div className="bg-harvest py-8">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[["300+", "Businesses Grown"], ["85%", "Avg. Traffic Increase"], ["4.8★", "Client Satisfaction"], ["$2M+", "Ad Spend Managed"]].map(([val, label]) => (
+          {[ ["Scoped", "Campaign Plans"], ["Monthly", "Performance Review"], ["No Lock-In", "Flexible Plans"], ["Australia", "Local Contact"] ].map(([val, label]) => (
             <div key={label}>
               <p className="font-display font-bold text-3xl text-white">{val}</p>
               <p className="text-white/80 text-sm mt-1">{label}</p>
@@ -361,10 +361,10 @@ export default function MarketingPackages() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <Megaphone className="w-12 h-12 text-harvest mx-auto mb-5" />
             <h2 className="font-display font-bold text-4xl text-white mb-4">Ready to Grow Your Business?</h2>
-            <p className="text-white/60 mb-10 text-lg max-w-xl mx-auto">Book a free 30-minute strategy session. We'll map out a custom marketing plan tailored to your goals and budget.</p>
+            <p className="text-white/60 mb-10 text-lg max-w-xl mx-auto">Book a free strategy session. We will review your goals and scope a practical marketing plan before recommending paid work.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild className="bg-harvest hover:bg-harvest/90 text-white gap-2 px-8 h-12 text-base font-semibold">
-                <a href="tel:+61000000000"><Phone className="w-4 h-4" /> Call Us Now</a>
+                <a href="tel:+61460003494"><Phone className="w-4 h-4" /> Call SOL</a>
               </Button>
               <Button asChild variant="outline" className="border-white/20 text-white hover:bg-white/10 gap-2 px-8 h-12 text-base font-semibold">
                 <Link to="/#contact"><MessageSquare className="w-4 h-4" /> Send an Enquiry</Link>

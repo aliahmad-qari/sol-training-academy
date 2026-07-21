@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Send, Clock, CheckCircle, XCircle, Loader2,
   ChevronDown, ChevronUp, MessageSquare, Inbox, BookOpen,
-  Video, FileText, Layers, Sparkles, Paperclip, X, ExternalLink
+  Video, FileText, Layers, Sparkles, Paperclip, X, ExternalLink, Search
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -245,6 +245,7 @@ export default function StudentRequests({ user }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -267,8 +268,25 @@ export default function StudentRequests({ user }) {
     load();
   };
 
-  const pending   = requests.filter(r => ["pending", "under_review", "in_progress"].includes(r.status));
-  const resolved  = requests.filter(r => ["completed", "approved", "rejected"].includes(r.status));
+  const query = search.trim().toLowerCase();
+  const filteredRequests = query
+    ? requests.filter(req => {
+        const typeLabel = TYPE_CONFIG[req.type]?.label || req.type;
+        const statusLabel = STATUS_CONFIG[req.status]?.label || req.status;
+        return [
+          req.subject,
+          req.description,
+          typeLabel,
+          statusLabel,
+          req.priority,
+          req.admin_response,
+          req.attachment_name,
+        ].some(value => String(value || "").toLowerCase().includes(query));
+      })
+    : requests;
+
+  const pending   = filteredRequests.filter(r => ["pending", "under_review", "in_progress"].includes(r.status));
+  const resolved  = filteredRequests.filter(r => ["completed", "approved", "rejected"].includes(r.status));
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
@@ -288,6 +306,18 @@ export default function StudentRequests({ user }) {
       {/* New request form */}
       {showForm && <NewRequestForm user={user} onCreated={handleCreated} onCancel={() => setShowForm(false)} />}
 
+      {requests.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate_mist" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search requests..."
+            className="h-11 rounded-xl border-border/60 bg-white pl-10 text-sm shadow-sm focus-visible:ring-harvest/20"
+          />
+        </div>
+      )}
+
       {/* List */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -301,6 +331,11 @@ export default function StudentRequests({ user }) {
           <Button onClick={() => setShowForm(true)} className="bg-harvest text-white gap-2">
             <Plus className="w-4 h-4" /> Make a Request
           </Button>
+        </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-border/50 p-12 text-center shadow-sm">
+          <Search className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="font-semibold text-slate-500 mb-1">No requests match your search</p>
         </div>
       ) : (
         <div className="space-y-4">

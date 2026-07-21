@@ -86,7 +86,7 @@ export default function ComplianceSection() {
             <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-sm rounded-xl p-4">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm font-semibold text-ink">AI Validation Active — 92% Confidence Score</span>
+                <span className="text-sm font-semibold text-ink">AI Document Validation Active</span>
               </div>
             </div>
           </motion.div>
