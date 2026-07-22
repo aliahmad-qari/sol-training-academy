@@ -57,7 +57,10 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
     : 0;
 
   const courseStats = courses.map(c => {
-    const cEnvs = enrollments.filter(e => e.course_id === c.id);
+    // Normalize both sides to strings — course_id may be an ObjectId while c.id
+    // is the virtual string id, so a strict === would drop every match and show
+    // 0 enrolled / 0% completion even when students are enrolled.
+    const cEnvs = enrollments.filter(e => String(e.course_id) === String(c._id || c.id));
     const completed = cEnvs.filter(e => e.status === "completed").length;
     const avgPct = cEnvs.length > 0
       ? Math.round(cEnvs.reduce((s, e) => s + (e.progress_percent || 0), 0) / cEnvs.length)
@@ -104,13 +107,13 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
     const avgProgress = envs.length > 0
       ? Math.round(envs.reduce((sum, e) => sum + (e.progress_percent || 0), 0) / envs.length)
       : 0;
-    const studentAttempts = quizAttempts.filter(a => a.user_id === s.id);
+    const studentAttempts = quizAttempts.filter(a => String(a.user_id) === String(s.id));
     const avgQuiz = averageQuizPercent(studentAttempts);
     return { ...s, completedCourses, avgProgress, avgQuiz, totalEnrolled: envs.length };
   });
 
   if (courseFilter !== "all") {
-    studentRows = studentRows.filter(s => s.enrollments.some(e => e.course_id === courseFilter));
+    studentRows = studentRows.filter(s => s.enrollments.some(e => String(e.course_id) === String(courseFilter)));
   }
   if (studentSearch) {
     const q = studentSearch.toLowerCase();
@@ -130,8 +133,8 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
   // ── Module time data ────────────────────────────────────────────────────────
   // For each module, estimate avg time spent = avg(completed topics' duration per enrolled student)
   const moduleTimeData = courses.map(course => {
-    const courseMods = modules.filter(m => m.course_id === course.id);
-    const courseEnvs = enrollments.filter(e => e.course_id === course.id);
+    const courseMods = modules.filter(m => String(m.course_id) === String(course._id || course.id));
+    const courseEnvs = enrollments.filter(e => String(e.course_id) === String(course._id || course.id));
     if (courseEnvs.length === 0 || courseMods.length === 0) return null;
 
     return courseMods.map(mod => {

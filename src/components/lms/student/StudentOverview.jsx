@@ -1,10 +1,11 @@
 ﻿import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Award, TrendingUp, Play, ChevronRight, Target, Zap, Clock, CheckCircle, BarChart3, AlertTriangle, CalendarDays } from "lucide-react";
+import { BookOpen, Award, TrendingUp, Play, ChevronRight, Target, Zap, Clock, CheckCircle, BarChart3, AlertTriangle, CalendarDays, ClipboardCheck, Megaphone, Flame, ShieldCheck, Inbox, FileText, Download, MessageSquare, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import ProgressRing from "@/components/lms/ProgressRing";
 import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 import AIProgressReport from "@/components/lms/student/AIProgressReport";
 import { quizAttemptPercentOrZero, quizScoreLabel } from "@/lib/quizScores";
 import { findSubmissionForAssignment } from "@/components/lms/student/StudentAssessments";
@@ -17,9 +18,19 @@ const LEVEL_CONFIG = {
 
 export default function StudentOverview({ user, enrollments, courses, quizAttempts, onOpenCourse, setActiveTab }) {
   const [assignments, setAssignments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [topicsByCourse, setTopicsByCourse] = useState({});
+  const [dmUnread, setDmUnread] = useState({ total: 0, byCourse: {} });
 
   useEffect(() => {
-    if (!enrollments.length) return;
+    if (!enrollments.length) {
+      setAssignments([]);
+      setSubmissions([]);
+      return;
+    }
     const courseIds = [...new Set(enrollments.map(e => String(e.course_id)))];
     const courseLevels = [...new Set(enrollments.map(e => e.course_level).filter(Boolean))];
     // Assignment deadlines are server-owned and start when the student opens
@@ -28,6 +39,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       base44.entities.Assignment.filter({ is_published: true }, "-created_date", 50).catch(() => []),
       user ? base44.entities.AssignmentSubmission.filter({ user_id: user.id }).catch(() => []) : Promise.resolve([]),
     ]).then(([all, subs]) => {
+      setSubmissions(subs);
       const mine = all
         .filter(a =>
           (courseIds.includes(String(a.course_id)) || (a.course_level && courseLevels.includes(a.course_level))) &&
@@ -36,8 +48,55 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         .map(a => ({ ...a, dueMs: null }))
         .slice(0, 5);
       setAssignments(mine);
-    }).catch(() => setAssignments([]));
+    }).catch(() => {
+      setAssignments([]);
+      setSubmissions([]);
+    });
   }, [enrollments, user]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setAnnouncements([]);
+      setRequests([]);
+      setSupportTickets([]);
+      setDmUnread({ total: 0, byCourse: {} });
+      return;
+    }
+
+    Promise.all([
+      apiClient.get("/announcements").then(res => Array.isArray(res.data?.data) ? res.data.data : []).catch(() => []),
+      base44.entities.StudentRequest.filter({ student_id: user.id }, "-created_date", 5).catch(() => []),
+      base44.entities.SupportTicket.filter({ user_id: user.id }, "-created_date", 5).catch(() => []),
+      apiClient.get("/direct-messages/unread-counts").then(res => res.data?.data || { total: 0, byCourse: {} }).catch(() => ({ total: 0, byCourse: {} })),
+    ]).then(([announcementData, requestData, ticketData, unreadData]) => {
+      setAnnouncements(announcementData);
+      setRequests(requestData);
+      setSupportTickets(ticketData);
+      setDmUnread(unreadData);
+    }).catch(() => {
+      setAnnouncements([]);
+      setRequests([]);
+      setSupportTickets([]);
+      setDmUnread({ total: 0, byCourse: {} });
+    });
+
+  }, [user?.id]);
+
+  useEffect(() => {
+    const courseIds = [...new Set(enrollments.map(e => String(e.course_id)).filter(Boolean))];
+    if (!courseIds.length) {
+      setTopicsByCourse({});
+      return;
+    }
+
+    Promise.all(courseIds.map(courseId =>
+      apiClient.get(`/topics?course_id=${courseId}&limit=500`)
+        .then(res => [courseId, Array.isArray(res.data?.data) ? res.data.data : []])
+        .catch(() => [courseId, []])
+    )).then(entries => {
+      setTopicsByCourse(Object.fromEntries(entries));
+    }).catch(() => setTopicsByCourse({}));
+  }, [enrollments]);
 
   const completed   = enrollments.filter(e => e.status === "completed").length;
   const inProgress  = enrollments.filter(e => e.status === "active" && (e.progress_percent || 0) > 0).length;
@@ -62,6 +121,98 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
   const notStarted = enrollments
     .filter(e => !e.progress_percent || e.progress_percent === 0)
     .slice(0, 2);
+
+  const visibleCourses = [...continueCourses, ...notStarted];
+  const recommendedCourse = continueCourses[0] || notStarted[0] || enrollments[0];
+  const bestProgress = enrollments.reduce((max, e) => Math.max(max, e.progress_percent || 0), 0);
+  const allCoursesComplete = enrollments.length > 0 && avgProgress >= 100;
+  const completedTopicIds = new Set((recommendedCourse?.completed_topic_ids || []).map(String));
+  const currentCourseTopics = recommendedCourse ? (topicsByCourse[String(recommendedCourse.course_id)] || []) : [];
+  const lastTopic = currentCourseTopics.find(t => String(t._id || t.id) === String(recommendedCourse?.last_topic_id));
+  const nextIncompleteTopic = currentCourseTopics.find(t => !completedTopicIds.has(String(t._id || t.id)));
+  const resumeTopic = nextIncompleteTopic || lastTopic || currentCourseTopics[0];
+  const resumeTopicTitle = resumeTopic?.title || resumeTopic?.topic_title || "your last lesson";
+  const gradedSubmissions = submissions.filter(s => s.status === "graded");
+  const openSubmissions = submissions.filter(s => ["submitted", "under_review", "resubmit_requested"].includes(s.status));
+  const latestAnnouncement = announcements.find(a => a.pinned) || announcements[0];
+  const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const recentQuizAttempts = quizAttempts.filter(q => {
+    const created = new Date(q.created_date || q.createdAt || q.updatedAt || 0).getTime();
+    return Number.isFinite(created) && created >= sevenDaysAgo;
+  });
+  const activeLearningDays = new Set(recentQuizAttempts.map(q =>
+    new Date(q.created_date || q.createdAt || q.updatedAt).toDateString()
+  )).size;
+  const expiringEnrollment = enrollments
+    .filter(e => e.expiry_date)
+    .map(e => {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const exp = new Date(e.expiry_date); exp.setHours(0, 0, 0, 0);
+      return { ...e, daysLeft: Math.round((exp - today) / (1000 * 60 * 60 * 24)) };
+    })
+    .filter(e => e.daysLeft <= 30)
+    .sort((a, b) => a.daysLeft - b.daysLeft)[0];
+
+  const quickAction = allCoursesComplete
+    ? {
+        title: "Training complete. Your certificate is ready.",
+        desc: "Download your official certificate or explore the next level to keep building momentum.",
+        label: "Download Official Certificate",
+        secondaryLabel: "Explore Level 2",
+        icon: Award,
+        onClick: () => setActiveTab("certificates"),
+        secondaryTo: "/training-courses",
+      }
+    : assignments.length > 0
+    ? {
+        title: "Submit your next assignment",
+        desc: `${assignments.length} assignment${assignments.length > 1 ? "s" : ""} waiting for you before certification.` ,
+        label: "Open Assignments",
+        icon: ClipboardCheck,
+        onClick: () => setActiveTab("assessments"),
+      }
+    : recommendedCourse
+    ? {
+        title: `Resume ${resumeTopicTitle}`,
+        desc: recommendedCourse.course_title || "Continue your training pathway.",
+        label: "Resume Learning",
+        icon: Play,
+        onClick: () => onOpenCourse(recommendedCourse),
+      }
+    : {
+        title: "Choose your first course",
+        desc: "Browse available NDIS training and begin your learning plan.",
+        label: "Browse Courses",
+        icon: BookOpen,
+        to: "/training-courses",
+      };
+
+  const certificateMessage = certs > 0
+    ? `${certs} certificate${certs > 1 ? "s" : ""} ready to download.`
+    : bestProgress >= 80
+    ? "Almost there. Finish your remaining lessons to unlock certificates."
+    : "Complete a course to unlock your certificate.";
+
+  const totalEnrolledLessons = enrollments.reduce((sum, enr) => {
+    const course = courses.find(c => String(c._id || c.id) === String(enr.course_id));
+    return sum + (course?.total_topics || (topicsByCourse[String(enr.course_id)] || []).length || 0);
+  }, 0);
+  const completedCPD = parseFloat((totalTopicsDone * 0.5).toFixed(1));
+  const totalCPD = parseFloat((Math.max(totalEnrolledLessons, totalTopicsDone) * 0.5).toFixed(1)) || 15;
+  const cpdPct = totalCPD > 0 ? Math.min(100, Math.round((completedCPD / totalCPD) * 100)) : 0;
+  const skillTags = ["NDISCompliance", "BudgetManagement", "CaseNotes", "SupportCoordination"].slice(0, Math.max(2, Math.min(4, Math.ceil(avgProgress / 25))));
+  const resourceLocker = [
+    { title: "NDIS Service Agreement Template", type: "DOCX", icon: FileText },
+    { title: "Participant Intake Form", type: "PDF", icon: ClipboardCheck },
+    { title: "Case Note Writing Guide", type: "PDF", icon: BookOpen },
+  ];
+  const totalUnreadChats = Number(dmUnread?.total || 0);
+  const formatQuizDate = (attempt) => {
+    const raw = attempt.created_date || attempt.createdAt || attempt.updatedAt;
+    const date = raw ? new Date(raw) : null;
+    if (!date || Number.isNaN(date.getTime())) return "Date unavailable";
+    return date.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+  };
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -147,6 +298,155 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
         ))}
       </div>
 
+      {/* Action dashboard */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+        <div className="rounded-2xl border border-harvest/20 bg-gradient-to-br from-white via-harvest/5 to-amber-50 p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-harvest text-white shadow-lg shadow-harvest/20">
+                <quickAction.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-harvest">Recommended Next Step</p>
+                <h3 className="mt-1 font-display text-lg font-bold leading-tight text-[#0d2348] sm:text-xl">{quickAction.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">{quickAction.desc}</p>
+              </div>
+            </div>
+            {quickAction.to ? (
+              <Link to={quickAction.to} className="w-full sm:w-auto">
+                <Button className="w-full gap-2 bg-harvest text-white hover:bg-harvest/90 sm:w-auto">
+                  {quickAction.label} <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Button onClick={quickAction.onClick} className="w-full gap-2 bg-harvest text-white hover:bg-harvest/90 sm:w-auto">
+                  {quickAction.label} <ChevronRight className="h-4 w-4" />
+                </Button>
+                {quickAction.secondaryTo && (
+                  <Link to={quickAction.secondaryTo} className="w-full sm:w-auto">
+                    <Button variant="outline" className="w-full gap-2 border-harvest/30 text-harvest hover:bg-harvest/10 sm:w-auto">
+                      {quickAction.secondaryLabel} <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { label: "Pending", value: assignments.length, tone: "bg-amber-50 text-amber-700 border-amber-100" },
+              { label: "Submitted", value: submissions.length, tone: "bg-slate-50 text-slate-700 border-slate-100" },
+              { label: "In Review", value: openSubmissions.length, tone: "bg-blue-50 text-blue-700 border-blue-100" },
+              { label: "Graded", value: gradedSubmissions.length, tone: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+            ].map(item => (
+              <button
+                key={item.label}
+                onClick={() => setActiveTab("assessments")}
+                className={`rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${item.tone}`}
+              >
+                <p className="font-display text-xl font-bold leading-none">{item.value}</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide">{item.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <Award className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Certificate Eligibility</p>
+                <p className="mt-1 text-sm font-semibold text-ink">{certificateMessage}</p>
+                <button onClick={() => setActiveTab("certificates")} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-harvest hover:underline">
+                  View certificates <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {expiringEnrollment && (
+            <div className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${expiringEnrollment.daysLeft < 0 ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
+              <div className="flex items-start gap-3">
+                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${expiringEnrollment.daysLeft < 0 ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"}`}>
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xs font-bold ${expiringEnrollment.daysLeft < 0 ? "text-red-700" : "text-amber-700"}`}>
+                    {expiringEnrollment.daysLeft < 0 ? "Course access expired" : expiringEnrollment.daysLeft === 0 ? "Access expires today" : `${expiringEnrollment.daysLeft} days access left`}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-slate-600">{expiringEnrollment.course_title}</p>
+                  <button onClick={() => setActiveTab("support")} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-harvest hover:underline">
+                    Contact support <ChevronRight className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Resources, CPD, and skill readiness */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Download className="h-4 w-4 text-harvest" />
+              <h3 className="font-display font-semibold text-[#0d2348]">Essential Resources Locker</h3>
+            </div>
+            <button onClick={() => setActiveTab("resources")} className="self-start text-xs font-bold text-harvest hover:underline sm:self-auto">
+              Resource Library
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {resourceLocker.map(item => (
+              <button
+                key={item.title}
+                onClick={() => setActiveTab("resources")}
+                className="group rounded-xl border border-slate-100 bg-slate-50 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-harvest/30 hover:bg-harvest/5 hover:shadow-sm"
+              >
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white text-harvest shadow-sm group-hover:bg-harvest group-hover:text-white">
+                  <item.icon className="h-4 w-4" />
+                </div>
+                <p className="text-sm font-semibold leading-snug text-ink group-hover:text-harvest">{item.title}</p>
+                <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">{item.type} Template</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Map className="h-4 w-4 text-harvest" />
+              <h3 className="font-display font-semibold text-[#0d2348]">CPD & Skills</h3>
+            </div>
+            <span className="text-xs font-bold text-harvest">{cpdPct}%</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-harvest/10">
+              <ProgressRing progress={cpdPct} size={72} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-2xl font-bold leading-none text-[#0d2348]">{completedCPD}h</p>
+              <p className="mt-1 text-xs text-slate-500">of {totalCPD} CPD hours tracked</p>
+              <button onClick={() => setActiveTab("cpd")} className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-harvest hover:underline">
+                View CPD log <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {skillTags.map(tag => (
+              <button key={tag} onClick={() => setActiveTab("skillmap")} className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-colors hover:bg-harvest/10 hover:text-harvest">
+                #{tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
       {/* ── Course Progress Bars ───────────────────────────────── */}
       {enrollments.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
@@ -257,7 +557,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
               All courses <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          {[...continueCourses, ...notStarted].length === 0 ? (
+          {visibleCourses.length === 0 ? (
             <div className="text-center py-8">
               <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
               <p className="text-sm text-slate-500 mb-3">No courses enrolled yet</p>
@@ -267,7 +567,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
             </div>
           ) : (
             <div className="space-y-2">
-              {[...continueCourses, ...notStarted].map(enr => {
+              {visibleCourses.map(enr => {
                 const cfg = LEVEL_CONFIG[enr.course_level] || LEVEL_CONFIG.level1;
                 return (
                   <button key={enr.id} onClick={() => onOpenCourse(enr)}
@@ -317,7 +617,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-medium text-[#0d2348]">Attempt #{attempt.attempt_number || 1}</p>
-                      <p className="text-[10px] text-slate-400">{quizScoreLabel(attempt)} marks · {new Date(attempt.created_date).toLocaleDateString("en-AU")}</p>
+                      <p className="text-[10px] text-slate-400">{quizScoreLabel(attempt)} marks · {formatQuizDate(attempt)}</p>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
                       ${attempt.passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
@@ -330,7 +630,92 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
           )}
         </div>
       </div>
+      {/* Student activity previews */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-harvest" />
+              <h3 className="font-display font-semibold text-[#0d2348]">Latest Announcement</h3>
+            </div>
+            <button onClick={() => setActiveTab("announcements")} className="text-xs text-harvest hover:underline">View</button>
+          </div>
+          {latestAnnouncement ? (
+            <button onClick={() => setActiveTab("announcements")} className="w-full rounded-xl border border-slate-100 bg-slate-50 p-3 text-left transition-all hover:border-harvest/30 hover:bg-harvest/5">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-harvest/10 px-2 py-0.5 text-[10px] font-bold text-harvest">{latestAnnouncement.badge || "Notice"}</span>
+                {latestAnnouncement.pinned && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">Pinned</span>}
+              </div>
+              <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{latestAnnouncement.title}</p>
+              <p className="mt-1 text-[10px] text-slate-400">
+                {latestAnnouncement.createdAt ? new Date(latestAnnouncement.createdAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "Recently posted"}
+              </p>
+            </button>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 p-5 text-center">
+              <Megaphone className="mx-auto mb-2 h-7 w-7 text-slate-300" />
+              <p className="text-sm text-slate-500">No announcements right now.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-harvest" />
+              <h3 className="font-display font-semibold text-[#0d2348]">Recent Chats</h3>
+            </div>
+            <button onClick={() => setActiveTab("discussion")} className="text-xs text-harvest hover:underline">Open Chat</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setActiveTab("discussion")} className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-left transition-all hover:border-harvest/30 hover:bg-harvest/5">
+              <MessageSquare className="mb-2 h-4 w-4 text-harvest" />
+              <p className="font-display text-xl font-bold leading-none text-ink">{totalUnreadChats}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Unread Chats</p>
+            </button>
+            <button onClick={() => setActiveTab("discussion")} className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-left transition-all hover:border-harvest/30 hover:bg-harvest/5">
+              <Inbox className="mb-2 h-4 w-4 text-harvest" />
+              <p className="font-display text-xl font-bold leading-none text-ink">{enrollments.length}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Study Groups</p>
+            </button>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-slate-500">Preview unread classmate and study-group activity, then jump straight into the course discussion board. {requests.length + supportTickets.length > 0 ? `${requests.length + supportTickets.length} support item${requests.length + supportTickets.length === 1 ? "" : "s"} also tracked.` : ""}</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Flame className="h-4 w-4 text-harvest" />
+            <h3 className="font-display font-semibold text-[#0d2348]">Weekly Activity</h3>
+          </div>
+          <div className="rounded-xl border border-harvest/20 bg-harvest/5 p-4">
+            <p className="font-display text-3xl font-bold leading-none text-[#0d2348]">{activeLearningDays}</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Active days this week</p>
+            <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
+              <span>{recentQuizAttempts.length} quiz attempt{recentQuizAttempts.length === 1 ? "" : "s"}</span>
+              <span>{totalTopicsDone} lessons done</span>
+            </div>
+          </div>
+          <button onClick={() => setActiveTab("streak")} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-harvest hover:underline">
+            View learning streak <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
