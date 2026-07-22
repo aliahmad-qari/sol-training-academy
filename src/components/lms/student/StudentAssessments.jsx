@@ -13,6 +13,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { averageQuizPercent, bestQuizAttempt, quizAttemptPercentOrZero } from "@/lib/quizScores";
 
+// Match a student's submission to an assignment across the several ways the two
+// can be linked. Assessment topics submitted from the course player store the
+// submission against `topic_id` (often with an empty or differing
+// `assignment_id`), so a pure assignment_id match would miss them and wrongly
+// show "Not submitted" even after the assessor has graded the work. We match on
+// assignment id OR the linked topic id OR, as a last resort, the assignment
+// title within the same course (titles are unique per module).
+export function findSubmissionForAssignment(submissions, assignment) {
+  if (!assignment || !Array.isArray(submissions)) return undefined;
+  const aId = assignment.id ?? assignment._id;
+  const aTopicId = assignment.source_topic_id ?? assignment.topic_id;
+  const aCourseId = assignment.course_id;
+  const aTitle = (assignment.title || "").trim().toLowerCase();
+
+  const eq = (x, y) => x != null && y != null && String(x) === String(y);
+
+  // Prefer an id/topic match; fall back to title+course so a broken link still resolves.
+  return (
+    submissions.find((s) => eq(s.assignment_id, aId) || eq(s.topic_id, aTopicId)) ||
+    submissions.find((s) =>
+      aTitle &&
+      (s.assignment_title || "").trim().toLowerCase() === aTitle &&
+      (aCourseId == null || eq(s.course_id, aCourseId))
+    )
+  );
+}
+
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function safeDate(val, opts = { day: "numeric", month: "short", year: "numeric" }) {
   if (!val) return "—";
@@ -657,7 +684,7 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
                   ) : (
                     <div className="space-y-3">
                       {assignments.slice(0, 4).map((a) => {
-                        const mySub = submissions.find(s => s.assignment_id === a.id);
+                        const mySub = findSubmissionForAssignment(submissions, a);
                         return (
                           <div key={a.id} className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
@@ -823,7 +850,7 @@ export default function StudentAssessments({ user, enrollments, quizAttempts: in
                   <AssignmentCard
                     key={a.id}
                     assignment={a}
-                    submission={submissions.find(s => s.assignment_id === a.id)}
+                    submission={findSubmissionForAssignment(submissions, a)}
                     userId={user?.id}
                     onSubmit={setSubmitModal}
                   />

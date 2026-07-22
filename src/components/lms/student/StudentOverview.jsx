@@ -7,6 +7,7 @@ import ProgressRing from "@/components/lms/ProgressRing";
 import { base44 } from "@/api/base44Client";
 import AIProgressReport from "@/components/lms/student/AIProgressReport";
 import { quizAttemptPercentOrZero, quizScoreLabel } from "@/lib/quizScores";
+import { findSubmissionForAssignment } from "@/components/lms/student/StudentAssessments";
 
 const LEVEL_CONFIG = {
   level1: { bar: "bg-harvest",     pill: "bg-harvest/10 text-harvest",       label: "Level 1" },
@@ -27,9 +28,11 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
       base44.entities.Assignment.filter({ is_published: true }, "-created_date", 50).catch(() => []),
       user ? base44.entities.AssignmentSubmission.filter({ user_id: user.id }).catch(() => []) : Promise.resolve([]),
     ]).then(([all, subs]) => {
-      const submittedIds = new Set(subs.map(s => s.assignment_id));
       const mine = all
-        .filter(a => (courseIds.includes(String(a.course_id)) || (a.course_level && courseLevels.includes(a.course_level))) && !submittedIds.has(a.id))
+        .filter(a =>
+          (courseIds.includes(String(a.course_id)) || (a.course_level && courseLevels.includes(a.course_level))) &&
+          !findSubmissionForAssignment(subs, a)
+        )
         .map(a => ({ ...a, dueMs: null }))
         .slice(0, 5);
       setAssignments(mine);

@@ -71,6 +71,23 @@ export default function AssignmentTopicView({ topic, user, enrollment, isComplet
             }).catch(() => []);
             currentSubmission = legacySubs?.[0] || null;
           }
+          // Final fallback: match by assignment title within this course. Covers
+          // submissions whose stored assignment_id/topic_id don't line up with the
+          // topic the player resolves (e.g. graded module assessments still showing
+          // "Not submitted").
+          if (!currentSubmission) {
+            const title = (normalized.title || "").trim().toLowerCase();
+            const courseId = normalized.course_id ?? enrollment?.course_id;
+            if (title) {
+              const mySubs = await base44.entities.AssignmentSubmission.filter({
+                user_id: user.id,
+              }).catch(() => []);
+              currentSubmission = (mySubs || []).find((s) =>
+                (s.assignment_title || "").trim().toLowerCase() === title &&
+                (courseId == null || String(s.course_id) === String(courseId))
+              ) || null;
+            }
+          }
         }
 
         if (!alive) return;

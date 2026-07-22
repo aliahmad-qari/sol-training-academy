@@ -99,7 +99,7 @@ export default function CertificateViewer({ enrollment, user }) {
     doc.setFont("Times", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...primaryColor);
-    doc.text("Sol Mwangi", 60, 173, { align: "center" });
+    doc.text("Saf Meo", 60, 173, { align: "center" });
     doc.text("Director", W - 60, 173, { align: "center" });
 
     // Bottom footer
@@ -151,8 +151,8 @@ export default function CertificateViewer({ enrollment, user }) {
           <div className="w-full flex justify-between items-end px-2 sm:px-4 mt-2 sm:mt-6 pt-2 sm:pt-4 border-t border-slate-300">
             <div className="text-center">
               <div className="w-12 sm:w-24 h-px mb-1 sm:mb-2" style={{ backgroundColor: "#003d7a" }} />
-              <p className="font-semibold text-[#003d7a] text-[9px] sm:text-sm">Sol Mwangi</p>
-              <p className="text-slate-600 text-[8px] sm:text-xs">Director</p>
+              <p className="font-semibold text-[#003d7a] text-[9px] sm:text-sm">Saf Meo</p>
+              <p className="text-slate-600 text-[8px] sm:text-xs">CEO Sol Business Consultant  </p>
             </div>
             <div className="text-center">
               <div className="w-12 sm:w-24 h-px mb-1 sm:mb-2" style={{ backgroundColor: "#003d7a" }} />
