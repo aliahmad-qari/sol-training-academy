@@ -348,31 +348,54 @@ function EnrollStudentModal({ course, onClose, onDone }) {
   );
 }
 
-// ── Extend Access Modal ───────────────────────────────────────────────────────
+// ── Adjust Access Modal (extend OR reduce) ────────────────────────────────────
+// Normalize any stored expiry (ISO string / Date) to the yyyy-MM-dd format an
+// <input type="date"> requires. Without this the custom field renders blank and
+// a save would send an empty, invalid expiry_date.
+function toDateInputValue(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? "" : format(d, "yyyy-MM-dd");
+}
+
 function ExtendAccessModal({ enrollment, onClose, onDone }) {
   const [mode, setMode] = useState("preset"); // preset | custom
-  const [days, setDays] = useState(30);
-  const [customDate, setCustomDate] = useState(enrollment.expiry_date || "");
+  const [days, setDays] = useState(30); // may be negative to reduce access
+  const [customDate, setCustomDate] = useState(toDateInputValue(enrollment.expiry_date));
   const [saving, setSaving] = useState(false);
 
   const currentExpiry = enrollment.expiry_date ? new Date(enrollment.expiry_date) : new Date();
+  const previewExpiry = mode === "custom"
+    ? (customDate ? new Date(customDate) : null)
+    : addDays(currentExpiry, days);
+  const isReducing = mode === "preset" && days < 0;
 
   const handleSave = async () => {
-    setSaving(true);
     let newExpiry;
     if (mode === "custom") {
+      if (!customDate) { toast.error("Please pick a date."); return; }
       newExpiry = customDate;
     } else {
+      // date-fns addDays accepts negative values, so this handles reduce too.
       const base = enrollment.expiry_date ? new Date(enrollment.expiry_date) : new Date();
       newExpiry = addDays(base, days).toISOString().split("T")[0];
     }
-    await base44.entities.CourseEnrollment.update(enrollment.id, {
-      expiry_date: newExpiry,
-      status: "active",
-    });
-    toast.success(`Access extended to ${format(new Date(newExpiry), "d MMM yyyy")}`);
-    setSaving(false);
-    onDone(); onClose();
+
+    setSaving(true);
+    try {
+      // If the new expiry is in the past, the enrollment should read as expired.
+      const isPast = new Date(newExpiry).getTime() < Date.now();
+      await base44.entities.CourseEnrollment.update(enrollment.id, {
+        expiry_date: newExpiry,
+        status: isPast ? "expired" : "active",
+      });
+      toast.success(`Access ${isPast ? "reduced" : "updated"} to ${format(new Date(newExpiry), "d MMM yyyy")}`);
+      onDone(); onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update access.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -380,7 +403,7 @@ function ExtendAccessModal({ enrollment, onClose, onDone }) {
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-2xl w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-5 border-b border-border/50">
-          <h3 className="font-display font-bold text-lg text-ink">Extend Access</h3>
+          <h3 className="font-display font-bold text-lg text-ink">Adjust Access</h3>
           <button onClick={onClose}><X className="w-5 h-5 text-slate_mist" /></button>
         </div>
         <div className="px-6 py-5 space-y-4">
@@ -390,34 +413,56 @@ function ExtendAccessModal({ enrollment, onClose, onDone }) {
               Current expiry: <strong className="text-ink">{enrollment.expiry_date ? format(new Date(enrollment.expiry_date), "d MMM yyyy") : "No expiry"}</strong>
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {[30, 60, 90].map(d => (
-              <button key={d} onClick={() => { setDays(d); setMode("preset"); }}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${mode === "preset" && days === d ? "border-harvest bg-harvest/10 text-harvest" : "border-border/50 text-ink hover:border-harvest/30"}`}>
-                +{d} Days
-              </button>
-            ))}
-            <button onClick={() => setMode("custom")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${mode === "custom" ? "border-harvest bg-harvest/10 text-harvest" : "border-border/50 text-ink hover:border-harvest/30"}`}>
-              Custom Date
-            </button>
+
+          {/* Extend presets */}
+          <div>
+            <Label className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-1.5 block">Extend</Label>
+            <div className="flex gap-2 flex-wrap">
+              {[30, 60, 90].map(d => (
+                <button key={d} onClick={() => { setDays(d); setMode("preset"); }}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${mode === "preset" && days === d ? "border-harvest bg-harvest/10 text-harvest" : "border-border/50 text-ink hover:border-harvest/30"}`}>
+                  +{d} Days
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Reduce presets */}
+          <div>
+            <Label className="text-[10px] font-semibold uppercase tracking-wider text-red-600 mb-1.5 block">Reduce</Label>
+            <div className="flex gap-2 flex-wrap">
+              {[-7, -30, -60].map(d => (
+                <button key={d} onClick={() => { setDays(d); setMode("preset"); }}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${mode === "preset" && days === d ? "border-red-500 bg-red-50 text-red-600" : "border-border/50 text-ink hover:border-red-300"}`}>
+                  {d} Days
+                </button>
+              ))}
+              <button onClick={() => setMode("custom")}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${mode === "custom" ? "border-harvest bg-harvest/10 text-harvest" : "border-border/50 text-ink hover:border-harvest/30"}`}>
+                Custom Date
+              </button>
+            </div>
+          </div>
+
           {mode === "custom" && (
             <div>
               <Label className="text-xs font-semibold uppercase tracking-wider text-slate_mist mb-1.5 block">New Expiry Date</Label>
               <Input type="date" value={customDate} onChange={e => setCustomDate(e.target.value)} className="h-10 text-sm" />
             </div>
           )}
-          {mode === "preset" && (
+          {mode === "preset" && previewExpiry && (
             <p className="text-xs text-slate_mist">
-              New expiry: <strong className="text-emerald-600">{format(addDays(currentExpiry, days), "d MMM yyyy")}</strong>
+              New expiry: <strong className={isReducing ? "text-red-600" : "text-emerald-600"}>{format(previewExpiry, "d MMM yyyy")}</strong>
+              {isReducing && previewExpiry.getTime() < Date.now() && (
+                <span className="text-red-500 font-semibold"> — access will expire immediately</span>
+              )}
             </p>
           )}
         </div>
         <div className="flex gap-3 px-6 py-4 border-t border-border/50">
           <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button onClick={handleSave} disabled={saving} className="flex-1 bg-harvest hover:bg-harvest/90 text-white">
-            {saving ? "Saving…" : "Extend Access"}
+          <Button onClick={handleSave} disabled={saving} className={`flex-1 text-white ${isReducing ? "bg-red-600 hover:bg-red-700" : "bg-harvest hover:bg-harvest/90"}`}>
+            {saving ? "Saving…" : isReducing ? "Reduce Access" : "Update Access"}
           </Button>
         </div>
       </motion.div>

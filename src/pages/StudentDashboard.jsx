@@ -203,6 +203,38 @@ export default function StudentDashboard() {
 
   useEffect(() => { loadData(); }, []);
 
+  // Keep enrollments (expiry / status / progress) in sync with server-side
+  // changes an admin may make — e.g. extending or reducing course access.
+  // Re-fetches when the student returns to the tab, on window focus, and on a
+  // light interval while the dashboard is open. Merges into existing state so
+  // the active course view and enrolled list update without a manual reload.
+  const refreshEnrollments = async () => {
+    try {
+      const res = await apiClient.get('/enrollments?limit=200');
+      const fresh = Array.isArray(res.data?.data) ? res.data.data : [];
+      setEnrollments(fresh);
+      setActiveCourse(prev => {
+        if (!prev) return prev;
+        const match = fresh.find(e => String(e._id || e.id) === String(prev._id || prev.id));
+        return match ? { ...prev, ...match } : prev;
+      });
+    } catch (err) {
+      console.error('Failed to refresh enrollments:', err);
+    }
+  };
+
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshEnrollments(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', refreshEnrollments);
+    const interval = setInterval(refreshEnrollments, 60000); // 60s while open
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', refreshEnrollments);
+      clearInterval(interval);
+    };
+  }, []);
+
   const loadData = async () => {
     setLoading(true);
     try {

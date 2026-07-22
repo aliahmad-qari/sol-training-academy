@@ -38,22 +38,29 @@ function ExtendModal({ enrollment, onClose, onExtended }) {
 
   const extend = async () => {
     const addDays = days === "custom" ? parseInt(custom) : parseInt(days);
-    if (!addDays || addDays < 1) { toast.error("Enter valid number of days"); return; }
+    // Allow negative values to reduce access; only reject 0 / non-numeric.
+    if (!Number.isFinite(addDays) || addDays === 0) { toast.error("Enter a non-zero number of days"); return; }
     setSaving(true);
-    const currentExpiry = enrollment.expiry_date ? new Date(enrollment.expiry_date) : new Date();
-    // If already expired, extend from today
-    const base = enrollment.status === "expired" ? new Date() : currentExpiry;
-    base.setDate(base.getDate() + addDays);
-    const newExpiry = base.toISOString().split("T")[0];
-    await base44.entities.CourseEnrollment.update(enrollment.id, {
-      expiry_date: newExpiry,
-      status: "active",
-      reminder_sent_days: [], // reset reminders
-    });
-    toast.success(`Access extended to ${new Date(newExpiry).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`);
-    setSaving(false);
-    onExtended();
-    onClose();
+    try {
+      const currentExpiry = enrollment.expiry_date ? new Date(enrollment.expiry_date) : new Date();
+      // If already expired, adjust from today so an extend actually moves forward.
+      const base = enrollment.status === "expired" ? new Date() : currentExpiry;
+      base.setDate(base.getDate() + addDays);
+      const newExpiry = base.toISOString().split("T")[0];
+      const isPast = new Date(newExpiry).getTime() < Date.now();
+      await base44.entities.CourseEnrollment.update(enrollment.id, {
+        expiry_date: newExpiry,
+        status: isPast ? "expired" : "active",
+        reminder_sent_days: [], // reset reminders
+      });
+      toast.success(`Access ${isPast ? "reduced" : "updated"} to ${new Date(newExpiry).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`);
+      onExtended();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update access.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -76,12 +83,15 @@ function ExtendModal({ enrollment, onClose, onExtended }) {
             <SelectItem value="90">+ 90 Days</SelectItem>
             <SelectItem value="180">+ 180 Days</SelectItem>
             <SelectItem value="365">+ 365 Days</SelectItem>
+            <SelectItem value="-7">− 7 Days (reduce)</SelectItem>
+            <SelectItem value="-30">− 30 Days (reduce)</SelectItem>
+            <SelectItem value="-60">− 60 Days (reduce)</SelectItem>
             <SelectItem value="custom">Custom…</SelectItem>
           </SelectContent>
         </Select>
         {days === "custom" && (
-          <Input type="number" min={1} value={custom} onChange={e => setCustom(e.target.value)}
-            placeholder="Number of days…" className="mb-3 h-9 text-sm" />
+          <Input type="number" value={custom} onChange={e => setCustom(e.target.value)}
+            placeholder="Days (negative to reduce)…" className="mb-3 h-9 text-sm" />
         )}
         <div className="flex gap-3">
           <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
