@@ -163,6 +163,9 @@ function CourseModal({ course, onClose, onSave }) {
               <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="0">Unlimited Access</SelectItem>
+                <SelectItem value="1">1 Day</SelectItem>
+                <SelectItem value="5">5 Days</SelectItem>
+                <SelectItem value="10">10 Days</SelectItem>
                 <SelectItem value="30">30 Days</SelectItem>
                 <SelectItem value="60">60 Days</SelectItem>
                 <SelectItem value="90">90 Days</SelectItem>

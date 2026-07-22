@@ -46,7 +46,10 @@ function ExtendModal({ enrollment, onClose, onExtended }) {
       // If already expired, adjust from today so an extend actually moves forward.
       const base = enrollment.status === "expired" ? new Date() : currentExpiry;
       base.setDate(base.getDate() + addDays);
-      const newExpiry = base.toISOString().split("T")[0];
+      // Format as LOCAL yyyy-MM-dd — toISOString() shifts the day backwards in
+      // positive-UTC timezones (e.g. Australia), landing on the wrong date.
+      const pad = (n) => String(n).padStart(2, "0");
+      const newExpiry = `${base.getFullYear()}-${pad(base.getMonth() + 1)}-${pad(base.getDate())}`;
       const isPast = new Date(newExpiry).getTime() < Date.now();
       await base44.entities.CourseEnrollment.update(enrollment.id, {
         expiry_date: newExpiry,
@@ -78,12 +81,17 @@ function ExtendModal({ enrollment, onClose, onExtended }) {
         <Select value={days} onValueChange={setDays}>
           <SelectTrigger className="mb-3"><SelectValue /></SelectTrigger>
           <SelectContent>
+            <SelectItem value="1">+ 1 Day</SelectItem>
+            <SelectItem value="5">+ 5 Days</SelectItem>
+            <SelectItem value="10">+ 10 Days</SelectItem>
             <SelectItem value="30">+ 30 Days</SelectItem>
             <SelectItem value="60">+ 60 Days</SelectItem>
             <SelectItem value="90">+ 90 Days</SelectItem>
             <SelectItem value="180">+ 180 Days</SelectItem>
             <SelectItem value="365">+ 365 Days</SelectItem>
-            <SelectItem value="-7">− 7 Days (reduce)</SelectItem>
+            <SelectItem value="-1">− 1 Day (reduce)</SelectItem>
+            <SelectItem value="-5">− 5 Days (reduce)</SelectItem>
+            <SelectItem value="-10">− 10 Days (reduce)</SelectItem>
             <SelectItem value="-30">− 30 Days (reduce)</SelectItem>
             <SelectItem value="-60">− 60 Days (reduce)</SelectItem>
             <SelectItem value="custom">Custom…</SelectItem>

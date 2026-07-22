@@ -377,8 +377,10 @@ function ExtendAccessModal({ enrollment, onClose, onDone }) {
       newExpiry = customDate;
     } else {
       // date-fns addDays accepts negative values, so this handles reduce too.
+      // Format as LOCAL yyyy-MM-dd — toISOString() would shift the day backwards
+      // in positive-UTC timezones (e.g. Australia), landing on the wrong date.
       const base = enrollment.expiry_date ? new Date(enrollment.expiry_date) : new Date();
-      newExpiry = addDays(base, days).toISOString().split("T")[0];
+      newExpiry = format(addDays(base, days), "yyyy-MM-dd");
     }
 
     setSaving(true);
@@ -418,7 +420,7 @@ function ExtendAccessModal({ enrollment, onClose, onDone }) {
           <div>
             <Label className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-1.5 block">Extend</Label>
             <div className="flex gap-2 flex-wrap">
-              {[30, 60, 90].map(d => (
+              {[1, 5, 10, 30, 60, 90].map(d => (
                 <button key={d} onClick={() => { setDays(d); setMode("preset"); }}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${mode === "preset" && days === d ? "border-harvest bg-harvest/10 text-harvest" : "border-border/50 text-ink hover:border-harvest/30"}`}>
                   +{d} Days
@@ -431,7 +433,7 @@ function ExtendAccessModal({ enrollment, onClose, onDone }) {
           <div>
             <Label className="text-[10px] font-semibold uppercase tracking-wider text-red-600 mb-1.5 block">Reduce</Label>
             <div className="flex gap-2 flex-wrap">
-              {[-7, -30, -60].map(d => (
+              {[-1, -5, -10, -30, -60].map(d => (
                 <button key={d} onClick={() => { setDays(d); setMode("preset"); }}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${mode === "preset" && days === d ? "border-red-500 bg-red-50 text-red-600" : "border-border/50 text-ink hover:border-red-300"}`}>
                   {d} Days
