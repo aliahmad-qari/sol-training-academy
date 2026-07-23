@@ -16,10 +16,14 @@ import ConsultingPackagesSection from "@/components/landing/ConsultingPackagesSe
 import FAQSection from "@/components/landing/FAQSection";
 import ContactSection from "@/components/landing/ContactSection";
 import Footer from "@/components/landing/Footer";
+import SEOHead from "@/components/SEOHead";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
+import BackToTopButton from "@/components/BackToTopButton";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead />
       <Navbar />
       <HeroSection />
       <LogoCarousel />
@@ -37,6 +41,8 @@ export default function Home() {
       <FloatingContactWidget />
       <FloatingChatWidget />
       <AccessibilityToolbar />
+      <BackToTopButton />
+      <CookieConsentBanner />
     </div>
   );
 }

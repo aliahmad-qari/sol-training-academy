@@ -1,20 +1,28 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, CheckCircle, ShieldCheck, TrendingUp, Users, Award, MapPin, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const HERO_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/ce4b4d474_generated_ebcd4dde.png";
 
 const stats = [
-  { value: "NDIS", label: "Registration Support" },
-  { value: "AUD", label: "Australian Business Focus" },
-  { value: "BAS", label: "Finance & Compliance" },
+  { value: "3", label: "Training levels" },
+  { value: "1,500+", label: "Quiz questions" },
+  { value: "24h", label: "Response target" },
 ];
 
 const trustHighlights = [
   { icon: ShieldCheck, label: "Audit-ready systems", value: "NDIS aligned" },
   { icon: TrendingUp, label: "Growth support", value: "Consulting + marketing" },
   { icon: Users, label: "Client guidance", value: "End-to-end support" },
+];
+
+// Honest trust signals drawn from what the business actually offers.
+const trustBadges = [
+  { icon: MapPin, label: "Australian-owned" },
+  { icon: FileCheck, label: "NDIS-aligned processes" },
+  { icon: Award, label: "Easy Compliance verified" },
 ];
 
 export default function HeroSection() {
@@ -65,17 +73,32 @@ export default function HeroSection() {
               transition={{ duration: 0.7, delay: 0.6 }}
               className="flex flex-wrap gap-4"
             >
-              <a href="#contact">
+              <Link to="/#contact">
                 <Button className="bg-harvest hover:bg-harvest/90 text-white font-display text-base px-8 py-6 gap-2 group shadow-lg shadow-harvest/20">
                   Book Free Consultation
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </Button>
-              </a>
-              <a href="#services">
+              </Link>
+              <Link to="/#services">
                 <Button variant="outline" className="font-display text-base px-8 py-6 border-ink/20 text-ink hover:bg-ink hover:text-white">
                   Explore Services
                 </Button>
-              </a>
+              </Link>
+            </motion.div>
+
+            {/* Trust-badge cluster (eploy-style social proof row) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.7 }}
+              className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2"
+            >
+              {trustBadges.map((badge) => (
+                <div key={badge.label} className="flex items-center gap-1.5">
+                  <badge.icon className="w-4 h-4 text-harvest flex-shrink-0" />
+                  <span className="text-xs font-semibold text-slate_mist">{badge.label}</span>
+                </div>
+              ))}
             </motion.div>
 
             <motion.div
@@ -103,6 +126,12 @@ export default function HeroSection() {
               <img
                 src={HERO_IMAGE}
                 alt="Modern architectural interior representing structural excellence"
+                width="960"
+                height="1280"
+                fetchPriority="high"
+                decoding="async"
+                loading="eager"
+                sizes="(min-width: 1024px) 50vw, 100vw"
                 className="w-full h-[640px] object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-ink/10 to-transparent" />

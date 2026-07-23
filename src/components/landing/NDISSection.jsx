@@ -2,18 +2,20 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle, Clock, FileCheck, Users, Shield, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const NDIS_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/5e1766cce_generated_9bb12ead.png";
 
 const roadmap = [
-  { week: "Week 1", title: "Discovery Call", desc: "Free consultation to assess eligibility, registration groups, and your timeline.", icon: Clock },
-  { week: "Weeks 2–3", title: "Documentation & Application", desc: "Customised policies, quality system, NDIS portal submission, and auditor matching.", icon: FileCheck },
-  { week: "Weeks 3–4", title: "Mock Audit & Training", desc: "Simulate the real audit, fix gaps early, and coach your team to perfection.", icon: Users },
-  { week: "Ongoing", title: "Certification & Beyond", desc: "Pass audit, get certified, and stay compliant with 30-day post-registration check.", icon: Award },
+  { id: "ndis-discovery", week: "Week 1", title: "Discovery Call", desc: "Free consultation to assess eligibility, registration groups, and your timeline.", icon: Clock },
+  { id: "ndis-documentation", week: "Weeks 2-3", title: "Documentation & Application", desc: "Customised policies, quality system, NDIS portal submission, and auditor matching.", icon: FileCheck },
+  { id: "ndis-mock-audit", week: "Weeks 3-4", title: "Mock Audit & Training", desc: "Simulate the real audit, fix gaps early, and coach your team to perfection.", icon: Users },
+  { id: "ndis-certification", week: "Ongoing", title: "Certification & Beyond", desc: "Pass audit, get certified, and stay compliant with 30-day post-registration check.", icon: Award },
 ];
 
 const packages = [
   {
+    id: "ndis-starter",
     name: "Starter",
     price: "$3,950",
     popular: true,
@@ -27,6 +29,7 @@ const packages = [
     ],
   },
   {
+    id: "ndis-ultimate",
     name: "Ultimate",
     price: "$6,500",
     popular: false,
@@ -93,6 +96,7 @@ export default function NDISSection() {
             {roadmap.map((step, i) => (
               <motion.div
                 key={step.week}
+                id={step.id}
                 initial={{ opacity: 0, x: 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -134,6 +138,7 @@ export default function NDISSection() {
           {packages.map((pkg, i) => (
             <motion.div
               key={pkg.name}
+              id={pkg.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -164,7 +169,7 @@ export default function NDISSection() {
                   </li>
                 ))}
               </ul>
-              <a href="#contact">
+              <Link to="/#contact">
                 <Button
                   className={`w-full font-display py-5 gap-2 group ${
                     pkg.popular
@@ -175,7 +180,7 @@ export default function NDISSection() {
                   Get {pkg.name}
                   <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Button>
-              </a>
+              </Link>
             </motion.div>
           ))}
         </div>

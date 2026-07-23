@@ -5,19 +5,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 
 const QUICK_QUESTIONS = [
-  "How does NDIS registration work?",
-  "What training courses do you offer?",
-  "Tell me about your pricing",
-  "I need help with bookkeeping",
+  "I need NDIS registration help",
+  "Show me support coordinator training",
+  "Tell me about pricing and packages",
+  "I want bookkeeping or business setup help",
 ];
 
 const GREETING = {
   role: "assistant",
-  content: "Hi! I'm the SOL Assistant 👋 Ask me anything about our services, or pick a question below.",
+  content: "Hi there, thanks for visiting SOL Business Consultant. How can I help you today?",
 };
 
 const FALLBACK_ERROR =
-  "Sorry — I couldn't respond just now. Please try again, or call us on +61 460 003 494.";
+  "Sorry - I couldn't respond just now. Please try again, or call us on +61 460 003 494.";
 
 function TypingIndicator() {
   return (
@@ -65,7 +65,7 @@ export default function FloatingChatWidget() {
   /**
    * Stateless chat: we keep the running message array in React state and send
    * the recent turns to the backend, which forwards them to Groq and returns a
-   * single reply. No base44.agents, no streaming subscription — so there is no
+   * single reply. No base44.agents, no streaming subscription - so there is no
    * `undefined.createConversation` crash, and every failure is caught below.
    */
   const sendMessage = async (text) => {
@@ -94,13 +94,13 @@ export default function FloatingChatWidget() {
     }
   };
 
-  const panelH = expanded ? "h-[600px]" : "h-[460px]";
-  const panelW = expanded ? "w-[420px]" : "w-[360px]";
+  const panelH = expanded ? "h-[640px]" : "h-[560px]";
+  const panelW = expanded ? "w-[calc(100vw-2rem)] sm:w-[460px]" : "w-[calc(100vw-2rem)] sm:w-[426px]";
 
   const shownMessages = messages.length === 0 ? [] : messages;
 
   return (
-    <div className="fixed right-4 bottom-8 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-5 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-8">
 
       {/* Chat Panel */}
       <AnimatePresence>
@@ -110,55 +110,63 @@ export default function FloatingChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className={`${panelW} ${panelH} bg-white rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden transition-all duration-300`}
+            className={`${panelW} ${panelH} bg-[#f3f4fb] rounded-xl shadow-2xl border border-harvest/20 flex flex-col overflow-hidden transition-all duration-300`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-ink flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-harvest flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
+            <div className="flex-shrink-0 bg-harvest text-white">
+              <div className="flex items-start justify-between gap-3 px-5 pb-5 pt-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-sm bg-white/15 ring-1 ring-white/20">
+                    <Bot className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-display text-lg font-bold leading-tight text-white">SOL Bot</p>
+                    <p className="text-xs leading-tight text-white/90">How can I help you today?</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-display font-semibold text-white text-sm leading-tight">SOL Assistant</p>
-                  <p className="text-white/50 text-[10px] flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                    Online · Replies instantly
-                  </p>
+                <div className="flex items-center gap-3 pt-1">
+                  <button onClick={reset} className="text-white/80 transition-colors hover:text-white" title="New chat">
+                    <RefreshCcwIcon />
+                  </button>
+                  <button onClick={() => setExpanded((e) => !e)} className="hidden text-white/80 transition-colors hover:text-white sm:block" title="Resize chat">
+                    {expanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                  </button>
+                  <button onClick={handleClose} className="text-white/90 transition-colors hover:text-white" title="Close chat">
+                    <X className="h-6 w-6" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={reset} className="text-white/40 hover:text-white transition-colors" title="New chat">
-                  <RefreshCcwIcon />
-                </button>
-                <button onClick={() => setExpanded((e) => !e)} className="text-white/40 hover:text-white transition-colors">
-                  {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                </button>
-                <button onClick={handleClose} className="text-white/40 hover:text-white transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
+              <div className="grid grid-cols-2 border-t border-white/10 text-sm font-medium">
+                <a href="/#contact" className="flex items-center justify-center px-4 py-4 text-white transition-colors hover:bg-white/10">Get a Quote</a>
+                <a href="/#contact" className="flex items-center justify-center px-4 py-4 text-white transition-colors hover:bg-white/10">Book a Demo</a>
               </div>
             </div>
-
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50">
               {shownMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-2">
-                  <div className="w-12 h-12 rounded-2xl bg-harvest/10 flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-harvest" />
+                <div className="flex min-h-full flex-col justify-start gap-4 px-1 py-6 text-left">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-14 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-harvest text-white shadow-lg shadow-harvest/20">
+                      <Bot className="h-5 w-5" />
+                    </div>
+                    <div className="max-w-[82%] rounded-2xl bg-white px-5 py-4 text-sm font-medium leading-relaxed text-ink shadow-sm">
+                      <p>{GREETING.content}</p>
+                      <p className="mt-2">How can I help you today?</p>
+                    </div>
                   </div>
                   <div>
-                    <p className="font-display font-semibold text-ink text-sm mb-1">{GREETING.content}</p>
-                  </div>
-                  <div className="grid grid-cols-1 gap-1.5 w-full">
-                    {QUICK_QUESTIONS.map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => sendMessage(q)}
-                        className="text-left text-xs text-ink border border-border rounded-xl px-3 py-2 hover:border-harvest hover:text-harvest transition-colors bg-white"
-                      >
-                        {q}
-                      </button>
-                    ))}
+                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Choose an option</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {QUICK_QUESTIONS.map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => sendMessage(q)}
+                          className="min-h-[64px] rounded-xl bg-harvest px-4 py-3 text-center text-sm font-semibold leading-tight text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-ink hover:shadow-md"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -224,7 +232,7 @@ export default function FloatingChatWidget() {
                 </button>
               </div>
               <p className="text-center text-[9px] text-slate_mist mt-1.5">
-                Powered by SOL AI · <a href="tel:+61460003494" className="hover:text-harvest">+61 460 003 494</a>
+                Powered by SOL AI &middot; <a href="tel:+61460003494" className="hover:text-harvest">+61 460 003 494</a>
               </p>
             </div>
           </motion.div>

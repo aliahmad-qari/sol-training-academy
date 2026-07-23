@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, Award, HelpCircle, TrendingUp, Layers, Activity, Clock, FileText, BarChart3, ShieldCheck, ChevronRight, Users2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Users, Award, HelpCircle, TrendingUp, Layers, Activity, Clock, FileText, BarChart3, ShieldCheck, ChevronRight, Users2, AlertTriangle, CalendarClock, Flame, Gauge } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import apiClient from "@/api/apiClient";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import NDISIntakeSummary from "./NDISIntakeSummary";
 
 const PIE_COLORS = ["#D97706", "#3B82F6", "#10B981", "#8B5CF6"];
@@ -51,6 +51,69 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
     const now = new Date();
     return (now - d) < 30 * 24 * 60 * 60 * 1000; // last 30 days
   }).length;
+  const avgProgress     = enrollments.length > 0
+    ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length)
+    : 0;
+
+  // Active enrollments whose access expires within the next 14 days
+  const expiringSoon = enrollments
+    .filter(e => e.status === "active" && e.expiry_date)
+    .map(e => ({ ...e, daysLeft: differenceInDays(new Date(e.expiry_date), new Date()) }))
+    .filter(e => e.daysLeft >= 0 && e.daysLeft <= 14)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, 6);
+
+  // Enrollment trend — last 6 months
+  const trendData = (() => {
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        name: format(d, "MMM"),
+        Enrollments: 0,
+      });
+    }
+    const idx = Object.fromEntries(months.map((m, i) => [m.key, i]));
+    enrollments.forEach(e => {
+      if (!e.created_date) return;
+      const d = new Date(e.created_date);
+      const k = `${d.getFullYear()}-${d.getMonth()}`;
+      if (k in idx) months[idx[k]].Enrollments += 1;
+    });
+    return months;
+  })();
+
+  // Top courses by enrollment (with completion rate)
+  const topCourses = courses
+    .map(c => {
+      const rows = enrollments.filter(e => e.course_id === c.id);
+      const done = rows.filter(e => e.status === "completed").length;
+      return {
+        id: c.id,
+        title: c.title || c.level?.replace("level", "Level ") || "Untitled",
+        enrolled: rows.length,
+        rate: rows.length > 0 ? Math.round((done / rows.length) * 100) : 0,
+      };
+    })
+    .filter(c => c.enrolled > 0)
+    .sort((a, b) => b.enrolled - a.enrolled)
+    .slice(0, 5);
+  const maxEnrolled = topCourses.reduce((m, c) => Math.max(m, c.enrolled), 0) || 1;
+
+  // "Needs attention" quick actions
+  const attentionItems = [
+    { label: "Assignments to grade", value: pendingAssignments, icon: FileText, tab: "gradebook", tone: "amber" },
+    { label: "Access expiring soon", value: expiringSoon.length, icon: CalendarClock, tab: "expiry", tone: "rose" },
+    { label: "Documents to verify",  value: pendingDocs.length,  icon: ShieldCheck, tab: "documents", tone: "blue" },
+  ].filter(i => i.value > 0);
+
+  const attentionTone = {
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    rose:  "border-rose-200 bg-rose-50 text-rose-700",
+    blue:  "border-blue-200 bg-blue-50 text-blue-700",
+  };
 
   const kpis = [
     { label: "Total Students",     value: uniqueStudents,               icon: Users,      color: "text-blue-600 bg-blue-50 border-blue-100",        tab: "students" },
@@ -62,6 +125,7 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
     { label: "Pending Assignments",value: pendingAssignments,           icon: FileText,   color: "text-amber-600 bg-amber-50 border-amber-100",      tab: "gradebook" },
     { label: "Quiz Attempts",      value: quizAttempts.length,          icon: HelpCircle, color: "text-rose-600 bg-rose-50 border-rose-100",         tab: "analytics" },
     { label: "Quiz Pass Rate",     value: `${passRate}%`,               icon: TrendingUp, color: "text-teal-600 bg-teal-50 border-teal-100",         tab: "analytics" },
+    { label: "Avg. Progress",      value: `${avgProgress}%`,            icon: Gauge,      color: "text-indigo-600 bg-indigo-50 border-indigo-100",   tab: "analytics" },
     { label: "Team Members",       value: teamCount === null ? "…" : teamCount, icon: Users2, color: "text-violet-600 bg-violet-50 border-violet-100", tab: "team" },
   ];
 
@@ -104,6 +168,28 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
           </button>
         </div>
       </div>
+
+      {/* Needs Attention */}
+      {attentionItems.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink flex-shrink-0 pt-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" /> Needs Attention
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+            {attentionItems.map(a => (
+              <button key={a.label} onClick={() => setActiveTab(a.tab)}
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all hover:shadow-md ${attentionTone[a.tone]}`}>
+                <a.icon className="w-5 h-5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold text-lg leading-none">{a.value}</p>
+                  <p className="text-[11px] leading-tight opacity-80">{a.label}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-60 flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -174,6 +260,92 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
           )}
         </div>
       </div>
+
+      {/* Enrollment trend + Top courses */}
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* 6-month trend */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-border/50 p-5">
+          <h3 className="font-display font-semibold text-ink mb-4">Enrollment Trend (last 6 months)</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={trendData} margin={{ left: -20 }}>
+              <defs>
+                <linearGradient id="enrollGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#D97706" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#D97706" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+              <Tooltip />
+              <Area type="monotone" dataKey="Enrollments" stroke="#D97706" strokeWidth={2} fill="url(#enrollGrad)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Top courses */}
+        <div className="bg-white rounded-2xl border border-border/50 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Flame className="w-4 h-4 text-harvest" />
+            <h3 className="font-display font-semibold text-ink">Top Courses</h3>
+          </div>
+          {topCourses.length === 0 ? (
+            <div className="h-40 flex items-center justify-center text-slate_mist text-sm">No enrollments yet</div>
+          ) : (
+            <div className="space-y-3">
+              {topCourses.map((c, i) => (
+                <div key={c.id}>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-xs font-medium text-ink truncate flex-1">
+                      <span className="text-slate_mist mr-1">{i + 1}.</span>{c.title}
+                    </span>
+                    <span className="text-xs font-bold text-ink flex-shrink-0">{c.enrolled}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-harvest rounded-full" style={{ width: `${(c.enrolled / maxEnrolled) * 100}%` }} />
+                  </div>
+                  <p className="text-[10px] text-slate_mist mt-0.5">{c.rate}% completed</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Access Expiring Soon */}
+      {expiringSoon.length > 0 && (
+        <div className="bg-white rounded-2xl border border-rose-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-rose-100 bg-rose-50">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="w-4 h-4 text-rose-600" />
+              <h3 className="font-display font-semibold text-rose-900 text-sm">Access Expiring Soon</h3>
+              <span className="text-xs font-bold bg-rose-600 text-white px-2 py-0.5 rounded-full">{expiringSoon.length}</span>
+            </div>
+            <button onClick={() => setActiveTab("expiry")} className="text-xs text-rose-600 hover:underline font-medium flex items-center gap-1">
+              Manage Access <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="divide-y divide-border/20">
+            {expiringSoon.map(e => (
+              <div key={e.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 text-xs font-bold flex-shrink-0">
+                  {(e.user_name || e.user_email || "?")[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ink truncate">{e.user_name || e.user_email || "Unknown"}</p>
+                  <p className="text-xs text-slate_mist truncate">{e.course_title}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${e.daysLeft <= 3 ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>
+                    {e.daysLeft === 0 ? "Today" : `${e.daysLeft}d left`}
+                  </span>
+                  <p className="text-[10px] text-slate_mist mt-1">{format(new Date(e.expiry_date), "dd MMM")}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* NDIS Intake Summary + Unverified Docs */}
       <div className="grid md:grid-cols-2 gap-5">

@@ -2,36 +2,43 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, FileSearch, Bell, BarChart3, Users, FolderOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const COMPLIANCE_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/ace7a7d08_generated_be3fe1ca.png";
 
 const steps = [
   {
+    id: "compliance-setup-configuration",
     icon: FolderOpen,
     title: "Setup & Configuration",
     desc: "We configure Easy Compliance to match your operations, map folder structures, and import documents.",
   },
   {
+    id: "compliance-onboarding-training",
     icon: Users,
     title: "Onboarding & Training",
     desc: "Hands-on training for managers and support workers with ongoing rollout support.",
   },
   {
+    id: "compliance-ai-document-validation",
     icon: FileSearch,
     title: "AI Document Validation",
     desc: "AI-powered validation checks every document, flags issues, and assigns confidence scores.",
   },
   {
+    id: "compliance-expiry-alerts-actions",
     icon: Bell,
     title: "Expiry Alerts & Actions",
     desc: "Never miss a renewal — automated alerts for police checks, first aid, and certifications.",
   },
   {
+    id: "compliance-internal-audits",
     icon: BarChart3,
     title: "Internal Audits Anytime",
     desc: "Run comprehensive internal audits with one click. AI flags issues before auditors do.",
   },
   {
+    id: "compliance-ongoing-compliance",
     icon: ShieldCheck,
     title: "Ongoing Compliance",
     desc: "Stay audit-ready every day — not just during audit season.",
@@ -138,6 +145,7 @@ export default function ComplianceSection() {
           {steps.map((step, i) => (
             <motion.div
               key={step.title}
+              id={step.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -166,12 +174,12 @@ export default function ComplianceSection() {
           transition={{ duration: 0.6 }}
           className="text-center mt-16"
         >
-          <a href="#contact">
+          <Link to="/#contact">
             <Button className="bg-harvest hover:bg-harvest/90 text-white font-display text-base px-10 py-6 gap-2 group shadow-lg shadow-harvest/20">
               Get Audit-Ready Now
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </Button>
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>

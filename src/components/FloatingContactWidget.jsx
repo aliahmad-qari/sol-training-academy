@@ -1,22 +1,25 @@
 import React from "react";
 import { Phone, MessageSquare } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function FloatingContactWidget() {
   return (
-    <div className="fixed right-4 bottom-28 z-40 flex flex-col gap-3 items-center">
-      <a
-        href="/#contact"
+    <div className="fixed right-4 bottom-24 z-40 flex flex-col items-center gap-2 sm:bottom-28 sm:gap-3">
+      <Link
+        to="/#contact"
         title="Send us a message"
-        className="w-12 h-12 rounded-full bg-harvest flex items-center justify-center shadow-lg hover:bg-harvest/90 hover:scale-110 transition-all duration-300"
+        aria-label="Send SOL Business Consultant a message"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-harvest shadow-lg transition-all duration-300 hover:scale-110 hover:bg-harvest/90 sm:h-12 sm:w-12"
       >
-        <MessageSquare className="w-5 h-5 text-white" />
-      </a>
+        <MessageSquare className="h-5 w-5 text-white" />
+      </Link>
       <a
         href="tel:+61460003494"
         title="Call us"
-        className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-lg hover:bg-green-600 hover:scale-110 transition-all duration-300"
+        aria-label="Call SOL Business Consultant"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-green-500 shadow-lg transition-all duration-300 hover:scale-110 hover:bg-green-600 sm:h-12 sm:w-12"
       >
-        <Phone className="w-5 h-5 text-white" />
+        <Phone className="h-5 w-5 text-white" />
       </a>
     </div>
   );

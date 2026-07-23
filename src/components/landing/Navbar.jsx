@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowRight, ChevronDown, ClipboardCheck, GraduationCap, Globe, Code2, Calculator, Megaphone, BookOpen, Shield, LayoutDashboard, UserCircle } from "lucide-react";
+import { Menu, X, ArrowRight, ChevronDown, ClipboardCheck, GraduationCap, Globe, Code2, Calculator, Megaphone, BookOpen, Shield, UserCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 
@@ -35,23 +35,62 @@ const SERVICE_CATEGORIES = [
 const NAV_LINKS = [
   { label: "Home",         href: "/" },
   { label: "About",        href: "/#about" },
-  { label: "Compliance",   href: "/services/ndis-registration" },
+  { label: "Compliance",   href: "/#compliance" },
   { label: "Pricing",      href: "/#pricing" },
   { label: "Blog",         href: "/blog" },
   { label: "Contact",      href: "/#contact" },
 ];
 
+const TRACKED_SECTIONS = ["about", "services", "pricing", "compliance", "ndis", "contact"];
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [barVisible, setBarVisible] = useState(true);
+  const [activeHash, setActiveHash] = useState("");
   const location = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      setActiveHash("");
+      return undefined;
+    }
+
+    const updateActiveSection = () => {
+      const current = TRACKED_SECTIONS
+        .map((id) => ({ id, element: document.getElementById(id) }))
+        .filter(({ element }) => element)
+        .reverse()
+        .find(({ element }) => element.getBoundingClientRect().top <= 140);
+
+      setActiveHash(current ? `/#${current.id}` : "");
+    };
+
+    updateActiveSection();
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    window.addEventListener("resize", updateActiveSection);
+    return () => {
+      window.removeEventListener("scroll", updateActiveSection);
+      window.removeEventListener("resize", updateActiveSection);
+    };
+  }, [location.pathname]);
+
+  const isActiveLink = (href) => {
+    if (href === "/") return location.pathname === "/" && !activeHash;
+    if (href.startsWith("/#")) return location.pathname === "/" && activeHash === href;
+    return location.pathname === href;
+  };
+
+  // The utility bar collapses once the user scrolls, so the nav stays compact.
+  const showBar = barVisible && !scrolled;
 
   return (
     <motion.header
@@ -64,6 +103,40 @@ export default function Navbar() {
           : "bg-transparent"
       }`}
     >
+      {/* Utility / announcement bar */}
+      <AnimatePresence>
+        {showBar && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="bg-ink text-white overflow-hidden"
+          >
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 h-9 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-3.5 h-3.5 text-harvest flex-shrink-0" />
+                <span className="truncate">
+                  Australian-owned NDIS & business consulting — audit-ready systems, end-to-end support.
+                </span>
+              </div>
+              <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
+                <Link to="/readiness-quiz" className="font-semibold hover:text-harvest transition-colors flex items-center gap-1">
+                  Free Readiness Quiz <ArrowRight className="w-3 h-3" />
+                </Link>
+                <button
+                  onClick={() => setBarVisible(false)}
+                  aria-label="Dismiss announcement"
+                  className="text-white/50 hover:text-white transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <nav className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center gap-2">
@@ -77,13 +150,20 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden lg:flex items-center gap-4">
-            {NAV_LINKS.map((link) => (
-              <a key={link.label} href={link.href}
-                className="text-sm font-medium text-slate_mist hover:text-ink transition-colors duration-300 relative group">
-                {link.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-harvest transition-all duration-300 group-hover:w-full" />
-              </a>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const active = isActiveLink(link.href);
+              return (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  className={`text-sm font-medium transition-colors duration-300 relative group ${active ? "text-ink" : "text-slate_mist hover:text-ink"}`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {link.label}
+                  <span className={`absolute -bottom-1 left-0 h-[2px] bg-harvest transition-all duration-300 ${active ? "w-full" : "w-0 group-hover:w-full"}`} />
+                </Link>
+              );
+            })}
             {/* Mega-menu Services dropdown */}
             <div className="relative" onMouseEnter={() => setServicesOpen(true)} onMouseLeave={() => setServicesOpen(false)}>
               <button
@@ -99,10 +179,10 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute top-full -left-4 mt-3 w-[620px] bg-white rounded-2xl border border-border shadow-2xl py-5 px-2 z-50 grid grid-cols-3 gap-1"
+                    className="absolute top-full -left-4 mt-3 w-[820px] bg-white rounded-2xl border border-border shadow-2xl p-2 z-50 grid grid-cols-[1fr_1fr_1fr_240px] gap-1"
                   >
                     {SERVICE_CATEGORIES.map((cat) => (
-                      <div key={cat.label} className="px-3">
+                      <div key={cat.label} className="px-3 py-3">
                         <div className="flex items-center gap-2 mb-2">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate_mist">{cat.label}</p>
                           {cat.badge && <span className="text-[9px] font-bold bg-harvest/10 text-harvest px-1.5 py-0.5 rounded-full">{cat.badge}</span>}
@@ -122,12 +202,20 @@ export default function Navbar() {
                         ))}
                       </div>
                     ))}
-                    {/* CTA strip */}
-                    <div className="col-span-3 mt-2 pt-3 border-t border-border/50 px-3 flex items-center justify-between">
-                      <p className="text-xs text-slate_mist">Not sure where to start?</p>
-                      <Link to="/readiness-quiz" onClick={() => setServicesOpen(false)}>
-                        <Button size="sm" className="bg-harvest text-white text-xs gap-1.5 h-7">
-                          Take Free Readiness Quiz <ArrowRight className="w-3 h-3" />
+                    {/* Promo card (eploy-style right rail) */}
+                    <div className="rounded-xl bg-gradient-to-br from-ink via-ink to-harvest/40 p-4 flex flex-col justify-between text-white">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/10 text-[10px] font-bold uppercase tracking-wider mb-3">
+                          <Sparkles className="w-3 h-3 text-harvest" /> Get Started
+                        </div>
+                        <p className="font-display font-bold text-base leading-tight">Not sure where to start?</p>
+                        <p className="text-xs text-white/70 mt-1.5 leading-relaxed">
+                          Take our 5-minute readiness quiz and get a tailored plan for your business.
+                        </p>
+                      </div>
+                      <Link to="/readiness-quiz" onClick={() => setServicesOpen(false)} className="mt-4">
+                        <Button size="sm" className="w-full bg-harvest hover:bg-harvest/90 text-white text-xs gap-1.5 h-8">
+                          Free Readiness Quiz <ArrowRight className="w-3 h-3" />
                         </Button>
                       </Link>
                     </div>
@@ -147,12 +235,12 @@ export default function Navbar() {
             <Link to="/get-started">
               <Button variant="outline" className="text-sm border-border/60 h-8 px-3">Find My Plan</Button>
             </Link>
-            <a href="/#contact">
+            <Link to="/#contact">
               <Button className="bg-ink hover:bg-ink/90 text-white font-display text-sm px-4 h-8 gap-1.5 group">
                 Book Consultation
                 <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
               </Button>
-            </a>
+            </Link>
           </div>
 
           <button
@@ -171,12 +259,20 @@ export default function Navbar() {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }} className="lg:hidden bg-white border-t border-border overflow-hidden">
             <div className="px-6 py-6 space-y-3">
-              {NAV_LINKS.map((link) => (
-                <a key={link.label} href={link.href} onClick={() => setMobileOpen(false)}
-                  className="block text-base font-medium text-ink hover:text-harvest transition-colors py-1">
-                  {link.label}
-                </a>
-              ))}
+              {NAV_LINKS.map((link) => {
+                const active = isActiveLink(link.href);
+                return (
+                  <Link
+                    key={link.label}
+                    to={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`block text-base font-medium transition-colors py-1 ${active ? "text-harvest" : "text-ink hover:text-harvest"}`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
               <div className="pt-2 border-t border-border/50">
                 {SERVICE_CATEGORIES.map(cat => (
                   <div key={cat.label} className="mb-3">
@@ -205,9 +301,9 @@ export default function Navbar() {
                 <Link to="/get-started" onClick={() => setMobileOpen(false)}>
                   <Button variant="outline" size="sm">Find My Plan</Button>
                 </Link>
-                <a href="/#contact" onClick={() => setMobileOpen(false)}>
+                <Link to="/#contact" onClick={() => setMobileOpen(false)}>
                   <Button className="bg-harvest text-white" size="sm">Book Consultation</Button>
-                </a>
+                </Link>
               </div>
             </div>
           </motion.div>
