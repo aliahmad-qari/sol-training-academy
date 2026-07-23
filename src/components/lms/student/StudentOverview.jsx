@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import apiClient from "@/api/apiClient";
 import AIProgressReport from "@/components/lms/student/AIProgressReport";
 import { quizAttemptPercentOrZero, quizScoreLabel } from "@/lib/quizScores";
+import { effectiveProgress } from "@/lib/enrollmentProgress";
 import { findSubmissionForAssignment } from "@/components/lms/student/StudentAssessments";
 
 const LEVEL_CONFIG = {
@@ -102,7 +103,7 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
   const inProgress  = enrollments.filter(e => e.status === "active" && (e.progress_percent || 0) > 0).length;
   const certs       = enrollments.filter(e => e.certificate_issued).length;
   const avgProgress = enrollments.length > 0
-    ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length) : 0;
+    ? Math.round(enrollments.reduce((s, e) => s + effectiveProgress(e), 0) / enrollments.length) : 0;
   const passedQuizzes = quizAttempts.filter(q => q.passed).length;
   const totalTopicsDone = enrollments.reduce((s, e) => s + (e.completed_topic_ids?.length || 0), 0);
 
@@ -119,12 +120,12 @@ export default function StudentOverview({ user, enrollments, courses, quizAttemp
     .filter(e => e.status === "active" && (e.progress_percent || 0) > 0)
     .slice(0, 3);
   const notStarted = enrollments
-    .filter(e => !e.progress_percent || e.progress_percent === 0)
+    .filter(e => e.status !== "completed" && (!e.progress_percent || e.progress_percent === 0))
     .slice(0, 2);
 
   const visibleCourses = [...continueCourses, ...notStarted];
   const recommendedCourse = continueCourses[0] || notStarted[0] || enrollments[0];
-  const bestProgress = enrollments.reduce((max, e) => Math.max(max, e.progress_percent || 0), 0);
+  const bestProgress = enrollments.reduce((max, e) => Math.max(max, effectiveProgress(e)), 0);
   const allCoursesComplete = enrollments.length > 0 && avgProgress >= 100;
   const completedTopicIds = new Set((recommendedCourse?.completed_topic_ids || []).map(String));
   const currentCourseTopics = recommendedCourse ? (topicsByCourse[String(recommendedCourse.course_id)] || []) : [];

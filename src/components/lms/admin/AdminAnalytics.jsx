@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { averageQuizPercent, quizAttemptPercentOrZero } from "@/lib/quizScores";
+import { effectiveProgress } from "@/lib/enrollmentProgress";
 
 const PIE_COLORS = ["#D97706", "#3B82F6", "#10B981", "#8B5CF6", "#F43F5E"];
 const LEVEL_COLORS = { level1: "#3B82F6", level2: "#F59E0B", level3: "#8B5CF6" };
@@ -63,7 +64,7 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
     const cEnvs = enrollments.filter(e => String(e.course_id) === String(c._id || c.id));
     const completed = cEnvs.filter(e => e.status === "completed").length;
     const avgPct = cEnvs.length > 0
-      ? Math.round(cEnvs.reduce((s, e) => s + (e.progress_percent || 0), 0) / cEnvs.length)
+      ? Math.round(cEnvs.reduce((s, e) => s + effectiveProgress(e), 0) / cEnvs.length)
       : 0;
     return {
       id: c.id,
@@ -105,7 +106,7 @@ export default function AdminAnalytics({ courses, enrollments, quizAttempts }) {
     const envs = s.enrollments;
     const completedCourses = envs.filter(e => e.status === "completed").length;
     const avgProgress = envs.length > 0
-      ? Math.round(envs.reduce((sum, e) => sum + (e.progress_percent || 0), 0) / envs.length)
+      ? Math.round(envs.reduce((sum, e) => sum + effectiveProgress(e), 0) / envs.length)
       : 0;
     const studentAttempts = quizAttempts.filter(a => String(a.user_id) === String(s.id));
     const avgQuiz = averageQuizPercent(studentAttempts);

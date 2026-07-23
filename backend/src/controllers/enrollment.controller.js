@@ -1,4 +1,4 @@
-import { CourseEnrollment, User } from '../models/index.js';
+import { CourseEnrollment, CourseTopic, User } from '../models/index.js';
 import { safeCreateNotification } from '../services/notification.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendOk, sendCreated } from '../utils/ApiResponse.js';
@@ -131,6 +131,39 @@ export const updateEnrollment = asyncHandler(async (req, res) => {
   const allowed = ['status', 'expiry_date', 'progress_percent', 'reminder_sent_days'];
   const update = {};
   for (const k of allowed) if (req.body[k] !== undefined) update[k] = req.body[k];
+
+  const hasStatus = Object.prototype.hasOwnProperty.call(update, 'status');
+  const hasProgress = Object.prototype.hasOwnProperty.call(update, 'progress_percent');
+  const progressNumber = hasProgress ? Number(update.progress_percent) : undefined;
+
+  // Keep status and progress_percent consistent so a manual admin edit never
+  // leaves contradictory rows like completed+0% or active+100%.
+  if (update.status === 'completed' || (hasProgress && progressNumber >= 100)) {
+    update.status = 'completed';
+    update.progress_percent = 100;
+    update.completed_date = new Date();
+  } else if (hasStatus && update.status !== 'completed') {
+    // Moving off completed: drop the completion stamp and, unless progress was
+    // set explicitly, recompute it from the actual completed topics so we don't
+    // leave a stale 100%.
+    update.completed_date = null;
+    if (!hasProgress) {
+      const current = await CourseEnrollment.findById(req.params.id).select('course_id completed_topic_ids').lean();
+      if (current) {
+        const totalTopics = await CourseTopic.countDocuments({ course_id: current.course_id });
+        const done = (current.completed_topic_ids || []).length;
+        update.progress_percent = totalTopics > 0 ? Math.min(100, Math.round((done / totalTopics) * 100)) : 0;
+      }
+    }
+  } else if (hasProgress && progressNumber < 100) {
+    // If an already-completed enrollment is manually reduced below 100%, move it
+    // back to active instead of keeping a misleading completed status/date.
+    const current = await CourseEnrollment.findById(req.params.id).select('status').lean();
+    if (current?.status === 'completed') {
+      update.status = 'active';
+      update.completed_date = null;
+    }
+  }
 
   const enrollment = await CourseEnrollment.findByIdAndUpdate(req.params.id, update, {
     new: true,

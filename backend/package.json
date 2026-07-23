@@ -13,6 +13,7 @@
     "seed:admin": "node src/utils/seedAdmin.js",
     "migrate:verified": "node src/utils/backfillVerified.js",
     "fix:quiz-passing-marks": "node src/utils/fixQuizPassingMarks.js",
+    "fix:completed-progress": "node src/utils/fixCompletedProgress.js",
     "migrate:assessment-assignments": "node src/utils/backfillAssessmentAssignments.js",
     "test:e2e": "node scripts/e2e.test.mjs"
   },

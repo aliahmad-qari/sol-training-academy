@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import apiClient from "@/api/apiClient";
 import { format, differenceInDays } from "date-fns";
 import NDISIntakeSummary from "./NDISIntakeSummary";
+import { effectiveProgress } from "@/lib/enrollmentProgress";
 
 const PIE_COLORS = ["#D97706", "#3B82F6", "#10B981", "#8B5CF6"];
 
@@ -52,7 +53,7 @@ export default function AdminOverview({ courses, enrollments, quizAttempts, setA
     return (now - d) < 30 * 24 * 60 * 60 * 1000; // last 30 days
   }).length;
   const avgProgress     = enrollments.length > 0
-    ? Math.round(enrollments.reduce((s, e) => s + (e.progress_percent || 0), 0) / enrollments.length)
+    ? Math.round(enrollments.reduce((s, e) => s + effectiveProgress(e), 0) / enrollments.length)
     : 0;
 
   // Active enrollments whose access expires within the next 14 days
