@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CheckCircle, ChevronDown, ChevronUp, Play, Clock, BookOpen, ArrowRight, Star, Video } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const COLOR_MAP = {
   blue: {
@@ -205,20 +206,20 @@ export default function CourseLevelContent({ course, enrollButton }) {
                 {/* ── Enrol Now button ── */}
                 <div className="mb-3">
                   {enrollButton || (
-                    <a href={course.enrollUrl} target="_blank" rel="noopener noreferrer">
+                    <Link to={course.enrollUrl || "/services/support-coordination-training#training-pricing"}>
                       <button className="w-full flex items-center justify-center gap-2 bg-ink hover:bg-ink/90 text-white font-display font-semibold text-base px-6 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 group">
                         Enrol Now <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                       </button>
-                    </a>
+                    </Link>
                   )}
                 </div>
 
                 {/* Secondary — contact */}
-                <a href="/#contact" className="block">
+                <Link to="/#contact" className="block">
                   <button className="w-full flex items-center justify-center gap-2 border border-border text-slate_mist hover:border-ink hover:text-ink font-medium text-sm px-6 py-2.5 rounded-xl transition-all duration-200">
                     Ask a Question
                   </button>
-                </a>
+                </Link>
 
                 {/* Divider */}
                 <div className="border-t border-border/50 my-5" />

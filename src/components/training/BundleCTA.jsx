@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export default function BundleCTA() {
   return (
@@ -41,17 +42,17 @@ export default function BundleCTA() {
           </div>
 
           <div className="flex flex-col gap-3 flex-shrink-0 w-full md:w-auto">
-            <a href="https://solbusinessconsultant.com.au" target="_blank" rel="noopener noreferrer">
+            <Link to="/services/support-coordination-training#training-pricing">
               <Button className="bg-harvest hover:bg-harvest/90 text-white font-display px-10 py-3 text-base gap-2 w-full">
                 Get Full Bundle <ArrowRight className="w-5 h-5" />
               </Button>
-            </a>
-            <a href="/#contact">
+            </Link>
+            <Link to="/#contact">
               <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 w-full text-sm">
                 Have questions? Contact Us
               </Button>
-            </a>
-            <p className="text-center text-xs text-white/30">📞 +61 460 003 494</p>
+            </Link>
+            <p className="text-center text-xs text-white/30">Call +61 460 003 494</p>
           </div>
         </div>
       </div>

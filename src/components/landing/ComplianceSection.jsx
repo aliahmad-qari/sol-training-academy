@@ -23,7 +23,7 @@ const steps = [
     id: "compliance-ai-document-validation",
     icon: FileSearch,
     title: "AI Document Validation",
-    desc: "AI-powered validation checks every document, flags issues, and assigns confidence scores.",
+    desc: "AI-assisted validation reviews documents, flags potential gaps, and assigns confidence scores.",
   },
   {
     id: "compliance-expiry-alerts-actions",
@@ -35,7 +35,7 @@ const steps = [
     id: "compliance-internal-audits",
     icon: BarChart3,
     title: "Internal Audits Anytime",
-    desc: "Run comprehensive internal audits with one click. AI flags issues before auditors do.",
+    desc: "Run structured internal audits and surface potential issues before formal audit activity.",
   },
   {
     id: "compliance-ongoing-compliance",
@@ -68,8 +68,7 @@ export default function ComplianceSection() {
             NDIS Compliance Made Effortless
           </h2>
           <p className="text-lg text-slate_mist max-w-2xl mt-4 leading-relaxed">
-            Easy Compliance is a service, not just software. Our team works with you every step — 
-            from scattered documents to audit-ready in weeks.
+            Easy Compliance is a service, not just software. Our team works with you every step - from scattered documents toward a clear audit-readiness plan.
           </p>
           <div className="w-20 h-[2px] bg-harvest mt-6" />
         </motion.div>
@@ -98,7 +97,7 @@ export default function ComplianceSection() {
             <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-sm rounded-xl p-4">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm font-semibold text-ink">AI Document Validation Active</span>
+                <span className="text-sm font-semibold text-ink">Document Review Workflow Active</span>
               </div>
             </div>
           </motion.div>
@@ -143,7 +142,7 @@ export default function ComplianceSection() {
           className="mb-8"
         >
           <h3 className="font-display font-bold text-2xl text-ink mb-2">The Compliance Lifecycle</h3>
-          <p className="text-slate_mist">From first call to audit-ready in weeks.</p>
+          <p className="text-slate_mist">From first call to a clear audit-readiness plan.</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -17,7 +17,7 @@ const SERVICE_CATEGORIES = [
   {
     label: "Training",
     items: [
-      { label: "Support Coordination Training", href: "/services/support-coordination-training", icon: GraduationCap,  desc: "Level 1–3 accredited courses" },
+      { label: "Support Coordination Training", href: "/services/support-coordination-training", icon: GraduationCap,  desc: "Level 1-3 NDIS-aligned courses" },
       { label: "Training Courses",              href: "/training-courses",                        icon: BookOpen,       desc: "Browse all online courses" },
     ],
   },
@@ -27,7 +27,7 @@ const SERVICE_CATEGORIES = [
       { label: "Digital Marketing",             href: "/marketing-packages",                     icon: Megaphone,      desc: "SEO, social media & ads" },
       { label: "Website Development",           href: "/services/website-development",           icon: Globe,          desc: "Custom business websites" },
       { label: "Software & Automation",         href: "/services/software-automation",           icon: Code2,          desc: "Streamline your operations" },
-      { label: "Accountancy",                   href: "/services/accountancy",                   icon: Calculator,     desc: "Tax, BAS & compliance" },
+      { label: "Accountancy",                   href: "/services/accountancy",                   icon: Calculator,     desc: "Finance operations support" },
     ],
   },
 ];
@@ -149,7 +149,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden xl:flex items-center gap-4">
             {NAV_LINKS.map((link) => {
               const active = isActiveLink(link.href);
               return (
@@ -179,10 +179,10 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute top-full -left-4 mt-3 w-[820px] bg-white rounded-2xl border border-border shadow-2xl p-2 z-50 grid grid-cols-[1fr_1fr_1fr_240px] gap-1"
+                    className={`fixed left-1/2 ${showBar ? "top-28" : "top-20"} z-50 mt-3 grid w-[calc(100vw-2rem)] max-w-5xl -translate-x-1/2 grid-cols-1 gap-2 rounded-2xl border border-border bg-white p-2 shadow-2xl max-h-[calc(100vh-7rem)] overflow-y-auto xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.2fr)_minmax(220px,240px)] xl:w-[920px]`}
                   >
                     {SERVICE_CATEGORIES.map((cat) => (
-                      <div key={cat.label} className="px-3 py-3">
+                      <div key={cat.label} className="min-w-0 px-3 py-3">
                         <div className="flex items-center gap-2 mb-2">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate_mist">{cat.label}</p>
                           {cat.badge && <span className="text-[9px] font-bold bg-harvest/10 text-harvest px-1.5 py-0.5 rounded-full">{cat.badge}</span>}
@@ -190,13 +190,13 @@ export default function Navbar() {
                         {cat.items.map((item) => (
                           <Link key={item.href} to={item.href}
                             onClick={() => setServicesOpen(false)}
-                            className="flex items-start gap-2.5 px-2 py-2 rounded-xl hover:bg-slate-50 hover:text-harvest transition-colors group mb-0.5">
+                            className="flex min-w-0 items-start gap-2.5 rounded-xl px-2 py-2 transition-colors group mb-0.5 hover:bg-slate-50 hover:text-harvest">
                             <div className="w-7 h-7 rounded-lg bg-harvest/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-harvest/20 transition-colors">
                               <item.icon className="w-3.5 h-3.5 text-harvest" />
                             </div>
-                            <div>
-                              <p className="text-sm font-semibold text-ink group-hover:text-harvest leading-tight">{item.label}</p>
-                              <p className="text-[11px] text-slate_mist leading-tight mt-0.5">{item.desc}</p>
+                            <div className="min-w-0">
+                              <p className="break-words text-sm font-semibold leading-tight text-ink group-hover:text-harvest">{item.label}</p>
+                              <p className="mt-0.5 break-words text-[11px] leading-tight text-slate_mist">{item.desc}</p>
                             </div>
                           </Link>
                         ))}
@@ -225,7 +225,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden xl:flex items-center gap-2">
             <Link to="/client-portal" className="text-sm font-medium text-slate_mist hover:text-harvest transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100">
               <UserCircle className="w-4 h-4" /> Portal
             </Link>
@@ -244,7 +244,7 @@ export default function Navbar() {
           </div>
 
           <button
-            className="lg:hidden p-2"
+            className="xl:hidden p-2"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileOpen}
@@ -257,7 +257,7 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }} className="lg:hidden bg-white border-t border-border overflow-hidden">
+            exit={{ opacity: 0, height: 0 }} className="xl:hidden bg-white border-t border-border overflow-hidden">
             <div className="px-6 py-6 space-y-3">
               {NAV_LINKS.map((link) => {
                 const active = isActiveLink(link.href);
@@ -297,12 +297,12 @@ export default function Navbar() {
                   <GraduationCap className="w-4 h-4 text-harvest" /> Student Dashboard
                 </Link>
               </div>
-              <div className="flex gap-2 pt-2">
-                <Link to="/get-started" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" size="sm">Find My Plan</Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <Link to="/get-started" onClick={() => setMobileOpen(false)} className="w-full">
+                  <Button variant="outline" size="sm" className="w-full">Find My Plan</Button>
                 </Link>
-                <Link to="/#contact" onClick={() => setMobileOpen(false)}>
-                  <Button className="bg-harvest text-white" size="sm">Book Consultation</Button>
+                <Link to="/#contact" onClick={() => setMobileOpen(false)} className="w-full">
+                  <Button className="w-full bg-harvest text-white" size="sm">Book Consultation</Button>
                 </Link>
               </div>
             </div>

@@ -17,7 +17,7 @@ const FAQS = [
   },
   {
     q: "Do I receive a certificate upon completion?",
-    a: "Yes. Individual learners receive a Certificate of Completion upon finishing all 12 modules and assessments. Team and Enterprise packages include branded certificate templates that your organisation can issue to staff under your own branding.",
+    a: "Yes. Individual learners receive a SOL Certificate of Completion upon finishing all 12 modules and assessments. Team and Enterprise packages include branded completion certificate templates your organisation can issue to staff under your own branding. This is a practical completion certificate, not a nationally accredited qualification unless delivered by an authorised RTO under its own scope.",
   },
   {
     q: "Can we white-label the content for our RTO or organisation?",

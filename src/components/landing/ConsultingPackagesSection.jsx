@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, CheckCircle, FileText, Calculator, Globe,
-  CreditCard, Users, TrendingUp, Zap, Star
+  Users, TrendingUp, Zap, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,14 +12,14 @@ const PACKAGES = [
     icon: FileText,
     category: "Compliance & Registration",
     name: "NDIS Starter Pack",
-    price: "From $1,500",
+    price: "From $3,950 +GST",
     badge: null,
     highlight: false,
-    tagline: "Everything you need to become a registered NDIS provider.",
+    tagline: "Guided preparation for your NDIS provider registration pathway.",
     features: [
-      "NDIS registration application",
-      "Policy & procedure pack (30+ docs)",
-      "Audit preparation & guidance",
+      "NDIS application preparation",
+      "Policy & procedure template pack",
+      "Audit readiness guidance",
       "ABN / company setup",
       "Ongoing compliance support",
     ],
@@ -67,15 +67,15 @@ const PACKAGES = [
     icon: Users,
     category: "Training & Development",
     name: "Support Coordination Training",
-    price: "From $497",
+    price: "From $1,200 +GST",
     badge: "Best Value",
     highlight: false,
-    tagline: "Industry-leading 12-module training program for NDIS workers.",
+    tagline: "NDIS-aligned 12-module training packages for learners and teams.",
     features: [
       "12 comprehensive modules",
       "1,500+ quiz questions",
       "Video scripts & slide decks",
-      "Audit-ready assessments",
+      "NDIS-aligned assessments",
       "Certificate on completion",
     ],
     cta: "Enrol Now",
@@ -83,18 +83,18 @@ const PACKAGES = [
   },
   {
     icon: Calculator,
-    category: "Finance & Accounting",
+    category: "Finance Operations Support",
     name: "NDIS Financial Management",
     price: "From $300/mo",
     badge: null,
     highlight: false,
-    tagline: "Bookkeeping, BAS, payroll and NDIS-specific financial reporting.",
+    tagline: "Bookkeeping setup, payroll process support, reporting guidance, and practitioner referrals where required.",
     features: [
-      "Monthly bookkeeping",
-      "BAS & GST lodgements",
-      "Payroll & STP reporting",
+      "Monthly bookkeeping support",
+      "BAS/GST preparation support",
+      "Payroll/STP process support",
       "NDIS financial reporting",
-      "Tax planning & advisory",
+      "Tax planning referrals where required",
     ],
     cta: "Get a Quote",
     href: "/services/accountancy",
@@ -115,7 +115,7 @@ const PACKAGES = [
       "Monthly performance reports",
     ],
     cta: "Grow My Business",
-    href: "/services/marketing",
+    href: "/marketing-packages",
   },
 ];
 
@@ -245,7 +245,7 @@ export default function ConsultingPackagesSection() {
             </div>
           </div>
           <Button asChild className="bg-harvest hover:bg-harvest/90 text-white gap-2 px-6 h-10 whitespace-nowrap font-semibold">
-            <a href="/#contact">Book Free Consultation <ArrowRight className="w-4 h-4" /></a>
+            <Link to="/#contact">Book Free Consultation <ArrowRight className="w-4 h-4" /></Link>
           </Button>
         </motion.div>
 

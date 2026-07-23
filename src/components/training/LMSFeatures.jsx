@@ -20,7 +20,7 @@ const FEATURES = [
   {
     icon: Award,
     title: "Certificates of Completion",
-    desc: "Earn recognised certificates upon completing each level to demonstrate your expertise.",
+    desc: "Earn practical certificates of completion for your records and professional development evidence.",
   },
   {
     icon: Shield,

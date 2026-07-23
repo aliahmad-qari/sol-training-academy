@@ -1,5 +1,5 @@
-﻿import React from "react";
-import { motion } from "framer-motion";
+import React from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 const PLATFORMS = [
   { name: "NDIS Commission", abbr: "NDIS\nCommission" },
@@ -28,6 +28,7 @@ function LogoPill({ item }) {
 }
 
 export default function LogoCarousel() {
+  const shouldReduceMotion = useReducedMotion();
   return (
     <section className="py-20 bg-white overflow-hidden border-t border-border/40">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-10 text-center">
@@ -47,7 +48,7 @@ export default function LogoCarousel() {
       <div className="relative">
         <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
         <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
-        <motion.div className="flex" animate={{ x: ["0%", "-50%"] }} transition={{ duration: 28, repeat: Infinity, ease: "linear" }}>
+        <motion.div className="flex" animate={shouldReduceMotion ? undefined : { x: ["0%", "-50%"] }} transition={shouldReduceMotion ? undefined : { duration: 28, repeat: Infinity, ease: "linear" }}>
           {DUPLICATED.map((item, i) => <LogoPill key={i} item={item} />)}
         </motion.div>
       </div>
@@ -55,7 +56,7 @@ export default function LogoCarousel() {
       <div className="relative mt-4">
         <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
         <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
-        <motion.div className="flex" animate={{ x: ["-50%", "0%"] }} transition={{ duration: 32, repeat: Infinity, ease: "linear" }}>
+        <motion.div className="flex" animate={shouldReduceMotion ? undefined : { x: ["-50%", "0%"] }} transition={shouldReduceMotion ? undefined : { duration: 32, repeat: Infinity, ease: "linear" }}>
           {DUPLICATED.map((item, i) => <LogoPill key={i} item={item} />)}
         </motion.div>
       </div>

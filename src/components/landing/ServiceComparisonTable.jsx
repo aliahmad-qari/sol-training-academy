@@ -39,7 +39,7 @@ const SERVICES = [
   {
     id: "ndis",
     name: "NDIS Registration",
-    tagline: "Get NDIS registered end-to-end",
+    tagline: "Prepare for NDIS registration",
     href: "/services/ndis-registration",
     color: "harvest",
     popular: true,
@@ -145,13 +145,13 @@ export default function ServiceComparisonTable() {
       {/* Header */}
       <div className="text-center mb-12">
         <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-3 block">
-          Compare Services
+          Compare Core Pathways
         </span>
         <h2 className="font-display font-bold text-3xl md:text-4xl text-ink">
           Choose the Right Path for Your Business
         </h2>
         <p className="text-slate_mist mt-3 max-w-xl mx-auto text-sm leading-relaxed">
-          Not sure which service you need? Compare our three most popular pathways side by side.
+          Not sure where to start? Compare three common pathways side by side, then choose the service that fits your current goal.
         </p>
         <div className="w-16 h-[2px] bg-harvest mt-6 mx-auto" />
       </div>

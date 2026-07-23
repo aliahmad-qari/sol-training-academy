@@ -4,14 +4,14 @@ import { Link } from "react-router-dom";
 import { ArrowRight, FileText, Calculator, Users, Globe, Building2, CreditCard, TrendingUp } from "lucide-react";
 import ServiceComparisonTable from "./ServiceComparisonTable";
 
-const SERVICES_IMAGE = "/Images/services/business-consulting-workshop.webp";
+const SERVICES_IMAGE = "/Images/services/marketing-strategy-team.webp";
 
 const services = [
-  { icon: FileText, num: "01", title: "NDIS Registration", desc: "Full end-to-end registration support — from application to certification.", href: "/services/ndis-registration" },
-  { icon: Calculator, num: "02", title: "Accountancy & Bookkeeping", desc: "Bookkeeping, BAS, payroll, tax planning, and NDIS financial reporting.", href: "/services/accountancy" },
+  { icon: FileText, num: "01", title: "NDIS Registration", desc: "Guided registration preparation and audit-readiness support tailored to your provider scope.", href: "/services/ndis-registration" },
+  { icon: Calculator, num: "02", title: "Finance Operations Support", desc: "Bookkeeping setup, reporting support, payroll process guidance, and registered practitioner referrals where required.", href: "/services/accountancy" },
   { icon: Globe, num: "03", title: "Website Development", desc: "Mobile-friendly, SEO-optimised sites with conversion-focused design.", href: "/services/website-development" },
   { icon: CreditCard, num: "04", title: "Software & NDIS Automation", desc: "Document automation, compliance dashboards, and Easy Compliance setup.", href: "/services/software-automation" },
-  { icon: Users, num: "05", title: "Support Coordination Training", desc: "12-module curriculum with 1,500+ quiz questions, video scripts, slide decks, and audit-ready assessments.", href: "/services/support-coordination-training" },
+  { icon: Users, num: "05", title: "Support Coordination Training", desc: "12-module NDIS-aligned curriculum with quiz questions, video scripts, slide decks, and practical assessments.", href: "/services/support-coordination-training" },
   { icon: Building2, num: "06", title: "Company & Business Registration", desc: "Fast ASIC company setup with ABN/TFN/GST registration and structuring.", href: "/#contact" },
   { icon: TrendingUp, num: "07", title: "Digital Marketing", desc: "SEO, social media, Google & Meta Ads, email campaigns, and full digital presence management for business growth.", href: "/services/marketing" },
 ];
@@ -50,7 +50,7 @@ export default function ServicesSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
               className="group relative p-8 rounded-2xl border border-border/60 bg-white hover:border-harvest/40 hover:shadow-lg hover:shadow-harvest/5 transition-all duration-500 block"
-              as={Link}
+
             >
               <Link to={service.href} className="block">
                 <div className="flex items-start justify-between mb-6">
@@ -102,7 +102,7 @@ export default function ServicesSection() {
                 Your One-Stop Business Partner
               </h3>
               <p className="text-white/70 max-w-lg mx-auto text-lg">
-                From startup to scale — every service integrated under one roof
+                From startup to scale - every service connected under one roof
               </p>
             </div>
           </div>

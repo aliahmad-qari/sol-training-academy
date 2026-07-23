@@ -9,8 +9,8 @@ const NDIS_IMAGE = "/Images/services/ndis-registration-documents.webp";
 const roadmap = [
   { id: "ndis-discovery", week: "Week 1", title: "Discovery Call", desc: "Free consultation to assess eligibility, registration groups, and your timeline.", icon: Clock },
   { id: "ndis-documentation", week: "Weeks 2-3", title: "Documentation & Application", desc: "Customised policies, quality system, NDIS portal submission, and auditor matching.", icon: FileCheck },
-  { id: "ndis-mock-audit", week: "Weeks 3-4", title: "Mock Audit & Training", desc: "Simulate the real audit, fix gaps early, and coach your team to perfection.", icon: Users },
-  { id: "ndis-certification", week: "Ongoing", title: "Certification & Beyond", desc: "Pass audit, get certified, and stay compliant with 30-day post-registration check.", icon: Award },
+  { id: "ndis-mock-audit", week: "Weeks 3-4", title: "Mock Audit & Training", desc: "Simulate audit-style questions, identify gaps early, and coach your team through the process.", icon: Users },
+  { id: "ndis-certification", week: "Ongoing", title: "Registration Decision & Beyond", desc: "Support audit follow-up, respond to findings, and keep your systems ready after the Commission's decision.", icon: Award },
 ];
 
 const packages = [
@@ -38,7 +38,7 @@ const packages = [
       "4 hrs intensive consulting (mock audit)",
       "Audit representation (6 hrs consulting support)",
       "Hard copy & digital policy manual",
-      "Free Internal Auditor course ($890 value)",
+      "Internal audit preparation resources",
       "30-day post-registration compliance check",
     ],
   },
@@ -106,7 +106,7 @@ export default function NDISSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="flex gap-6 relative"
+                className="flex gap-6 relative scroll-mt-32"
               >
                 {/* Vertical line */}
                 <div className="flex flex-col items-center">
@@ -148,7 +148,7 @@ export default function NDISSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className={`rounded-2xl p-8 border ${
+              className={`rounded-2xl p-8 border scroll-mt-32 ${
                 pkg.popular
                   ? "bg-white/10 border-harvest/40 backdrop-blur-sm"
                   : "bg-white/5 border-white/10"

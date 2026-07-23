@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Phone, Mail, MapPin, MessageSquare, CalendarDays } from "lucide-react";
+import { ArrowRight, Phone, Mail, MapPin, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,18 +23,17 @@ const INITIAL_FORM = {
 const SERVICE_OPTIONS = [
   { value: "ndis_registration", label: "NDIS Registration Support" },
   { value: "software_automation", label: "Easy Compliance / Automation" },
-  { value: "accountancy", label: "Bookkeeping & BAS" },
+  { value: "accountancy", label: "Finance Operations Support" },
   { value: "support_coordination_training", label: "Support Coordination Training" },
   { value: "business_registration", label: "Company Registration" },
   { value: "website_development", label: "Website Development" },
-  { value: "accountancy_payroll", label: "Payroll Services" },
+  { value: "accountancy_payroll", label: "Payroll Process Support" },
   { value: "general_enquiry", label: "Other / Multiple Services" },
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+\d\s().-]{8,20}$/;
 const WHATSAPP_LINK = "https://wa.me/61460003494?text=Hi%20SOL%20Business%20Consultant%2C%20I%27d%20like%20to%20book%20a%20consultation.";
-const CALENDLY_LINK = "https://calendly.com/sol";
 
 export default function ContactSection() {
   const [loading, setLoading] = useState(false);
@@ -95,18 +94,22 @@ export default function ContactSection() {
         source: "website_contact_form",
       });
 
-      base44.integrations.Core.SendEmail({
-        to: "info@solbusinessconsultant.com.au",
-        subject: "New website enquiry - " + serviceLabel,
-        body:
-          "New website enquiry received.\n\n" +
-          "Name: " + formData.name + "\n" +
-          "Email: " + formData.email + "\n" +
-          "Phone: " + (formData.phone || "Not provided") + "\n" +
-          "Company: " + (formData.company || "Not provided") + "\n" +
-          "Service: " + serviceLabel + "\n\n" +
-          "Message:\n" + (formData.message || "No message provided."),
-      }).catch(() => {});
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: "info@solbusinessconsultant.com.au",
+          subject: "New website enquiry - " + serviceLabel,
+          body:
+            "New website enquiry received.\n\n" +
+            "Name: " + formData.name + "\n" +
+            "Email: " + formData.email + "\n" +
+            "Phone: " + (formData.phone || "Not provided") + "\n" +
+            "Company: " + (formData.company || "Not provided") + "\n" +
+            "Service: " + serviceLabel + "\n\n" +
+            "Message:\n" + (formData.message || "No message provided."),
+        });
+      } catch (emailError) {
+        console.warn("Contact notification email failed:", emailError);
+      }
 
       toast.success("Thank you! Your enquiry has been sent. We'll be in touch within 24 hours.");
       setFormData(INITIAL_FORM);
@@ -150,14 +153,12 @@ export default function ContactSection() {
               >
                 <MessageSquare className="w-4 h-4" /> WhatsApp Us
               </a>
-              <a
-                href={CALENDLY_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/get-started"
                 className="flex items-center justify-center gap-2 rounded-xl border border-ink/15 bg-white px-5 py-3 text-sm font-semibold text-ink transition-all hover:-translate-y-0.5 hover:border-harvest hover:text-harvest"
               >
-                <CalendarDays className="w-4 h-4" /> Book on Calendly
-              </a>
+                <ArrowRight className="w-4 h-4" /> Start Online Enquiry
+              </Link>
             </div>
 
             <div className="space-y-6">

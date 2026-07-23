@@ -8,7 +8,7 @@ import { toast } from "sonner";
 const solServices = [
   { label: "NDIS Registration", href: "/services/ndis-registration" },
   { label: "Support Coordination Training", href: "/services/support-coordination-training" },
-  { label: "Bookkeeping & BAS", href: "/services/accountancy" },
+  { label: "Finance Operations Support", href: "/services/accountancy" },
   { label: "Company Registration", href: "/#services" },
   { label: "Website Development", href: "/services/website-development" },
   { label: "Software & Automation", href: "/services/software-automation" },
@@ -83,7 +83,7 @@ export default function Footer() {
     <footer className="bg-ink text-white pt-24 pb-8">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* Top — CTA Banner */}
-        <div className="bg-harvest/10 border border-harvest/20 rounded-2xl p-10 md:p-14 mb-20 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="bg-harvest/10 border border-harvest/20 rounded-2xl p-6 sm:p-8 md:p-14 mb-20 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <h3 className="font-display font-bold text-3xl md:text-4xl text-white leading-tight">
               Let's Build Your<br />Business Foundation
@@ -92,16 +92,16 @@ export default function Footer() {
           </div>
           <Link
             to="/#contact"
-            className="flex-shrink-0 bg-harvest hover:bg-harvest/90 text-white font-display font-semibold px-8 py-4 rounded-xl flex items-center gap-2 transition-colors"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-harvest px-8 py-4 font-display font-semibold text-white transition-colors hover:bg-harvest/90 sm:w-auto sm:flex-shrink-0"
           >
             Get Started <ArrowUpRight className="w-5 h-5" />
           </Link>
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 mb-16">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-4 lg:col-span-1 mb-4 lg:mb-0">
+          <div className="sm:col-span-2 md:col-span-4 lg:col-span-1 mb-4 lg:mb-0">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-full bg-harvest flex items-center justify-center">
                 <span className="text-white font-display font-bold text-lg">S</span>

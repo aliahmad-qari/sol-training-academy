@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import CourseHero from "@/components/training/CourseHero";
@@ -94,7 +94,7 @@ export const LEVELS = [
         ],
       },
     ],
-    enrollUrl: "https://solbusinessconsultant.com.au",
+    enrollUrl: "/services/support-coordination-training#training-pricing",
   },
   {
     id: "level2",
@@ -198,7 +198,7 @@ export const LEVELS = [
         ],
       },
     ],
-    enrollUrl: "https://solbusinessconsultant.com.au",
+    enrollUrl: "/services/support-coordination-training#training-pricing",
     popular: true,
   },
   {
@@ -299,7 +299,7 @@ export const LEVELS = [
         ],
       },
     ],
-    enrollUrl: "https://solbusinessconsultant.com.au",
+    enrollUrl: "/services/support-coordination-training#training-pricing",
   },
 ];
 

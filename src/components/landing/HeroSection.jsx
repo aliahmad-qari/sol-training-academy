@@ -22,7 +22,7 @@ const trustHighlights = [
 const trustBadges = [
   { icon: MapPin, label: "Australian-owned" },
   { icon: FileCheck, label: "NDIS-aligned processes" },
-  { icon: Award, label: "Easy Compliance verified" },
+  { icon: Award, label: "Easy Compliance support" },
 ];
 
 export default function HeroSection() {
@@ -71,16 +71,16 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.6 }}
-              className="flex flex-wrap gap-4"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
             >
-              <Link to="/#contact">
-                <Button className="bg-harvest hover:bg-harvest/90 text-white font-display text-base px-8 py-6 gap-2 group shadow-lg shadow-harvest/20">
+              <Link to="/#contact" className="w-full sm:w-auto">
+                <Button className="w-full justify-center bg-harvest hover:bg-harvest/90 text-white font-display text-base px-8 py-6 gap-2 group shadow-lg shadow-harvest/20 sm:w-auto">
                   Book Free Consultation
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link to="/#services">
-                <Button variant="outline" className="font-display text-base px-8 py-6 border-ink/20 text-ink hover:bg-ink hover:text-white">
+              <Link to="/#services" className="w-full sm:w-auto">
+                <Button variant="outline" className="w-full justify-center font-display text-base px-8 py-6 border-ink/20 text-ink hover:bg-ink hover:text-white sm:w-auto">
                   Explore Services
                 </Button>
               </Link>
@@ -105,7 +105,7 @@ export default function HeroSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.8 }}
-              className="flex gap-8 pt-6 border-t border-border/60"
+              className="grid grid-cols-3 gap-3 sm:gap-6 pt-6 border-t border-border/60"
             >
               {stats.map((s) => (
                 <div key={s.label}>
@@ -120,7 +120,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.4 }}
-            className="relative hidden lg:block"
+            className="relative mt-4 lg:mt-0"
           >
             <div className="relative rounded-3xl overflow-hidden shadow-2xl group">
               <img
@@ -132,7 +132,7 @@ export default function HeroSection() {
                 decoding="async"
                 loading="eager"
                 sizes="(min-width: 1024px) 50vw, 100vw"
-                className="w-full h-[640px] object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-[320px] sm:h-[440px] lg:h-[640px] object-cover object-center transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-ink/10 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
@@ -152,14 +152,14 @@ export default function HeroSection() {
               </div>
             </div>
 
-            <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-5 shadow-xl border border-border/50 max-w-[240px]">
+            <div className="absolute -bottom-6 left-4 right-4 max-w-[calc(100%-2rem)] bg-white rounded-2xl p-5 shadow-xl border border-border/50 sm:-left-6 sm:right-auto sm:max-w-[240px]">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
                   <CheckCircle className="w-4 h-4 text-green-600" />
                 </div>
                 <span className="font-display font-semibold text-sm text-ink">Audit Ready</span>
               </div>
-              <p className="text-xs text-slate_mist">Your compliance system is configured and verified by Easy Compliance.</p>
+              <p className="text-xs text-slate_mist">Your compliance system is configured and reviewed against your workflow.</p>
             </div>
           </motion.div>
         </div>

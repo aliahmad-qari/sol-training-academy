@@ -10,7 +10,7 @@ import {
 const faqs = [
   {
     q: "How long does NDIS registration take?",
-    a: "Usually 3–5 months, but with our support many clients complete the process in 6–8 weeks. We handle the documentation, coaching, and auditor matching to accelerate the timeline.",
+    a: "Timeframes vary depending on provider scope, audit pathway, documentation readiness, and external availability. We help you prepare the documentation, coaching, and audit-readiness steps as efficiently as possible.",
   },
   {
     q: "Do I need to be a registered NDIS provider?",
@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     q: "How does Easy Compliance work?",
-    a: "Easy Compliance is our integrated compliance platform. We configure it for your operations, import your documents, train your team, and provide AI-powered validation that keeps you audit-ready 24/7.",
+    a: "Easy Compliance is our integrated compliance support platform. We configure it for your operations, import your documents, train your team, and provide AI-assisted validation to support ongoing audit readiness.",
   },
   {
     q: "What does onboarding cost for Easy Compliance?",

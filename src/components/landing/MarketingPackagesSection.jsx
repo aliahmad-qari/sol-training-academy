@@ -27,7 +27,7 @@ const PACKAGES = [
     period: "/mo",
     badge: "Full Service",
     highlight: false,
-    features: ["All platforms managed", "Unlimited content creation", "Advanced SEO + link building", "Google & Meta Ads", "Video reels & PR outreach", "Custom analytics dashboard"],
+    features: ["All platforms managed", "Scoped content creation plan", "Advanced SEO + link building", "Google & Meta Ads", "Video reels & PR outreach", "Custom analytics dashboard"],
   },
 ];
 
@@ -51,12 +51,12 @@ export default function MarketingPackagesSection() {
               Digital Marketing
             </span>
             <h2 className="font-display font-bold text-4xl md:text-5xl text-ink max-w-xl leading-tight">
-              Marketing Packages That Drive Real Results
+              Marketing Packages Built for Measurable Growth
             </h2>
             <div className="w-20 h-[2px] bg-harvest mt-6" />
           </div>
           <p className="text-slate_mist max-w-xs text-sm leading-relaxed">
-            From social media to paid ads — we manage your entire digital presence so you can focus on what you do best.
+            From social media to paid ads, we manage the digital channels that support your growth goals.
           </p>
         </motion.div>
 
@@ -111,7 +111,7 @@ export default function MarketingPackagesSection() {
                     : "border border-harvest text-harvest hover:bg-harvest hover:text-white bg-transparent"
                 }`}
               >
-                <Link to="/services/marketing">Get Started</Link>
+                <Link to="/marketing-packages">Get Started</Link>
               </Button>
             </motion.div>
           ))}
@@ -124,7 +124,7 @@ export default function MarketingPackagesSection() {
           viewport={{ once: true }}
           className="text-center"
         >
-          <Link to="/services/marketing" className="inline-flex items-center gap-2 text-harvest font-semibold text-sm hover:gap-3 transition-all">
+          <Link to="/marketing-packages" className="inline-flex items-center gap-2 text-harvest font-semibold text-sm hover:gap-3 transition-all">
             View all marketing services & custom packages <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>

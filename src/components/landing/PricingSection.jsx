@@ -9,7 +9,7 @@ const TABS = [
   { id: "registration", label: "NDIS Registration", icon: Shield },
   { id: "training", label: "SC Training", icon: BookOpen },
   { id: "software", label: "Software & Automation", icon: Cpu },
-  { id: "accountancy", label: "Accountancy", icon: Calculator },
+  { id: "accountancy", label: "Finance Support", icon: Calculator },
 ];
 
 const NDIS_PACKAGES = [
@@ -145,7 +145,7 @@ const SOFTWARE_PACKAGES = [
     popular: false,
     features: [
       "Fully scoped custom software",
-      "Unlimited processes & integrations",
+      "Scoped processes & integrations",
       "Dedicated project manager",
       "Full handover training",
       "Ongoing maintenance available",
@@ -158,34 +158,34 @@ const SOFTWARE_PACKAGES = [
 
 const ACCOUNTANCY_PACKAGES = [
   {
-    name: "Monthly Bookkeeping",
+    name: "Monthly Finance Support",
     price: "$350",
     tag: "Per Month",
     popular: false,
     features: [
-      "Monthly bookkeeping & reconciliation",
-      "BAS lodgement (monthly/quarterly)",
-      "Profit & loss reporting",
+      "Bookkeeping setup and reconciliation support",
+      "BAS/GST preparation support",
+      "Profit and loss reporting support",
       "Xero / MYOB / QuickBooks",
-      "Billed monthly — no lock-in",
+      "Billed monthly - no lock-in",
     ],
     cta: "Get Started",
     href: "/services/accountancy",
   },
   {
-    name: "Full Service",
+    name: "Finance Operations Support",
     price: "$990",
     tag: "Per Month",
     popular: true,
     features: [
-      "Everything in Monthly Bookkeeping",
-      "Payroll processing & STP reporting",
-      "Superannuation management",
-      "Tax planning & annual return",
+      "Everything in Monthly Finance Support",
+      "Payroll/STP process support",
+      "Superannuation process guidance",
+      "Tax planning and annual return referrals",
       "NDIS financial reporting",
-      "Direct CPA accountant access",
+      "Registered accountant referral pathway",
     ],
-    cta: "Start Full Service",
+    cta: "Start Finance Operations Support",
     href: "/services/accountancy",
   },
   {
@@ -194,10 +194,10 @@ const ACCOUNTANCY_PACKAGES = [
     tag: "Per Month",
     popular: false,
     features: [
-      "Everything in Full Service",
+      "Everything in Finance Operations Support",
       "NDIS price guide compliance review",
-      "SDA / SIL financial compliance",
-      "Audit support & representation",
+      "SDA/SIL financial reporting guidance",
+      "Audit document support",
       "Participant financial reporting",
       "Custom reporting dashboards",
     ],
@@ -210,7 +210,7 @@ const PACKAGE_MAP = {
   registration: { packages: NDIS_PACKAGES, cols: "md:grid-cols-2", note: "Prices are in AUD and exclude GST (for GST-registered businesses); GST is added at checkout. Audit support is included — registration and audit outcomes are not guaranteed. Terms apply." },
   training: { packages: TRAINING_PACKAGES, cols: "md:grid-cols-3", note: "Prices are in AUD and exclude GST; GST is added at checkout. Enterprise custom pricing on request. Group discounts for 10+ staff." },
   software: { packages: SOFTWARE_PACKAGES, cols: "md:grid-cols-3", note: "Prices are in AUD and exclude GST; GST is added at checkout. Custom pricing confirmed after a free scoping session." },
-  accountancy: { packages: ACCOUNTANCY_PACKAGES, cols: "md:grid-cols-3", note: "Prices are in AUD and exclude GST; GST is added at checkout. Monthly retainer, cancel anytime." },
+  accountancy: { packages: ACCOUNTANCY_PACKAGES, cols: "md:grid-cols-3", note: "Prices are in AUD and exclude GST; GST is added at checkout. Monthly retainer, cancel anytime. BAS, tax, and registered-agent services are handled by appropriately registered practitioners where required." },
 };
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
@@ -334,10 +334,10 @@ export default function PricingSection() {
             <h3 className="font-display font-bold text-2xl md:text-3xl text-white">Not sure which package is right for you?</h3>
             <p className="text-white/70 mt-2">Book a free 30-minute consultation — we'll assess your needs and recommend the best fit.</p>
           </div>
-          <a href="/#contact"
+          <Link to="/#contact"
             className="flex-shrink-0 inline-flex items-center gap-2 bg-harvest hover:bg-harvest/90 text-white font-display font-semibold px-8 py-4 rounded-xl transition-colors whitespace-nowrap">
             Book Free Consultation <ArrowRight className="w-4 h-4" />
-          </a>
+          </Link>
         </motion.div>
 
       </div>
