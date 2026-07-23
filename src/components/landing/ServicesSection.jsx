@@ -1,10 +1,10 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, FileText, Calculator, Users, Globe, Building2, CreditCard, ClipboardList, DollarSign, TrendingUp, UserCheck, Monitor } from "lucide-react";
+import { ArrowRight, FileText, Calculator, Users, Globe, Building2, CreditCard, TrendingUp } from "lucide-react";
 import ServiceComparisonTable from "./ServiceComparisonTable";
 
-const SERVICES_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/fdcc084a9_generated_ca5c7672.png";
+const SERVICES_IMAGE = "/images/services/business-consulting-workshop.webp";
 
 const services = [
   { icon: FileText, num: "01", title: "NDIS Registration", desc: "Full end-to-end registration support — from application to certification.", href: "/services/ndis-registration" },
@@ -88,7 +88,12 @@ export default function ServicesSection() {
         >
           <img
             src={SERVICES_IMAGE}
-            alt="Modern consulting workspace"
+            alt="Business consultants collaborating around a laptop during a planning workshop"
+            width="1400"
+            height="800"
+            loading="lazy"
+            decoding="async"
+            sizes="(min-width: 1024px) 1152px, 100vw"
             className="w-full h-64 md:h-80 object-cover"
           />
           <div className="absolute inset-0 bg-ink/60 flex items-center justify-center">

@@ -1,7 +1,7 @@
 ﻿import React from "react";
 import { motion } from "framer-motion";
 
-const ABOUT_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/47fbe6fb5_generated_7c663069.png";
+const ABOUT_IMAGE = "/images/about/trainer-student-discussion.webp";
 
 const values = [
   { num: "01", title: "Precision", desc: "Every policy, document, and system is prepared with careful attention to business context and compliance detail." },
@@ -46,8 +46,13 @@ export default function AboutSection() {
           >
             <img
               src={ABOUT_IMAGE}
-              alt="Modern architectural facade representing structured business support"
-              className="w-full h-[400px] object-cover"
+              alt="Consultant guiding a client through business planning on a laptop"
+              width="1200"
+              height="800"
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="w-full h-[320px] sm:h-[400px] object-cover"
             />
           </motion.div>
 

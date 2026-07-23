@@ -5,6 +5,8 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import NDISIntakeFlow from "@/components/intake/NDISIntakeFlow";
 
+const HERO_IMAGE = "/images/services/ndis-registration-documents.webp";
+
 const PATHWAY_STEPS = [
   { step: "01", title: "Get in Touch and Check Fit", desc: "Submit your details. SOL reviews your provider goals and identifies the registration questions that need attention." },
   { step: "02", title: "Prepare Business Details", desc: "We organise your business structure, key personnel, operating locations, and intended registration groups." },
@@ -29,7 +31,8 @@ export default function NDISRegistration() {
       <section className="pt-36 pb-20 bg-basalt text-white relative overflow-hidden">
         <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/3 w-[600px] h-[600px] rounded-full border border-harvest/10 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+          <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-harvest/40 bg-harvest/10 text-harvest text-xs font-semibold tracking-wide uppercase mb-6">
               <Shield className="w-3.5 h-3.5" /> NDIS Registration
             </div>
@@ -59,6 +62,28 @@ export default function NDISRegistration() {
               </div>
             </div>
           </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="relative"
+            >
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl">
+                <img
+                  src={HERO_IMAGE}
+                  alt="Consultants reviewing NDIS registration documents on a desk"
+                  width="1200"
+                  height="800"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  sizes="(min-width: 1024px) 44vw, 100vw"
+                  className="h-72 w-full object-cover sm:h-96 lg:h-[520px]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-ink/50 via-transparent to-harvest/20" />
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

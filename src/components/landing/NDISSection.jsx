@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle, Clock, FileCheck, Users, Shield, Award } from 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const NDIS_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/5e1766cce_generated_9bb12ead.png";
+const NDIS_IMAGE = "/images/services/ndis-registration-documents.webp";
 
 const roadmap = [
   { id: "ndis-discovery", week: "Week 1", title: "Discovery Call", desc: "Free consultation to assess eligibility, registration groups, and your timeline.", icon: Clock },
@@ -86,8 +86,13 @@ export default function NDISSection() {
           >
             <img
               src={NDIS_IMAGE}
-              alt="Diverse professionals in collaborative environment"
-              className="w-full h-full min-h-[400px] object-cover"
+              alt="Consultants reviewing NDIS registration documents in a professional office"
+              width="1200"
+              height="800"
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="w-full h-[320px] sm:h-[400px] lg:h-full lg:min-h-[400px] object-cover"
             />
           </motion.div>
 

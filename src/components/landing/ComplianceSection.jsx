@@ -4,7 +4,7 @@ import { ShieldCheck, FileSearch, Bell, BarChart3, Users, FolderOpen, ArrowRight
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const COMPLIANCE_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/ace7a7d08_generated_be3fe1ca.png";
+const COMPLIANCE_IMAGE = "/images/services/compliance-document-review.webp";
 
 const steps = [
   {
@@ -86,8 +86,13 @@ export default function ComplianceSection() {
           >
             <img
               src={COMPLIANCE_IMAGE}
-              alt="Precision mechanisms representing compliance systems"
-              className="w-full h-[400px] object-cover"
+              alt="Professionals reviewing compliance documents in a modern office"
+              width="1200"
+              height="800"
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="w-full h-[320px] sm:h-[400px] object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-ink/40 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-sm rounded-xl p-4">

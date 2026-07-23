@@ -11,7 +11,8 @@ const POSTS = [
     date: "May 2025",
     category: "NDIS",
     color: "bg-harvest/10 text-harvest",
-    image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80",
+    image: "/images/blog/ndis-provider-registration.webp",
+    imageAlt: "Consultants reviewing NDIS provider registration documents",
   },
   {
     title: "Top 5 Bookkeeping Mistakes Small Businesses Make",
@@ -20,7 +21,8 @@ const POSTS = [
     date: "April 2025",
     category: "Accounting",
     color: "bg-ink/8 text-ink",
-    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80",
+    image: "/images/blog/bookkeeping-business-records.webp",
+    imageAlt: "Laptop and business papers arranged for bookkeeping work",
   },
   {
     title: "What is Support Coordination? A Complete Guide",
@@ -29,7 +31,8 @@ const POSTS = [
     date: "March 2025",
     category: "Training",
     color: "bg-harvest/10 text-harvest",
-    image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&q=80",
+    image: "/images/blog/support-coordination-training.webp",
+    imageAlt: "Professional trainer presenting to adult learners in a workshop",
   },
   {
     title: "Website Development for NDIS Providers: What You Need",
@@ -38,7 +41,8 @@ const POSTS = [
     date: "February 2025",
     category: "Web Development",
     color: "bg-ink/8 text-ink",
-    image: "https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&q=80",
+    image: "/images/blog/website-project-planning.webp",
+    imageAlt: "Team planning an NDIS provider website project",
   },
   {
     title: "How Automation Can Transform Your NDIS Business",
@@ -47,7 +51,8 @@ const POSTS = [
     date: "January 2025",
     category: "Automation",
     color: "bg-harvest/10 text-harvest",
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&q=80",
+    image: "/images/blog/automation-dashboard.webp",
+    imageAlt: "Laptop dashboard representing business automation reporting",
   },
   {
     title: "Understanding BAS Lodgement for Australian Businesses",
@@ -56,7 +61,8 @@ const POSTS = [
     date: "December 2024",
     category: "Accounting",
     color: "bg-ink/8 text-ink",
-    image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80",
+    image: "/images/blog/bas-lodgement-records.webp",
+    imageAlt: "Business documents prepared for BAS lodgement and accounting review",
   },
 ];
 
@@ -81,7 +87,16 @@ export default function Blog() {
               >
                 {/* Post Image */}
                 <div className="relative h-44 overflow-hidden">
-                  <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img
+                    src={post.image}
+                    alt={post.imageAlt}
+                    width="800"
+                    height="533"
+                    loading="lazy"
+                    decoding="async"
+                    sizes="(min-width: 1024px) 31vw, (min-width: 768px) 45vw, 100vw"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink/50 to-transparent" />
                   <span className={`absolute bottom-3 left-3 text-xs font-semibold px-3 py-1 rounded-full ${post.color}`}>
                     {post.category}

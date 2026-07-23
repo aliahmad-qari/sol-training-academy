@@ -1,6 +1,8 @@
 import React from "react";
 import { GraduationCap, Users, Award, Clock } from "lucide-react";
 
+const HERO_IMAGE = "/images/hero/academy-training-hero.webp";
+
 const STATS = [
   { icon: GraduationCap, value: "3 Levels", label: "Structured Learning" },
   { icon: Users, value: "100% Online", label: "Learn Anywhere" },
@@ -31,6 +33,20 @@ export default function CourseHero() {
               <div className="text-white/50 text-xs">{label}</div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-12 overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl">
+          <img
+            src={HERO_IMAGE}
+            alt="Professional trainer delivering a laptop-based workshop to adult learners"
+            width="1400"
+            height="900"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            sizes="(min-width: 1024px) 960px, 100vw"
+            className="h-56 w-full object-cover sm:h-72 md:h-80"
+          />
         </div>
       </div>
     </section>

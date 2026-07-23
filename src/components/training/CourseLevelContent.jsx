@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { CheckCircle, ChevronDown, ChevronUp, Play, Clock, BookOpen, ArrowRight, Star, Video } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const COLOR_MAP = {
   blue: {
@@ -11,7 +10,7 @@ const COLOR_MAP = {
     text: "text-blue-600",
     dot: "bg-blue-600",
     // Level 1 — NDIS support worker with participant
-    thumbnail: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=700&q=85",
+    thumbnail: "/images/courses/level-1-foundation-learning.webp",
     accentGrad: "from-slate-900/85 to-blue-800/50",
     levelColor: "bg-blue-600",
   },
@@ -23,7 +22,7 @@ const COLOR_MAP = {
     text: "text-amber-600",
     dot: "bg-amber-500",
     // Level 2 — professional team coordination meeting
-    thumbnail: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=700&q=85",
+    thumbnail: "/images/courses/level-2-professional-coordination.webp",
     accentGrad: "from-slate-900/85 to-amber-800/50",
     levelColor: "bg-amber-500",
   },
@@ -35,7 +34,7 @@ const COLOR_MAP = {
     text: "text-purple-600",
     dot: "bg-purple-600",
     // Level 3 — senior leader mentoring / advanced practice
-    thumbnail: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=700&q=85",
+    thumbnail: "/images/courses/level-3-advanced-mentoring.webp",
     accentGrad: "from-slate-900/85 to-purple-800/50",
     levelColor: "bg-purple-600",
   },
@@ -154,6 +153,11 @@ export default function CourseLevelContent({ course, enrollButton }) {
                 <img
                   src={c.thumbnail}
                   alt={course.title}
+                  width="900"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
+                  sizes="(min-width: 1024px) 33vw, 100vw"
                   className="w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-700"
                 />
                 {/* gradient overlay — bottom heavy */}

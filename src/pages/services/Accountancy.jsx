@@ -5,6 +5,8 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import GenericIntakeFlow from "@/components/intake/GenericIntakeFlow";
 
+const HERO_IMAGE = "/images/services/accounting-consultation.webp";
+
 const FEATURES = [
   { icon: Receipt, title: "Bookkeeping Referrals", desc: "We connect you with trusted Xero/MYOB/QuickBooks bookkeepers suited to your business size and needs." },
   { icon: Calculator, title: "BAS & Tax Guidance", desc: "Consultancy support to help you understand your BAS and tax obligations — we refer you to registered agents." },
@@ -31,7 +33,8 @@ export default function Accountancy() {
       <section className="pt-36 pb-20 bg-ink text-white relative overflow-hidden">
         <div className="absolute top-1/2 right-0 translate-x-1/3 -translate-y-1/2 w-[500px] h-[500px] rounded-full border border-harvest/10 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+          <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-harvest/40 bg-harvest/10 text-harvest text-xs font-semibold tracking-wide uppercase mb-6">
               <Calculator className="w-3.5 h-3.5" /> Accounting Consultancy
             </div>
@@ -53,6 +56,28 @@ export default function Accountancy() {
               </div>
             </div>
           </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="relative"
+            >
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl">
+                <img
+                  src={HERO_IMAGE}
+                  alt="Business papers, laptop, and calculator prepared for accounting consultation"
+                  width="1200"
+                  height="800"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  sizes="(min-width: 1024px) 44vw, 100vw"
+                  className="h-72 w-full object-cover sm:h-96 lg:h-[520px]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-ink/50 via-transparent to-harvest/20" />
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

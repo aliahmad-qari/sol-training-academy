@@ -5,6 +5,8 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import GenericIntakeFlow from "@/components/intake/GenericIntakeFlow";
 
+const HERO_IMAGE = "/images/services/automation-dashboard.webp";
+
 const FEATURES = [
   { icon: FileText, title: "NDIS Document Automation", desc: "Auto-generate branded policies, procedures, and registers with client details in seconds." },
   { icon: Workflow, title: "Client Intake Systems", desc: "Structured intake flows that capture, store, and route client data automatically." },
@@ -31,7 +33,8 @@ export default function SoftwareAutomation() {
       <section className="pt-36 pb-20 bg-basalt text-white relative overflow-hidden">
         <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full border border-harvest/10 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+          <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-harvest/40 bg-harvest/10 text-harvest text-xs font-semibold tracking-wide uppercase mb-6">
               <Cpu className="w-3.5 h-3.5" /> Software & NDIS Automation
             </div>
@@ -53,6 +56,28 @@ export default function SoftwareAutomation() {
               </div>
             </div>
           </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="relative"
+            >
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl">
+                <img
+                  src={HERO_IMAGE}
+                  alt="Laptop displaying an analytics dashboard for business automation"
+                  width="1200"
+                  height="800"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  sizes="(min-width: 1024px) 44vw, 100vw"
+                  className="h-72 w-full object-cover sm:h-96 lg:h-[520px]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-ink/50 via-transparent to-harvest/20" />
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

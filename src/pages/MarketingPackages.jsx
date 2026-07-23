@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const HERO_IMAGE = "/images/services/marketing-strategy-team.webp";
+
 const SERVICES = [
   { icon: Search, title: "Search Engine Optimisation (SEO)", desc: "Rank higher on Google with technical SEO, keyword strategy, on-page optimisation, and backlink building." },
   { icon: Share2, title: "Social Media Marketing", desc: "Professionally managed Facebook, Instagram, LinkedIn & TikTok - content creation, scheduling, and community management included." },
@@ -116,7 +118,8 @@ export default function MarketingPackages() {
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: "radial-gradient(circle at 70% 40%, #D97706 0%, transparent 60%)" }} />
         <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+          <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">Digital Marketing</span>
             <h1 className="font-display font-bold text-5xl md:text-6xl text-white leading-tight max-w-3xl mb-6">
               Marketing Packages & Services
@@ -133,6 +136,28 @@ export default function MarketingPackages() {
               </Button>
             </div>
           </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="relative"
+            >
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl">
+                <img
+                  src={HERO_IMAGE}
+                  alt="Marketing team reviewing digital campaign plans at a laptop"
+                  width="1200"
+                  height="800"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  sizes="(min-width: 1024px) 44vw, 100vw"
+                  className="h-72 w-full object-cover sm:h-96 lg:h-[520px]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-ink/50 via-transparent to-harvest/20" />
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

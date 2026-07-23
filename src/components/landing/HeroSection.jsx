@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle, ShieldCheck, TrendingUp, Users, Award, MapPin,
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const HERO_IMAGE = "https://media.base44.com/images/public/6a1e37de99aadfdb49a9ef0d/ce4b4d474_generated_ebcd4dde.png";
+const HERO_IMAGE = "/images/services/business-consulting-workshop.webp";
 
 const stats = [
   { value: "3", label: "Training levels" },
@@ -125,14 +125,14 @@ export default function HeroSection() {
             <div className="relative rounded-3xl overflow-hidden shadow-2xl group">
               <img
                 src={HERO_IMAGE}
-                alt="Modern architectural interior representing structural excellence"
+                alt="Business consultants collaborating around a laptop during a strategic planning workshop"
                 width="960"
                 height="1280"
                 fetchPriority="high"
                 decoding="async"
                 loading="eager"
                 sizes="(min-width: 1024px) 50vw, 100vw"
-                className="w-full h-[640px] object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-[640px] object-cover object-center transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-ink/10 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
