@@ -1,7 +1,7 @@
 import React from "react";
 import { GraduationCap, Users, Award, Clock } from "lucide-react";
 
-const HERO_IMAGE = "/images/hero/academy-training-hero.webp";
+const HERO_IMAGE = "/Images/hero/academy-training-hero.webp";
 
 const STATS = [
   { icon: GraduationCap, value: "3 Levels", label: "Structured Learning" },

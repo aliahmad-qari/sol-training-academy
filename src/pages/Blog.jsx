@@ -11,7 +11,7 @@ const POSTS = [
     date: "May 2025",
     category: "NDIS",
     color: "bg-harvest/10 text-harvest",
-    image: "/images/blog/ndis-provider-registration.webp",
+    image: "/Images/blog/ndis-provider-registration.webp",
     imageAlt: "Consultants reviewing NDIS provider registration documents",
   },
   {
@@ -21,7 +21,7 @@ const POSTS = [
     date: "April 2025",
     category: "Accounting",
     color: "bg-ink/8 text-ink",
-    image: "/images/blog/bookkeeping-business-records.webp",
+    image: "/Images/blog/bookkeeping-business-records.webp",
     imageAlt: "Laptop and business papers arranged for bookkeeping work",
   },
   {
@@ -31,7 +31,7 @@ const POSTS = [
     date: "March 2025",
     category: "Training",
     color: "bg-harvest/10 text-harvest",
-    image: "/images/blog/support-coordination-training.webp",
+    image: "/Images/blog/support-coordination-training.webp",
     imageAlt: "Professional trainer presenting to adult learners in a workshop",
   },
   {
@@ -41,7 +41,7 @@ const POSTS = [
     date: "February 2025",
     category: "Web Development",
     color: "bg-ink/8 text-ink",
-    image: "/images/blog/website-project-planning.webp",
+    image: "/Images/blog/website-project-planning.webp",
     imageAlt: "Team planning an NDIS provider website project",
   },
   {
@@ -51,7 +51,7 @@ const POSTS = [
     date: "January 2025",
     category: "Automation",
     color: "bg-harvest/10 text-harvest",
-    image: "/images/blog/automation-dashboard.webp",
+    image: "/Images/blog/automation-dashboard.webp",
     imageAlt: "Laptop dashboard representing business automation reporting",
   },
   {
@@ -61,7 +61,7 @@ const POSTS = [
     date: "December 2024",
     category: "Accounting",
     color: "bg-ink/8 text-ink",
-    image: "/images/blog/bas-lodgement-records.webp",
+    image: "/Images/blog/bas-lodgement-records.webp",
     imageAlt: "Business documents prepared for BAS lodgement and accounting review",
   },
 ];

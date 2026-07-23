@@ -6,7 +6,7 @@ import Footer from "@/components/landing/Footer";
 import GenericIntakeFlow from "@/components/intake/GenericIntakeFlow";
 import SupportCoordinationFAQ from "@/components/services/SupportCoordinationFAQ";
 
-const HERO_IMAGE = "/images/training/professional-workshop-presentation.webp";
+const HERO_IMAGE = "/Images/training/professional-workshop-presentation.webp";
 
 const MODULES = [
   {

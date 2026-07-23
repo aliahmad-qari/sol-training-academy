@@ -5,7 +5,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import NDISIntakeFlow from "@/components/intake/NDISIntakeFlow";
 
-const HERO_IMAGE = "/images/services/ndis-registration-documents.webp";
+const HERO_IMAGE = "/Images/services/ndis-registration-documents.webp";
 
 const PATHWAY_STEPS = [
   { step: "01", title: "Get in Touch and Check Fit", desc: "Submit your details. SOL reviews your provider goals and identifies the registration questions that need attention." },

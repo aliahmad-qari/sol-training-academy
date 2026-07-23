@@ -4,24 +4,24 @@ All new website imagery was downloaded locally into `public/images` instead of h
 
 | Local file | Original source page | Photographer | Source | Used in |
 | --- | --- | --- | --- | --- |
-| `public/images/hero/academy-training-hero.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-8761533/ | Pavel Danilyuk | Pexels | Training Courses hero |
-| `public/images/about/trainer-student-discussion.webp` | https://www.pexels.com/photo/positive-coworkers-browsing-laptop-in-creative-workspace-4173367/ | Gustavo Fring | Pexels | About section |
-| `public/images/training/professional-workshop-presentation.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-8761533/ | Pavel Danilyuk | Pexels | Support Coordination Training hero |
-| `public/images/services/ndis-registration-documents.webp` | https://www.pexels.com/photo/business-colleagues-reviewing-document-in-office-36733314/ | Vitaly Gariev | Pexels | NDIS section, NDIS Registration service page, NDIS blog card |
-| `public/images/services/business-consulting-workshop.webp` | https://www.pexels.com/photo/a-group-of-people-planning-while-looking-at-the-laptop-7550298/ | MART PRODUCTION | Pexels | Home hero, Services banner, Website Development service page, website blog card |
-| `public/images/services/compliance-document-review.webp` | https://www.pexels.com/photo/professionals-looking-at-documents-8847204/ | Mikhail Nilov | Pexels | Compliance section |
-| `public/images/services/automation-dashboard.webp` | https://www.pexels.com/photo/close-up-shot-of-a-laptop-computer-12969403/ | Atlantic Ambience | Pexels | Software Automation service page, automation blog card |
-| `public/images/services/accounting-consultation.webp` | https://www.pexels.com/photo/person-using-a-calculator-and-a-laptop-8296991/ | Mikhail Nilov | Pexels | Accountancy service page, accounting and BAS blog cards |
-| `public/images/services/marketing-strategy-team.webp` | https://www.pexels.com/photo/colleagues-planning-and-working-together-in-an-office-8117474/ | Ivan S. | Pexels | Marketing Services page, Marketing Packages page |
-| `public/images/courses/level-1-foundation-learning.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-for-work-while-at-home-7120874/ | Pavel Danilyuk | Pexels | Training course Level 1 thumbnail |
-| `public/images/courses/level-2-professional-coordination.webp` | https://www.pexels.com/photo/coworkers-looking-at-a-laptop-in-a-meeting-7698802/ | Yan Krukau | Pexels | Training course Level 2 thumbnail |
-| `public/images/courses/level-3-advanced-mentoring.webp` | https://www.pexels.com/photo/a-group-of-people-planning-7698710/ | Yan Krukau | Pexels | Training course Level 3 thumbnail |
-| `public/images/blog/ndis-provider-registration.webp` | https://www.pexels.com/photo/business-colleagues-reviewing-document-in-office-36733314/ | Vitaly Gariev | Pexels | Blog: How to Register as an NDIS Provider in Australia |
-| `public/images/blog/bookkeeping-business-records.webp` | https://www.pexels.com/photo/person-using-a-calculator-and-a-laptop-8296991/ | Mikhail Nilov | Pexels | Blog: Top 5 Bookkeeping Mistakes Small Businesses Make |
-| `public/images/blog/support-coordination-training.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-8761533/ | Pavel Danilyuk | Pexels | Blog: What is Support Coordination? A Complete Guide |
-| `public/images/blog/website-project-planning.webp` | https://www.pexels.com/photo/a-group-of-people-planning-while-looking-at-the-laptop-7550298/ | MART PRODUCTION | Pexels | Blog: Website Development for NDIS Providers |
-| `public/images/blog/automation-dashboard.webp` | https://www.pexels.com/photo/close-up-shot-of-a-laptop-computer-12969403/ | Atlantic Ambience | Pexels | Blog: How Automation Can Transform Your NDIS Business |
-| `public/images/blog/bas-lodgement-records.webp` | https://www.pexels.com/photo/person-using-a-calculator-and-a-laptop-8296991/ | Mikhail Nilov | Pexels | Blog: Understanding BAS Lodgement for Australian Businesses |
+| `public/Images/hero/academy-training-hero.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-8761533/ | Pavel Danilyuk | Pexels | Training Courses hero |
+| `public/Images/about/trainer-student-discussion.webp` | https://www.pexels.com/photo/positive-coworkers-browsing-laptop-in-creative-workspace-4173367/ | Gustavo Fring | Pexels | About section |
+| `public/Images/training/professional-workshop-presentation.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-8761533/ | Pavel Danilyuk | Pexels | Support Coordination Training hero |
+| `public/Images/services/ndis-registration-documents.webp` | https://www.pexels.com/photo/business-colleagues-reviewing-document-in-office-36733314/ | Vitaly Gariev | Pexels | NDIS section, NDIS Registration service page, NDIS blog card |
+| `public/Images/services/business-consulting-workshop.webp` | https://www.pexels.com/photo/a-group-of-people-planning-while-looking-at-the-laptop-7550298/ | MART PRODUCTION | Pexels | Home hero, Services banner, Website Development service page, website blog card |
+| `public/Images/services/compliance-document-review.webp` | https://www.pexels.com/photo/professionals-looking-at-documents-8847204/ | Mikhail Nilov | Pexels | Compliance section |
+| `public/Images/services/automation-dashboard.webp` | https://www.pexels.com/photo/close-up-shot-of-a-laptop-computer-12969403/ | Atlantic Ambience | Pexels | Software Automation service page, automation blog card |
+| `public/Images/services/accounting-consultation.webp` | https://www.pexels.com/photo/person-using-a-calculator-and-a-laptop-8296991/ | Mikhail Nilov | Pexels | Accountancy service page, accounting and BAS blog cards |
+| `public/Images/services/marketing-strategy-team.webp` | https://www.pexels.com/photo/colleagues-planning-and-working-together-in-an-office-8117474/ | Ivan S. | Pexels | Marketing Services page, Marketing Packages page |
+| `public/Images/courses/level-1-foundation-learning.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-for-work-while-at-home-7120874/ | Pavel Danilyuk | Pexels | Training course Level 1 thumbnail |
+| `public/Images/courses/level-2-professional-coordination.webp` | https://www.pexels.com/photo/coworkers-looking-at-a-laptop-in-a-meeting-7698802/ | Yan Krukau | Pexels | Training course Level 2 thumbnail |
+| `public/Images/courses/level-3-advanced-mentoring.webp` | https://www.pexels.com/photo/a-group-of-people-planning-7698710/ | Yan Krukau | Pexels | Training course Level 3 thumbnail |
+| `public/Images/blog/ndis-provider-registration.webp` | https://www.pexels.com/photo/business-colleagues-reviewing-document-in-office-36733314/ | Vitaly Gariev | Pexels | Blog: How to Register as an NDIS Provider in Australia |
+| `public/Images/blog/bookkeeping-business-records.webp` | https://www.pexels.com/photo/person-using-a-calculator-and-a-laptop-8296991/ | Mikhail Nilov | Pexels | Blog: Top 5 Bookkeeping Mistakes Small Businesses Make |
+| `public/Images/blog/support-coordination-training.webp` | https://www.pexels.com/photo/a-woman-using-a-laptop-8761533/ | Pavel Danilyuk | Pexels | Blog: What is Support Coordination? A Complete Guide |
+| `public/Images/blog/website-project-planning.webp` | https://www.pexels.com/photo/a-group-of-people-planning-while-looking-at-the-laptop-7550298/ | MART PRODUCTION | Pexels | Blog: Website Development for NDIS Providers |
+| `public/Images/blog/automation-dashboard.webp` | https://www.pexels.com/photo/close-up-shot-of-a-laptop-computer-12969403/ | Atlantic Ambience | Pexels | Blog: How Automation Can Transform Your NDIS Business |
+| `public/Images/blog/bas-lodgement-records.webp` | https://www.pexels.com/photo/person-using-a-calculator-and-a-laptop-8296991/ | Mikhail Nilov | Pexels | Blog: Understanding BAS Lodgement for Australian Businesses |
 
 ## Notes
 

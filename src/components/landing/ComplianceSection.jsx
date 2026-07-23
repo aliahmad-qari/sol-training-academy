@@ -4,7 +4,7 @@ import { ShieldCheck, FileSearch, Bell, BarChart3, Users, FolderOpen, ArrowRight
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const COMPLIANCE_IMAGE = "/images/services/compliance-document-review.webp";
+const COMPLIANCE_IMAGE = "/Images/services/compliance-document-review.webp";
 
 const steps = [
   {

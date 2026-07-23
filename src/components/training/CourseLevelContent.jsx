@@ -10,7 +10,7 @@ const COLOR_MAP = {
     text: "text-blue-600",
     dot: "bg-blue-600",
     // Level 1 — NDIS support worker with participant
-    thumbnail: "/images/courses/level-1-foundation-learning.webp",
+    thumbnail: "/Images/courses/level-1-foundation-learning.webp",
     accentGrad: "from-slate-900/85 to-blue-800/50",
     levelColor: "bg-blue-600",
   },
@@ -22,7 +22,7 @@ const COLOR_MAP = {
     text: "text-amber-600",
     dot: "bg-amber-500",
     // Level 2 — professional team coordination meeting
-    thumbnail: "/images/courses/level-2-professional-coordination.webp",
+    thumbnail: "/Images/courses/level-2-professional-coordination.webp",
     accentGrad: "from-slate-900/85 to-amber-800/50",
     levelColor: "bg-amber-500",
   },
@@ -34,7 +34,7 @@ const COLOR_MAP = {
     text: "text-purple-600",
     dot: "bg-purple-600",
     // Level 3 — senior leader mentoring / advanced practice
-    thumbnail: "/images/courses/level-3-advanced-mentoring.webp",
+    thumbnail: "/Images/courses/level-3-advanced-mentoring.webp",
     accentGrad: "from-slate-900/85 to-purple-800/50",
     levelColor: "bg-purple-600",
   },

@@ -5,7 +5,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import GenericIntakeFlow from "@/components/intake/GenericIntakeFlow";
 
-const HERO_IMAGE = "/images/services/accounting-consultation.webp";
+const HERO_IMAGE = "/Images/services/accounting-consultation.webp";
 
 const FEATURES = [
   { icon: Receipt, title: "Bookkeeping Referrals", desc: "We connect you with trusted Xero/MYOB/QuickBooks bookkeepers suited to your business size and needs." },

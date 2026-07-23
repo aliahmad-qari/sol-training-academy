@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, FileText, Calculator, Users, Globe, Building2, CreditCard, TrendingUp } from "lucide-react";
 import ServiceComparisonTable from "./ServiceComparisonTable";
 
-const SERVICES_IMAGE = "/images/services/business-consulting-workshop.webp";
+const SERVICES_IMAGE = "/Images/services/business-consulting-workshop.webp";
 
 const services = [
   { icon: FileText, num: "01", title: "NDIS Registration", desc: "Full end-to-end registration support — from application to certification.", href: "/services/ndis-registration" },

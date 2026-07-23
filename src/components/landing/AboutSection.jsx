@@ -1,7 +1,7 @@
 ﻿import React from "react";
 import { motion } from "framer-motion";
 
-const ABOUT_IMAGE = "/images/about/trainer-student-discussion.webp";
+const ABOUT_IMAGE = "/Images/about/trainer-student-discussion.webp";
 
 const values = [
   { num: "01", title: "Precision", desc: "Every policy, document, and system is prepared with careful attention to business context and compliance detail." },

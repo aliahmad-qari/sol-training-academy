@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const HERO_IMAGE = "/images/services/marketing-strategy-team.webp";
+const HERO_IMAGE = "/Images/services/marketing-strategy-team.webp";
 
 const SERVICES = [
   { icon: Search, title: "Search Engine Optimisation (SEO)", desc: "Rank higher on Google with technical SEO, keyword strategy, on-page optimisation, and backlink building." },

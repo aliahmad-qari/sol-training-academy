@@ -5,7 +5,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import GenericIntakeFlow from "@/components/intake/GenericIntakeFlow";
 
-const HERO_IMAGE = "/images/services/automation-dashboard.webp";
+const HERO_IMAGE = "/Images/services/automation-dashboard.webp";
 
 const FEATURES = [
   { icon: FileText, title: "NDIS Document Automation", desc: "Auto-generate branded policies, procedures, and registers with client details in seconds." },

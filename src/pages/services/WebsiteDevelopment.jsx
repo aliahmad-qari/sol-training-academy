@@ -5,7 +5,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import GenericIntakeFlow from "@/components/intake/GenericIntakeFlow";
 
-const HERO_IMAGE = "/images/services/business-consulting-workshop.webp";
+const HERO_IMAGE = "/Images/services/business-consulting-workshop.webp";
 
 const FEATURES = [
   { icon: Smartphone, title: "Mobile-First Design", desc: "Every site we build looks perfect on mobile, tablet, and desktop." },

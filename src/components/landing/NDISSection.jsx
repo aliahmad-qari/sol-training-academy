@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle, Clock, FileCheck, Users, Shield, Award } from 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const NDIS_IMAGE = "/images/services/ndis-registration-documents.webp";
+const NDIS_IMAGE = "/Images/services/ndis-registration-documents.webp";
 
 const roadmap = [
   { id: "ndis-discovery", week: "Week 1", title: "Discovery Call", desc: "Free consultation to assess eligibility, registration groups, and your timeline.", icon: Clock },

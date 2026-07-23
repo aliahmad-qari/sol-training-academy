@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle, ShieldCheck, TrendingUp, Users, Award, MapPin,
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const HERO_IMAGE = "/images/services/business-consulting-workshop.webp";
+const HERO_IMAGE = "/Images/services/business-consulting-workshop.webp";
 
 const stats = [
   { value: "3", label: "Training levels" },

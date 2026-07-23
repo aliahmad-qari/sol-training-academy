@@ -7,7 +7,7 @@ import { ArrowRight, CheckCircle, Megaphone, Search, Mail, Share2, BarChart2, Gl
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 
-const HERO_IMAGE = "/images/services/marketing-strategy-team.webp";
+const HERO_IMAGE = "/Images/services/marketing-strategy-team.webp";
 
 const PACKAGES = [
   {
