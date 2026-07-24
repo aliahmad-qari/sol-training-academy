@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
 
 const INITIAL_FORM = {
   name: "",
@@ -83,51 +83,35 @@ export default function ContactSection() {
     const serviceLabel = selectedService?.label || "General website enquiry";
 
     try {
-      await base44.entities.Enquiry.create({
-        service_type: serviceType,
-        full_name: formData.name,
-        email: formData.email,
-        phone: formData.phone || "",
-        company_name: formData.company || "",
-        message: "[Website Contact Form - " + serviceLabel + "]\n\n" + (formData.message || "No message provided."),
-        status: "new",
-        source: "website_contact_form",
+      await apiClient.post("/contact", {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        company: formData.company.trim(),
+        service: serviceType,
+        service_label: serviceLabel,
+        message: formData.message.trim(),
+        website: formData.website,
       });
-
-      try {
-        await base44.integrations.Core.SendEmail({
-          to: "info@solbusinessconsultant.com.au",
-          subject: "New website enquiry - " + serviceLabel,
-          body:
-            "New website enquiry received.\n\n" +
-            "Name: " + formData.name + "\n" +
-            "Email: " + formData.email + "\n" +
-            "Phone: " + (formData.phone || "Not provided") + "\n" +
-            "Company: " + (formData.company || "Not provided") + "\n" +
-            "Service: " + serviceLabel + "\n\n" +
-            "Message:\n" + (formData.message || "No message provided."),
-        });
-      } catch (emailError) {
-        console.warn("Contact notification email failed:", emailError);
-      }
 
       toast.success("Thank you! Your enquiry has been sent. We'll be in touch within 24 hours.");
       setFormData(INITIAL_FORM);
       setErrors({});
     } catch (error) {
       console.error("Contact enquiry failed:", error);
-      toast.error("We couldn't send your enquiry. Please email or call us directly.");
+      const message = error?.response?.data?.message || "We couldn't send your enquiry. Please email or call us directly.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section id="contact" className="py-24 md:py-32 bg-chalk relative overflow-hidden">
-      <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full border border-harvest/5 pointer-events-none" />
+    <section id="contact" className="py-20 md:py-32 bg-chalk relative overflow-hidden">
+      <div className="absolute -bottom-32 -right-32 hidden h-[420px] w-[420px] rounded-full border border-harvest/5 pointer-events-none sm:block lg:h-[500px] lg:w-[500px]" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -137,7 +121,7 @@ export default function ContactSection() {
             <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">
               Get In Touch
             </span>
-            <h2 className="font-display font-bold text-3xl md:text-5xl text-ink leading-tight mb-6">
+            <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-ink leading-tight mb-6">
               Ready to Build<br />Your Foundation?
             </h2>
             <p className="text-base md:text-lg text-slate_mist leading-relaxed mb-8 max-w-md">
@@ -161,8 +145,8 @@ export default function ContactSection() {
               </Link>
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
+            <div className="space-y-5 sm:space-y-6">
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white border border-border/50 flex items-center justify-center">
                   <Mail className="w-5 h-5 text-harvest" />
                 </div>
@@ -171,7 +155,7 @@ export default function ContactSection() {
                   <a href="mailto:info@solbusinessconsultant.com.au" className="font-display font-semibold text-ink hover:text-harvest transition-colors break-words">info@solbusinessconsultant.com.au</a>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white border border-border/50 flex items-center justify-center">
                   <Phone className="w-5 h-5 text-harvest" />
                 </div>
@@ -180,7 +164,7 @@ export default function ContactSection() {
                   <a href="tel:+61460003494" className="font-display font-semibold text-ink hover:text-harvest transition-colors">+61 460 003 494</a>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white border border-border/50 flex items-center justify-center">
                   <MapPin className="w-5 h-5 text-harvest" />
                 </div>
@@ -296,7 +280,7 @@ export default function ContactSection() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-harvest hover:bg-harvest/90 text-white font-display text-base py-6 gap-2 group"
+                className="w-full bg-harvest hover:bg-harvest/90 text-white font-display text-base py-5 sm:py-6 gap-2 group"
               >
                 {loading ? "Sending..." : "Book Free Consultation"}
                 {!loading && <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />}

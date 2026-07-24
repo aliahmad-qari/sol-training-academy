@@ -18,11 +18,11 @@ const services = [
 
 export default function ServicesSection() {
   return (
-    <section id="services" className="py-32 relative">
+    <section id="services" className="py-20 md:py-32 relative">
       {/* Vertical rule */}
       <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/50 hidden xl:block" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -34,14 +34,14 @@ export default function ServicesSection() {
           <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">
             Our Services
           </span>
-          <h2 className="font-display font-bold text-4xl md:text-5xl text-ink max-w-2xl leading-tight">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-ink max-w-2xl leading-tight">
             Comprehensive Solutions for Every Stage of Growth
           </h2>
           <div className="w-20 h-[2px] bg-harvest mt-6" />
         </motion.div>
 
         {/* Services Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {services.map((service, i) => (
             <motion.div
               key={service.num}
@@ -49,7 +49,7 @@ export default function ServicesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="group relative p-8 rounded-2xl border border-border/60 bg-white hover:border-harvest/40 hover:shadow-lg hover:shadow-harvest/5 transition-all duration-500 block"
+              className="group relative p-5 sm:p-8 rounded-2xl border border-border/60 bg-white hover:border-harvest/40 hover:shadow-lg hover:shadow-harvest/5 transition-all duration-500 block"
 
             >
               <Link to={service.href} className="block">
@@ -96,12 +96,12 @@ export default function ServicesSection() {
             sizes="(min-width: 1024px) 1152px, 100vw"
             className="w-full h-64 md:h-80 object-cover"
           />
-          <div className="absolute inset-0 bg-ink/60 flex items-center justify-center">
+          <div className="absolute inset-0 bg-ink/60 flex items-center justify-center px-4">
             <div className="text-center text-white">
-              <h3 className="font-display font-bold text-3xl md:text-4xl mb-3">
+              <h3 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl mb-3">
                 Your One-Stop Business Partner
               </h3>
-              <p className="text-white/70 max-w-lg mx-auto text-lg">
+              <p className="text-white/70 max-w-lg mx-auto text-base md:text-lg">
                 From startup to scale - every service connected under one roof
               </p>
             </div>

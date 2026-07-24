@@ -46,7 +46,11 @@ const VERCEL_RE = /^https:\/\/[\w-]+\.vercel\.app$/;
 
 // Known production origins, hardcoded as a safety net in case the CLIENT_URL
 // env var is missing/misspelled on the host. env.clientOrigins is still honored.
-const STATIC_ALLOWED_ORIGINS = ['https://sol-training-academy.vercel.app'];
+const STATIC_ALLOWED_ORIGINS = [
+  'https://sol-training-academy.vercel.app',
+  'https://solbusinessconsultant.com.au',
+  'https://www.solbusinessconsultant.com.au',
+];
 
 const isAllowedOrigin = (origin) =>
   env.clientOrigins.includes(origin) ||

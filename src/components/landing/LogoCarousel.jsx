@@ -19,7 +19,7 @@ const DUPLICATED = [...PLATFORMS, ...PLATFORMS];
 
 function LogoPill({ item }) {
   return (
-    <div className="flex-shrink-0 mx-5 flex items-center justify-center px-7 py-4 rounded-2xl bg-white border border-border/60 shadow-sm hover:border-harvest/30 hover:shadow-md transition-all duration-300 min-w-[130px]">
+    <div className="flex-shrink-0 mx-3 sm:mx-5 flex items-center justify-center px-5 sm:px-7 py-3 sm:py-4 rounded-2xl bg-white border border-border/60 shadow-sm hover:border-harvest/30 hover:shadow-md transition-all duration-300 min-w-[112px] sm:min-w-[130px]">
       <span className="font-display font-bold text-xs text-slate_mist text-center leading-tight whitespace-pre-line tracking-wide">
         {item.abbr}
       </span>
@@ -30,8 +30,8 @@ function LogoPill({ item }) {
 export default function LogoCarousel() {
   const shouldReduceMotion = useReducedMotion();
   return (
-    <section className="py-20 bg-white overflow-hidden border-t border-border/40">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-10 text-center">
+    <section className="py-14 md:py-20 bg-white overflow-hidden border-t border-border/40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center">
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-3 block">
             Australian Compliance Context
@@ -46,16 +46,16 @@ export default function LogoCarousel() {
       </div>
 
       <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
-        <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
+        <div className="absolute left-0 top-0 bottom-0 w-10 sm:w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
+        <div className="absolute right-0 top-0 bottom-0 w-10 sm:w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
         <motion.div className="flex" animate={shouldReduceMotion ? undefined : { x: ["0%", "-50%"] }} transition={shouldReduceMotion ? undefined : { duration: 28, repeat: Infinity, ease: "linear" }}>
           {DUPLICATED.map((item, i) => <LogoPill key={i} item={item} />)}
         </motion.div>
       </div>
 
       <div className="relative mt-4">
-        <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
-        <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
+        <div className="absolute left-0 top-0 bottom-0 w-10 sm:w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
+        <div className="absolute right-0 top-0 bottom-0 w-10 sm:w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, white, transparent)" }} />
         <motion.div className="flex" animate={shouldReduceMotion ? undefined : { x: ["-50%", "0%"] }} transition={shouldReduceMotion ? undefined : { duration: 32, repeat: Infinity, ease: "linear" }}>
           {DUPLICATED.map((item, i) => <LogoPill key={i} item={item} />)}
         </motion.div>
@@ -73,7 +73,7 @@ export default function LogoCarousel() {
           "Clear pricing before paid work",
           "Privacy-conscious enquiry handling",
         ].map((label) => (
-          <div key={label} className="px-5 py-2.5 bg-chalk rounded-full border border-border/50 text-sm text-slate_mist font-medium">
+          <div key={label} className="px-4 sm:px-5 py-2 sm:py-2.5 bg-chalk rounded-full border border-border/50 text-xs sm:text-sm text-slate_mist font-medium text-center">
             {label}
           </div>
         ))}

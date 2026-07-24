@@ -27,19 +27,19 @@ const trustBadges = [
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-20">
-      <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/3 w-[800px] h-[800px] rounded-full border border-harvest/10 opacity-40 pointer-events-none" />
-      <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/4 w-[600px] h-[600px] rounded-full border border-harvest/5 opacity-30 pointer-events-none" />
+    <section className="relative min-h-0 lg:min-h-screen flex items-center overflow-hidden pt-24 lg:pt-20">
+      <div className="absolute top-1/2 right-0 hidden -translate-y-1/2 translate-x-1/3 rounded-full border border-harvest/10 opacity-40 pointer-events-none sm:block sm:h-[520px] sm:w-[520px] lg:h-[800px] lg:w-[800px]" />
+      <div className="absolute top-1/2 right-0 hidden -translate-y-1/2 translate-x-1/4 rounded-full border border-harvest/5 opacity-30 pointer-events-none sm:block sm:h-[420px] sm:w-[420px] lg:h-[600px] lg:w-[600px]" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center py-12 lg:py-0">
-          <div className="space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center py-10 sm:py-12 lg:py-0">
+          <div className="space-y-6 sm:space-y-8">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-harvest/30 bg-harvest/5 text-harvest text-xs font-semibold tracking-wide uppercase mb-6">
+              <div className="inline-flex max-w-full flex-wrap items-center gap-2 px-3 sm:px-4 py-2 rounded-full border border-harvest/30 bg-harvest/5 text-harvest text-[11px] sm:text-xs font-semibold tracking-wide uppercase mb-5 sm:mb-6">
                 <CheckCircle className="w-3.5 h-3.5" />
                 Australian Business & NDIS Consulting
               </div>
@@ -52,9 +52,9 @@ export default function HeroSection() {
               className="space-y-2"
             >
               <h1 className="font-display font-bold text-ink leading-[1.05] tracking-tight">
-                <span className="block text-5xl md:text-6xl lg:text-7xl">STRUCTURE.</span>
-                <span className="block text-5xl md:text-6xl lg:text-7xl">COMPLIANCE.</span>
-                <span className="block text-5xl md:text-6xl lg:text-7xl text-harvest">SCALE.</span>
+                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl">STRUCTURE.</span>
+                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl">COMPLIANCE.</span>
+                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-harvest">SCALE.</span>
               </h1>
             </motion.div>
 
@@ -62,7 +62,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.5 }}
-              className="text-lg text-slate_mist max-w-lg leading-relaxed"
+              className="text-base md:text-lg text-slate_mist max-w-lg leading-relaxed"
             >
               From NDIS registration to Easy Compliance and strategic business consulting, we build the foundations that let your business thrive.
             </motion.p>
@@ -74,13 +74,13 @@ export default function HeroSection() {
               className="flex flex-col sm:flex-row gap-3 sm:gap-4"
             >
               <Link to="/#contact" className="w-full sm:w-auto">
-                <Button className="w-full justify-center bg-harvest hover:bg-harvest/90 text-white font-display text-base px-8 py-6 gap-2 group shadow-lg shadow-harvest/20 sm:w-auto">
+                <Button className="w-full justify-center bg-harvest hover:bg-harvest/90 text-white font-display text-base px-6 sm:px-8 py-5 sm:py-6 gap-2 group shadow-lg shadow-harvest/20 sm:w-auto">
                   Book Free Consultation
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link to="/#services" className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full justify-center font-display text-base px-8 py-6 border-ink/20 text-ink hover:bg-ink hover:text-white sm:w-auto">
+                <Button variant="outline" className="w-full justify-center font-display text-base px-6 sm:px-8 py-5 sm:py-6 border-ink/20 text-ink hover:bg-ink hover:text-white sm:w-auto">
                   Explore Services
                 </Button>
               </Link>
@@ -109,7 +109,7 @@ export default function HeroSection() {
             >
               {stats.map((s) => (
                 <div key={s.label}>
-                  <div className="font-display font-bold text-3xl text-ink">{s.value}</div>
+                  <div className="font-display font-bold text-2xl sm:text-3xl text-ink">{s.value}</div>
                   <div className="text-xs text-slate_mist tracking-wide uppercase mt-1">{s.label}</div>
                 </div>
               ))}
@@ -135,10 +135,10 @@ export default function HeroSection() {
                 className="w-full h-[320px] sm:h-[440px] lg:h-[640px] object-cover object-center transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-ink/10 to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6">
+              <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
                 <div className="grid gap-3">
                   {trustHighlights.map((item) => (
-                    <div key={item.label} className="flex items-center gap-3 rounded-xl bg-white/90 backdrop-blur-sm px-4 py-3 shadow-lg">
+                    <div key={item.label} className="flex items-center gap-3 rounded-xl bg-white/90 backdrop-blur-sm px-3 sm:px-4 py-3 shadow-lg">
                       <div className="w-9 h-9 rounded-lg bg-harvest/10 flex items-center justify-center flex-shrink-0">
                         <item.icon className="w-4 h-4 text-harvest" />
                       </div>

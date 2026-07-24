@@ -67,14 +67,14 @@ export default function SubscriptionsList() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex gap-3 flex-wrap">
-          <div className="relative">
+      <div className="flex flex-col items-stretch gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:w-auto lg:flex-wrap">
+          <div className="relative sm:col-span-2 lg:col-span-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate_mist" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search businesses…" className="pl-9 w-56" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search businesses…" className="w-full pl-9 lg:w-56" />
           </div>
           <Select value={filterPlan} onValueChange={setFilterPlan}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Plan" /></SelectTrigger>
+            <SelectTrigger className="w-full lg:w-36"><SelectValue placeholder="Plan" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Plans</SelectItem>
               <SelectItem value="starter">Starter</SelectItem>
@@ -83,7 +83,7 @@ export default function SubscriptionsList() {
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="w-full lg:w-36"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="trial">Trial</SelectItem>
@@ -94,20 +94,20 @@ export default function SubscriptionsList() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
           {selected.length > 0 && (
-            <Button variant="outline" onClick={() => setSendTarget({ bulk: true, ids: selected })} className="gap-2 text-sm">
+            <Button variant="outline" onClick={() => setSendTarget({ bulk: true, ids: selected })} className="w-full gap-2 text-sm sm:w-auto">
               <Mail className="w-4 h-4" /> Send Sequence ({selected.length})
             </Button>
           )}
-          <Button onClick={() => setShowAdd(true)} className="bg-harvest hover:bg-harvest/90 text-white gap-2">
+          <Button onClick={() => setShowAdd(true)} className="w-full bg-harvest hover:bg-harvest/90 text-white gap-2 sm:w-auto">
             <Plus className="w-4 h-4" /> Add Subscriber
           </Button>
         </div>
       </div>
 
       {/* Count + select all */}
-      <div className="flex items-center gap-3 text-sm text-slate_mist">
+      <div className="flex flex-wrap items-center gap-3 text-sm text-slate_mist">
         <span>{filtered.length} subscriber{filtered.length !== 1 ? "s" : ""}</span>
         {filtered.length > 0 && (
           <>
@@ -130,36 +130,36 @@ export default function SubscriptionsList() {
             <p className="text-sm mt-1">Click "Add Subscriber" to get started</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="w-full min-w-[920px] text-sm">
               <thead className="bg-chalk border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 text-left w-8">
+                  <th className="px-3 py-3 sm:px-4 text-left w-8">
                     <input type="checkbox" checked={selected.length === filtered.length} onChange={() => selected.length === filtered.length ? clearSelect() : selectAll()} className="accent-harvest" />
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Business</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Plan</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Billing</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Next Bill</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Emails</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate_mist text-xs uppercase tracking-wide">Actions</th>
+                  <th className="px-3 py-3 sm:px-4 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Business</th>
+                  <th className="px-3 py-3 sm:px-4 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Plan</th>
+                  <th className="px-3 py-3 sm:px-4 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Status</th>
+                  <th className="px-3 py-3 sm:px-4 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Billing</th>
+                  <th className="px-3 py-3 sm:px-4 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Next Bill</th>
+                  <th className="px-3 py-3 sm:px-4 text-left font-semibold text-slate_mist text-xs uppercase tracking-wide">Emails</th>
+                  <th className="px-3 py-3 sm:px-4 text-right font-semibold text-slate_mist text-xs uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {filtered.map(sub => (
                   <tr key={sub.id} className={`hover:bg-chalk/50 transition-colors ${selected.includes(sub.id) ? "bg-harvest/5" : ""}`}>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 sm:px-4">
                       <input type="checkbox" checked={selected.includes(sub.id)} onChange={() => toggleSelect(sub.id)} className="accent-harvest" />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 sm:px-4">
                       <p className="font-semibold text-ink">{sub.business_name}</p>
                       <p className="text-xs text-slate_mist">{sub.email}</p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 sm:px-4">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${PLAN_BADGE[sub.plan]}`}>{sub.plan}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 sm:px-4">
                       <Select value={sub.status} onValueChange={v => handleStatusChange(sub.id, v)}>
                         <SelectTrigger className="h-7 w-28 text-xs border-0 p-0 gap-1">
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${STATUS_BADGE[sub.status]}`}>{sub.status}</span>
@@ -170,10 +170,10 @@ export default function SubscriptionsList() {
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate_mist capitalize">{sub.billing_cycle}</td>
-                    <td className="px-4 py-3 text-xs text-slate_mist">{sub.next_billing || "—"}</td>
-                    <td className="px-4 py-3 text-xs text-slate_mist">{sub.emails_sent || 0}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 sm:px-4 text-xs text-slate_mist capitalize">{sub.billing_cycle}</td>
+                    <td className="px-3 py-3 sm:px-4 text-xs text-slate_mist">{sub.next_billing || "—"}</td>
+                    <td className="px-3 py-3 sm:px-4 text-xs text-slate_mist">{sub.emails_sent || 0}</td>
+                    <td className="px-3 py-3 sm:px-4">
                       <div className="flex items-center gap-1 justify-end">
                         <Button size="sm" variant="ghost" onClick={() => setSendTarget(sub)} className="h-7 px-2 text-xs text-harvest hover:bg-harvest/10">
                           <Zap className="w-3 h-3 mr-1" /> Automate

@@ -47,11 +47,11 @@ const steps = [
 
 export default function ComplianceSection() {
   return (
-    <section id="compliance" className="py-32 bg-chalk relative overflow-hidden">
+    <section id="compliance" className="py-20 md:py-32 bg-chalk relative overflow-hidden">
       {/* Background monolith */}
-      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full border border-harvest/5 pointer-events-none" />
+      <div className="absolute -top-32 -left-32 hidden h-[420px] w-[420px] rounded-full border border-harvest/5 pointer-events-none sm:block lg:h-[500px] lg:w-[500px]" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -64,17 +64,17 @@ export default function ComplianceSection() {
             <ShieldCheck className="w-3.5 h-3.5" />
             Powered by Easy Compliance
           </div>
-          <h2 className="font-display font-bold text-4xl md:text-5xl text-ink max-w-3xl leading-tight">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-ink max-w-3xl leading-tight">
             NDIS Compliance Made Effortless
           </h2>
-          <p className="text-lg text-slate_mist max-w-2xl mt-4 leading-relaxed">
+          <p className="text-base md:text-lg text-slate_mist max-w-2xl mt-4 leading-relaxed">
             Easy Compliance is a service, not just software. Our team works with you every step - from scattered documents toward a clear audit-readiness plan.
           </p>
           <div className="w-20 h-[2px] bg-harvest mt-6" />
         </motion.div>
 
         {/* Image + Features Grid */}
-        <div className="grid lg:grid-cols-2 gap-16 items-center mb-20">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-12 md:mb-20">
           {/* Image */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
@@ -94,7 +94,7 @@ export default function ComplianceSection() {
               className="w-full h-[320px] sm:h-[400px] object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-ink/40 to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-sm rounded-xl p-4">
+            <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-xl p-3 sm:bottom-6 sm:left-6 sm:right-6 sm:p-4">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                 <span className="text-sm font-semibold text-ink">Document Review Workflow Active</span>
@@ -120,7 +120,7 @@ export default function ComplianceSection() {
                   { title: "Last-Minute Scramble", desc: "Weeks of panic preparing, hunting down documents." },
                   { title: "Fear of Non-Compliance", desc: "One missing document could cost your registration." },
                 ].map((item) => (
-                  <div key={item.title} className="flex gap-4 p-4 rounded-xl bg-white border border-border/50">
+                  <div key={item.title} className="flex gap-3 sm:gap-4 p-4 rounded-xl bg-white border border-border/50">
                     <div className="w-2 h-full rounded-full bg-destructive/20 flex-shrink-0" />
                     <div>
                       <h4 className="font-display font-semibold text-sm text-ink">{item.title}</h4>
@@ -145,7 +145,7 @@ export default function ComplianceSection() {
           <p className="text-slate_mist">From first call to a clear audit-readiness plan.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {steps.map((step, i) => (
             <motion.div
               key={step.title}
@@ -176,10 +176,10 @@ export default function ComplianceSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mt-16"
+          className="text-center mt-10 md:mt-16"
         >
           <Link to="/#contact">
-            <Button className="bg-harvest hover:bg-harvest/90 text-white font-display text-base px-10 py-6 gap-2 group shadow-lg shadow-harvest/20">
+            <Button className="bg-harvest hover:bg-harvest/90 text-white font-display text-base px-6 sm:px-10 py-5 sm:py-6 gap-2 group shadow-lg shadow-harvest/20">
               Get Audit-Ready Now
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </Button>

@@ -51,16 +51,16 @@ services:
         sync: false
       - key: CLOUDINARY_FOLDER
         value: sol_training_academy
-      # Transactional email (Resend) — OTP verification + password reset.
-      - key: RESEND_API_KEY
-        sync: false
+      # Transactional email (Brevo) — OTP verification, password reset, and website enquiries.
       - key: EMAIL_PROVIDER
-        value: resend
-      # Sandbox sender — works before domain verification. Switch back to
-      # "SOL Business Consultant <saf@solbusinessconsultant.com.au>" once the
-      # domain is verified in Resend.
+        value: brevo
+      - key: BREVO_API_KEY
+        sync: false
+      # Must match an email address verified in Brevo's Senders panel.
       - key: EMAIL_FROM
-        value: SOL Business Consultant <onboarding@resend.dev>
+        value: SOL Business Consultant <info@solbusinessconsultant.com.au>
+      - key: CONTACT_RATE_LIMIT_MAX
+        value: "10"
       - key: COMPANY_NAME
         value: SOL Business Consultant Pty Ltd
       - key: COMPANY_ABN

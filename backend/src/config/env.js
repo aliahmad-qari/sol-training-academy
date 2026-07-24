@@ -118,6 +118,7 @@ export const env = {
     windowMs: toNumber(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
     max: toNumber(process.env.RATE_LIMIT_MAX, 300),
     authMax: toNumber(process.env.AUTH_RATE_LIMIT_MAX, 20),
+    contactMax: toNumber(process.env.CONTACT_RATE_LIMIT_MAX, 10),
     // AI endpoints (Groq). Defaults raised from the old Gemini free-tier 15/min.
     aiWindowMs: toNumber(process.env.AI_RATE_LIMIT_WINDOW_MS, 60 * 1000),
     aiMax: toNumber(process.env.AI_RATE_LIMIT_MAX, 30),

@@ -221,7 +221,7 @@ function PricingCard({ pkg, delay = 0 }) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      className={`relative rounded-3xl p-8 border-2 flex flex-col transition-all duration-300 ${
+      className={`relative rounded-3xl p-5 sm:p-8 border-2 flex flex-col transition-all duration-300 ${
         pkg.popular
           ? "bg-basalt border-harvest/40 shadow-2xl shadow-harvest/10"
           : "bg-white border-border/60 hover:border-harvest/30 shadow-md"
@@ -241,7 +241,7 @@ function PricingCard({ pkg, delay = 0 }) {
       <h4 className={`font-display font-bold text-xl mb-2 ${pkg.popular ? "text-white" : "text-ink"}`}>{pkg.name}</h4>
 
       <div className="flex items-end gap-1.5 mb-6">
-        <span className="font-display font-bold text-4xl text-harvest">{pkg.price}</span>
+        <span className="font-display font-bold text-3xl sm:text-4xl text-harvest">{pkg.price}</span>
         {pkg.price !== "Custom" && (
           <span className={`text-sm mb-1 ${pkg.popular ? "text-white/70" : "text-slate_mist"}`}>+GST</span>
         )}
@@ -277,25 +277,25 @@ export default function PricingSection() {
   const { packages, cols, note } = PACKAGE_MAP[activeTab];
 
   return (
-    <section id="pricing" className="py-32 bg-chalk relative overflow-hidden">
-      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full border border-harvest/5 pointer-events-none" />
+    <section id="pricing" className="py-20 md:py-32 bg-chalk relative overflow-hidden">
+      <div className="absolute -top-32 -right-32 hidden h-[420px] w-[420px] rounded-full border border-harvest/5 pointer-events-none sm:block lg:h-[500px] lg:w-[500px]" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
           <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">Transparent Pricing</span>
-          <h2 className="font-display font-bold text-4xl md:text-5xl text-ink leading-tight">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-ink leading-tight">
             Simple, Upfront Pricing
           </h2>
-          <p className="text-slate_mist text-lg mt-4 max-w-xl mx-auto">
+          <p className="text-slate_mist text-base md:text-lg mt-4 max-w-xl mx-auto">
             No hidden fees. Compare packages across all Sol services and choose the level of support that fits your business.
           </p>
           <div className="w-20 h-[2px] bg-harvest mt-6 mx-auto" />
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
+        <div className="flex flex-wrap justify-center gap-2 mb-10 md:mb-12">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -303,7 +303,7 @@ export default function PricingSection() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
+                className={`flex min-w-0 items-center gap-2 px-3 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 border ${
                   isActive
                     ? "bg-ink text-white border-ink shadow-md"
                     : "bg-white text-slate_mist border-border/60 hover:border-harvest/40 hover:text-ink"
@@ -329,13 +329,13 @@ export default function PricingSection() {
 
         {/* Bottom CTA */}
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className="mt-16 bg-ink rounded-3xl p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8">
+          className="mt-10 md:mt-16 bg-ink rounded-3xl p-6 sm:p-10 md:p-14 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 md:gap-8">
           <div>
             <h3 className="font-display font-bold text-2xl md:text-3xl text-white">Not sure which package is right for you?</h3>
             <p className="text-white/70 mt-2">Book a free 30-minute consultation — we'll assess your needs and recommend the best fit.</p>
           </div>
           <Link to="/#contact"
-            className="flex-shrink-0 inline-flex items-center gap-2 bg-harvest hover:bg-harvest/90 text-white font-display font-semibold px-8 py-4 rounded-xl transition-colors whitespace-nowrap">
+            className="inline-flex w-full items-center justify-center gap-2 bg-harvest hover:bg-harvest/90 text-white font-display font-semibold px-6 sm:px-8 py-4 rounded-xl transition-colors sm:w-auto sm:flex-shrink-0 sm:whitespace-nowrap">
             Book Free Consultation <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>

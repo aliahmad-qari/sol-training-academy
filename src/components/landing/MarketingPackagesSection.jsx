@@ -33,24 +33,24 @@ const PACKAGES = [
 
 export default function MarketingPackagesSection() {
   return (
-    <section id="marketing" className="py-32 bg-chalk relative overflow-hidden">
+    <section id="marketing" className="py-20 md:py-32 bg-chalk relative overflow-hidden">
       {/* BG accent */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-harvest/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 md:mb-16"
         >
           <div>
             <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">
               Digital Marketing
             </span>
-            <h2 className="font-display font-bold text-4xl md:text-5xl text-ink max-w-xl leading-tight">
+            <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-ink max-w-xl leading-tight">
               Marketing Packages Built for Measurable Growth
             </h2>
             <div className="w-20 h-[2px] bg-harvest mt-6" />
@@ -61,7 +61,7 @@ export default function MarketingPackagesSection() {
         </motion.div>
 
         {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 mb-10">
           {PACKAGES.map((pkg, i) => (
             <motion.div
               key={pkg.name}
@@ -69,9 +69,9 @@ export default function MarketingPackagesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className={`relative rounded-2xl p-8 flex flex-col border-2 transition-all ${
+              className={`relative rounded-2xl p-5 sm:p-8 flex flex-col border-2 transition-all ${
                 pkg.highlight
-                  ? "bg-ink border-harvest text-white shadow-2xl shadow-harvest/10 scale-[1.02]"
+                  ? "bg-ink border-harvest text-white shadow-2xl shadow-harvest/10 md:scale-[1.02]"
                   : "bg-white border-border hover:border-harvest/40 hover:shadow-lg"
               }`}
             >
@@ -89,7 +89,7 @@ export default function MarketingPackagesSection() {
                   <h3 className={`font-display font-bold text-lg ${pkg.highlight ? "text-white" : "text-ink"}`}>{pkg.name}</h3>
                 </div>
                 <div className="flex items-end gap-1">
-                  <span className={`font-display font-bold text-4xl ${pkg.highlight ? "text-white" : "text-ink"}`}>{pkg.price}</span>
+                  <span className={`font-display font-bold text-3xl sm:text-4xl ${pkg.highlight ? "text-white" : "text-ink"}`}>{pkg.price}</span>
                   <span className={`text-sm mb-1 ${pkg.highlight ? "text-white/60" : "text-slate_mist"}`}>{pkg.period}</span>
                 </div>
               </div>

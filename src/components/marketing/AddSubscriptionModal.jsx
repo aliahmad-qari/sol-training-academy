@@ -50,14 +50,14 @@ export default function AddSubscriptionModal({ onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-border">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border">
           <h3 className="font-display font-bold text-xl text-ink">Add Subscriber</h3>
           <button onClick={onClose}><X className="w-5 h-5 text-slate_mist" /></button>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5 md:col-span-2">
               <Label className="text-xs uppercase tracking-wide text-slate_mist">Business Name *</Label>
               <Input value={form.business_name} onChange={e => set("business_name", e.target.value)} placeholder="Acme Pty Ltd" />
@@ -122,20 +122,20 @@ export default function AddSubscriptionModal({ onClose, onSaved }) {
           </div>
 
           {/* MRR Preview */}
-          <div className="bg-harvest/5 border border-harvest/20 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-harvest/5 border border-harvest/20 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs text-slate_mist uppercase tracking-wide">Estimated MRR</p>
               <p className="font-display font-bold text-2xl text-harvest">${Math.round(mrr).toLocaleString()}/mo</p>
             </div>
-            <div className="text-right text-xs text-slate_mist">
+            <div className="text-left text-xs text-slate_mist sm:text-right">
               <p>Trial ends: {trialEnds}</p>
               <p className="mt-0.5 capitalize">{form.billing_cycle} billing</p>
             </div>
           </div>
         </div>
-        <div className="flex gap-3 p-6 border-t border-border">
-          <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button onClick={handleSave} disabled={saving} className="flex-1 bg-harvest hover:bg-harvest/90 text-white gap-2">
+        <div className="flex flex-col gap-3 p-4 sm:p-6 border-t border-border sm:flex-row">
+          <Button variant="outline" onClick={onClose} className="w-full sm:flex-1">Cancel</Button>
+          <Button onClick={handleSave} disabled={saving} className="w-full sm:flex-1 bg-harvest hover:bg-harvest/90 text-white gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             Add & Send Welcome Email
           </Button>

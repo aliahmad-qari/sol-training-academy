@@ -61,4 +61,15 @@ export const aiLimiter = rateLimit({
   message: { success: false, message: 'Too many AI requests. Please wait a moment and try again.' },
 });
 
+/**
+ * Public contact form limiter. This endpoint can trigger outbound Brevo email,
+ * so keep it tighter than the general API limiter to protect the sender quota.
+ */
+export const contactLimiter = rateLimit({
+  windowMs: env.rateLimit.windowMs,
+  max: env.rateLimit.contactMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many contact requests. Please wait a moment and try again.' },
+});
 export default apiLimiter;

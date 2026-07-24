@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { Users, TrendingUp, Mail, DollarSign, ArrowUpRight, Zap, AlertCircle, CheckCircle } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { Users, TrendingUp, Mail, DollarSign, Zap, AlertCircle, CheckCircle } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const PLAN_COLORS = { starter: "#64748B", growth: "#D97706", enterprise: "#0F172A" };
 const STATUS_COLORS = { trial: "#3B82F6", active: "#10B981", paused: "#F59E0B", cancelled: "#EF4444", expired: "#6B7280" };
@@ -81,25 +81,25 @@ export default function AutomationDashboard() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         {statCards.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-white rounded-2xl border border-border p-4 space-y-2">
+            className="bg-white rounded-2xl border border-border p-4 sm:p-5 space-y-2">
             <div className={`w-9 h-9 rounded-lg ${s.bg} flex items-center justify-center`}>
               <s.icon className={`w-4 h-4 ${s.color}`} />
             </div>
-            <p className="font-display font-bold text-xl text-ink">{s.value}</p>
+            <p className="font-display font-bold text-lg sm:text-xl text-ink">{s.value}</p>
             <p className="text-xs text-slate_mist leading-tight">{s.label}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Charts Row */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Monthly Growth */}
-        <div className="md:col-span-2 bg-white rounded-2xl border border-border p-6">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-border p-4 sm:p-6">
           <h3 className="font-display font-semibold text-ink mb-4">New Subscribers (Last 6 Months)</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyGrowth}>
@@ -112,7 +112,7 @@ export default function AutomationDashboard() {
         </div>
 
         {/* Plan Distribution */}
-        <div className="bg-white rounded-2xl border border-border p-6">
+        <div className="bg-white rounded-2xl border border-border p-4 sm:p-6">
           <h3 className="font-display font-semibold text-ink mb-4">Plan Distribution</h3>
           <ResponsiveContainer width="100%" height={140}>
             <PieChart>
@@ -137,13 +137,13 @@ export default function AutomationDashboard() {
       </div>
 
       {/* Status + Recent Activity */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Status Breakdown */}
-        <div className="bg-white rounded-2xl border border-border p-6">
+        <div className="bg-white rounded-2xl border border-border p-4 sm:p-6">
           <h3 className="font-display font-semibold text-ink mb-4">Subscription Status</h3>
           <div className="space-y-3">
             {statusDist.map(s => (
-              <div key={s.name} className="flex items-center gap-3">
+              <div key={s.name} className="flex items-center gap-2 sm:gap-3">
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: s.color }} />
                 <div className="flex-1 bg-chalk rounded-full h-2 overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: `${total > 0 ? (s.value / total) * 100 : 0}%`, background: s.color }} />
@@ -155,7 +155,7 @@ export default function AutomationDashboard() {
         </div>
 
         {/* Recent Automation Activity */}
-        <div className="bg-white rounded-2xl border border-border p-6">
+        <div className="bg-white rounded-2xl border border-border p-4 sm:p-6">
           <h3 className="font-display font-semibold text-ink mb-4">Recent Automation Activity</h3>
           {logs.length === 0 ? (
             <div className="text-center py-8 text-slate_mist text-sm">No automation activity yet</div>

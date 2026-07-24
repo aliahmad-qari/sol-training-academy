@@ -46,11 +46,12 @@ const parseAddress = (raw) => {
  *   subject: string,
  *   html:    string,
  *   text?:   string,   - plain text fallback (recommended for deliverability)
+ *   replyTo?: string,   - optional reply-to address for inbound enquiries
  * }} msg
  * @returns {Promise<{ id?: string }>}
  * @throws  {ApiError} 500 on misconfiguration or provider rejection.
  */
-export const sendEmail = async ({ to, subject, html, text }) => {
+export const sendEmail = async ({ to, subject, html, text, replyTo }) => {
   // ── Dev fallback: no API key set → log to console instead of crashing ───
   if (!env.email.apiKey) {
     if (env.isProd) {
@@ -64,6 +65,7 @@ export const sendEmail = async ({ to, subject, html, text }) => {
 
   const fromParsed = parseAddress(env.email.from);
   const toParsed   = parseAddress(to);
+  const replyToParsed = replyTo ? parseAddress(replyTo) : null;
 
   // ── Brevo REST API payload ───────────────────────────────────────────────
   const payload = {
@@ -78,6 +80,14 @@ export const sendEmail = async ({ to, subject, html, text }) => {
       },
     ],
     subject,
+    ...(replyToParsed
+      ? {
+          replyTo: {
+            email: replyToParsed.email,
+            ...(replyToParsed.name ? { name: replyToParsed.name } : {}),
+          },
+        }
+      : {}),
     htmlContent: html,
     ...(text ? { textContent: text } : {}),
     // Disable Brevo's link/open tracking — tracking rewrites the HTML body

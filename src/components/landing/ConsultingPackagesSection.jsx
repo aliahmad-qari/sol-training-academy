@@ -121,14 +121,14 @@ const PACKAGES = [
 
 export default function ConsultingPackagesSection() {
   return (
-    <section id="consulting-packages" className="py-32 bg-ink relative overflow-hidden">
+    <section id="consulting-packages" className="py-20 md:py-32 bg-ink relative overflow-hidden">
       {/* BG texture */}
       <div
         className="absolute inset-0 opacity-5"
         style={{ backgroundImage: "radial-gradient(circle at 20% 80%, #D97706 0%, transparent 50%), radial-gradient(circle at 80% 20%, #D97706 0%, transparent 50%)" }}
       />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
         {/* Header */}
         <motion.div
@@ -136,13 +136,13 @@ export default function ConsultingPackagesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 md:mb-16"
         >
           <div>
             <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">
               Business Consulting Packages
             </span>
-            <h2 className="font-display font-bold text-4xl md:text-5xl text-white max-w-xl leading-tight">
+            <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-white max-w-xl leading-tight">
               The Right Package for Every Stage of Growth
             </h2>
             <div className="w-20 h-[2px] bg-harvest mt-6" />
@@ -153,7 +153,7 @@ export default function ConsultingPackagesSection() {
         </motion.div>
 
         {/* Cards grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mb-10 md:mb-12">
           {PACKAGES.map((pkg, i) => (
             <motion.div
               key={pkg.name}
@@ -161,9 +161,9 @@ export default function ConsultingPackagesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className={`relative rounded-2xl border-2 p-7 flex flex-col transition-all duration-300 ${
+              className={`relative rounded-2xl border-2 p-6 sm:p-7 flex flex-col transition-all duration-300 ${
                 pkg.highlight
-                  ? "bg-harvest border-harvest text-white shadow-2xl shadow-harvest/30 scale-[1.03]"
+                  ? "bg-harvest border-harvest text-white shadow-2xl shadow-harvest/30 md:scale-[1.03]"
                   : "bg-white/5 border-white/10 hover:border-harvest/50 hover:bg-white/8 backdrop-blur-sm"
               }`}
             >
@@ -177,7 +177,7 @@ export default function ConsultingPackagesSection() {
               )}
 
               {/* Top row */}
-              <div className="flex items-start justify-between mb-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
                   pkg.highlight ? "bg-white/20" : "bg-harvest/15"
                 }`}>
@@ -235,16 +235,16 @@ export default function ConsultingPackagesSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white/5 border border-white/10 rounded-2xl px-8 py-6"
+          className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-5 sm:gap-6 bg-white/5 border border-white/10 rounded-2xl px-5 sm:px-8 py-5 sm:py-6"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-3 sm:gap-4">
             <Star className="w-8 h-8 text-harvest flex-shrink-0" />
             <div>
               <p className="font-display font-bold text-white">Not sure which package is right for you?</p>
               <p className="text-white/50 text-sm">Book a free 30-minute consultation and we'll map the perfect plan.</p>
             </div>
           </div>
-          <Button asChild className="bg-harvest hover:bg-harvest/90 text-white gap-2 px-6 h-10 whitespace-nowrap font-semibold">
+          <Button asChild className="w-full justify-center bg-harvest hover:bg-harvest/90 text-white gap-2 px-6 h-10 font-semibold sm:w-auto sm:whitespace-nowrap">
             <Link to="/#contact">Book Free Consultation <ArrowRight className="w-4 h-4" /></Link>
           </Button>
         </motion.div>

@@ -100,19 +100,19 @@ export default function EmailSequences() {
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="flex gap-3 justify-between items-center flex-wrap">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display font-bold text-lg text-ink">Email Sequences</h2>
           <p className="text-sm text-slate_mist">Automated emails triggered by subscriber actions</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           {sequences.length === 0 && (
-            <Button variant="outline" onClick={seedDefaults} disabled={seeding} className="gap-2 text-sm">
+            <Button variant="outline" onClick={seedDefaults} disabled={seeding} className="w-full gap-2 text-sm sm:w-auto">
               {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
               Load Default Sequences
             </Button>
           )}
-          <Button onClick={() => { setForm(EMPTY_FORM); setEditing(null); setShowForm(true); }} className="bg-harvest hover:bg-harvest/90 text-white gap-2">
+          <Button onClick={() => { setForm(EMPTY_FORM); setEditing(null); setShowForm(true); }} className="w-full bg-harvest hover:bg-harvest/90 text-white gap-2 sm:w-auto">
             <Plus className="w-4 h-4" /> New Sequence
           </Button>
         </div>
@@ -120,12 +120,12 @@ export default function EmailSequences() {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-white border border-border rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="bg-white border border-border rounded-2xl p-4 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between gap-3">
             <h3 className="font-display font-semibold text-ink">{editing ? "Edit Sequence" : "New Sequence"}</h3>
             <button onClick={() => { setShowForm(false); setEditing(null); }}><X className="w-5 h-5 text-slate_mist" /></button>
           </div>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wide text-slate_mist">Sequence Name *</Label>
               <Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Trial Welcome Email" />
@@ -164,9 +164,9 @@ export default function EmailSequences() {
               <Textarea value={form.body} onChange={e => set("body", e.target.value)} rows={8} placeholder="Write your email here..." className="font-mono text-xs" />
             </div>
           </div>
-          <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => { setShowForm(false); setEditing(null); }}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-harvest hover:bg-harvest/90 text-white gap-2">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => { setShowForm(false); setEditing(null); }} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handleSave} disabled={saving} className="w-full bg-harvest hover:bg-harvest/90 text-white gap-2 sm:w-auto">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               {editing ? "Save Changes" : "Create Sequence"}
             </Button>
@@ -188,7 +188,7 @@ export default function EmailSequences() {
           {sequences.map(seq => {
             const t = triggerInfo(seq.trigger);
             return (
-              <div key={seq.id} className="bg-white rounded-xl border border-border p-5 flex items-start gap-4">
+              <div key={seq.id} className="bg-white rounded-xl border border-border p-4 sm:p-5 flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="w-10 h-10 rounded-xl bg-harvest/10 flex items-center justify-center text-xl flex-shrink-0">{t.icon}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -204,13 +204,13 @@ export default function EmailSequences() {
                   </p>
                   <p className="text-sm text-ink mt-1.5 font-medium">{seq.subject}</p>
                   <p className="text-xs text-slate_mist mt-1 line-clamp-2">{seq.body?.replace(/\n/g, " ")}</p>
-                  <div className="flex gap-3 mt-2 text-xs text-slate_mist">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-slate_mist">
                     <span>Sent: {seq.sent_count || 0}</span>
                     <span>Open rate: {seq.open_rate || 0}%</span>
                     <span>Click rate: {seq.click_rate || 0}%</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex w-full flex-wrap items-center justify-start gap-1 sm:w-auto sm:flex-shrink-0 sm:justify-end">
                   <Button size="sm" variant="ghost" onClick={() => handleToggleStatus(seq)} className="h-7 px-2 text-xs">
                     {seq.status === "active" ? "Pause" : "Activate"}
                   </Button>

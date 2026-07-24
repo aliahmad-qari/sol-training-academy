@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
 import userRoutes from './user.routes.js';
@@ -27,6 +27,7 @@ import courseFeedbackRoutes from './courseFeedback.routes.js';
 import announcementRoutes from './announcement.routes.js';
 import studentDocumentRoutes from './studentDocument.routes.js';
 import notificationRoutes from './notification.routes.js';
+import contactRoutes from './contact.routes.js';
 
 import directMessageRoutes from './directMessage.routes.js';
 
@@ -36,6 +37,7 @@ import directMessageRoutes from './directMessage.routes.js';
 const router = Router();
 
 router.use('/health', healthRoutes);
+router.use('/contact', contactRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/courses', courseRoutes);

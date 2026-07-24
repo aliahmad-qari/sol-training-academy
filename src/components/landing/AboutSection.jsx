@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { motion } from "framer-motion";
 
 const ABOUT_IMAGE = "/Images/about/trainer-student-discussion.webp";
@@ -18,8 +18,8 @@ const focusAreas = [
 
 export default function AboutSection() {
   return (
-    <section id="about" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+    <section id="about" className="py-20 md:py-32 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -30,13 +30,13 @@ export default function AboutSection() {
           <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">
             About Sol
           </span>
-          <h2 className="font-display font-bold text-4xl md:text-5xl text-ink max-w-2xl leading-tight">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-ink max-w-2xl leading-tight">
             The Foundation<br />of Your Growth
           </h2>
           <div className="w-20 h-[2px] bg-harvest mt-6" />
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 md:mb-24">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -63,10 +63,10 @@ export default function AboutSection() {
             transition={{ duration: 0.8 }}
             className="space-y-6"
           >
-            <p className="text-lg leading-relaxed text-slate_mist">
+            <p className="text-base md:text-lg leading-relaxed text-slate_mist">
               SOL Business Consultant supports Australian businesses with NDIS registration guidance, compliance preparation, bookkeeping, digital systems, websites, and growth services.
             </p>
-            <p className="text-lg leading-relaxed text-slate_mist">
+            <p className="text-base md:text-lg leading-relaxed text-slate_mist">
               With Easy Compliance in our ecosystem, we help providers organise documents, prepare operational evidence, and build workflows that are easier to maintain. We focus on practical systems, clear advice, and responsible claims.
             </p>
             <div className="flex flex-wrap gap-8 pt-4">
@@ -80,7 +80,7 @@ export default function AboutSection() {
           </motion.div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
           {values.map((v, i) => (
             <motion.div
               key={v.num}
@@ -90,7 +90,7 @@ export default function AboutSection() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className="p-6 border-t-2 border-harvest/30 hover:border-harvest transition-colors duration-300"
             >
-              <span className="font-display text-5xl font-bold text-border/40">{v.num}</span>
+              <span className="font-display text-4xl sm:text-5xl font-bold text-border/40">{v.num}</span>
               <h4 className="font-display font-bold text-lg text-ink mt-4 mb-2">{v.title}</h4>
               <p className="text-sm text-slate_mist leading-relaxed">{v.desc}</p>
             </motion.div>

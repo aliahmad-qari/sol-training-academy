@@ -140,14 +140,14 @@ export default function ServiceComparisonTable() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.7 }}
-      className="mt-24"
+      className="mt-14 md:mt-24"
     >
       {/* Header */}
-      <div className="text-center mb-12">
+      <div className="text-center mb-8 md:mb-12">
         <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-3 block">
           Compare Core Pathways
         </span>
-        <h2 className="font-display font-bold text-3xl md:text-4xl text-ink">
+        <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-ink">
           Choose the Right Path for Your Business
         </h2>
         <p className="text-slate_mist mt-3 max-w-xl mx-auto text-sm leading-relaxed">
@@ -157,8 +157,8 @@ export default function ServiceComparisonTable() {
       </div>
 
       {/* Table wrapper */}
-      <div className="overflow-x-auto rounded-2xl border border-border/60 shadow-sm bg-white">
-        <table className="w-full min-w-[640px] border-collapse">
+      <div className="overflow-x-auto overscroll-x-contain rounded-2xl border border-border/60 shadow-sm bg-white">
+        <table className="w-full min-w-[720px] border-collapse">
           {/* Service Headers */}
           <thead>
             <tr>

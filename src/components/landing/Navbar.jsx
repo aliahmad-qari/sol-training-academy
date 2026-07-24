@@ -113,8 +113,8 @@ export default function Navbar() {
             transition={{ duration: 0.25 }}
             className="bg-ink text-white overflow-hidden"
           >
-            <div className="max-w-7xl mx-auto px-6 lg:px-8 h-9 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-between text-[11px] sm:text-xs">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
                 <Sparkles className="w-3.5 h-3.5 text-harvest flex-shrink-0" />
                 <span className="truncate">
                   Australian-owned NDIS & business consulting — audit-ready systems, end-to-end support.
@@ -137,7 +137,7 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-harvest flex items-center justify-center">
@@ -244,7 +244,7 @@ export default function Navbar() {
           </div>
 
           <button
-            className="xl:hidden p-2"
+            className="xl:hidden p-2 -mr-2"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileOpen}
@@ -257,8 +257,8 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }} className="xl:hidden bg-white border-t border-border overflow-hidden">
-            <div className="px-6 py-6 space-y-3">
+            exit={{ opacity: 0, height: 0 }} className="xl:hidden bg-white border-t border-border max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div className="px-4 sm:px-6 py-5 sm:py-6 space-y-3">
               {NAV_LINKS.map((link) => {
                 const active = isActiveLink(link.href);
                 return (

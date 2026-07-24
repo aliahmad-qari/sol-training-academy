@@ -44,19 +44,19 @@ const faqs = [
 
 export default function FAQSection() {
   return (
-    <section className="py-32">
-      <div className="max-w-3xl mx-auto px-6 lg:px-8">
+    <section className="py-20 md:py-32">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
         >
           <span className="text-xs font-semibold tracking-[0.3em] uppercase text-harvest mb-4 block">
             FAQ
           </span>
-          <h2 className="font-display font-bold text-4xl text-ink">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl text-ink">
             Frequently Asked Questions
           </h2>
           <div className="w-20 h-[2px] bg-harvest mt-6 mx-auto" />
@@ -73,7 +73,7 @@ export default function FAQSection() {
               <AccordionItem
                 key={i}
                 value={`faq-${i}`}
-                className="border border-border/50 rounded-xl px-6 bg-white data-[state=open]:border-harvest/30 data-[state=open]:shadow-sm transition-all"
+                className="border border-border/50 rounded-xl px-4 sm:px-6 bg-white data-[state=open]:border-harvest/30 data-[state=open]:shadow-sm transition-all"
               >
                 <AccordionTrigger className="text-left font-display font-semibold text-ink text-[15px] hover:no-underline py-5">
                   {faq.q}

@@ -46,12 +46,12 @@ const packages = [
 
 export default function NDISSection() {
   return (
-    <section id="ndis" className="py-32 bg-basalt text-white relative overflow-hidden">
+    <section id="ndis" className="py-20 md:py-32 bg-basalt text-white relative overflow-hidden">
       {/* Sol Monolith background */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full border border-white/[0.03] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-white/[0.02] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.03] pointer-events-none sm:block sm:h-[620px] sm:w-[620px] lg:h-[900px] lg:w-[900px]" />
+      <div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.02] pointer-events-none sm:block sm:h-[480px] sm:w-[480px] lg:h-[700px] lg:w-[700px]" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -64,10 +64,10 @@ export default function NDISSection() {
             <Shield className="w-3.5 h-3.5" />
             NDIS Registration Specialists
           </div>
-          <h2 className="font-display font-bold text-4xl md:text-5xl lg:text-6xl text-white max-w-3xl leading-tight">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white max-w-3xl leading-tight">
             Your Path to NDIS<br />Registration, Simplified
           </h2>
-          <p className="text-lg text-white/60 max-w-2xl mt-4 leading-relaxed">
+          <p className="text-base md:text-lg text-white/60 max-w-2xl mt-4 leading-relaxed">
             We help sole traders, small providers, and allied health professionals navigate 
             the NDIS Commission audit with confidence.
           </p>
@@ -75,7 +75,7 @@ export default function NDISSection() {
         </motion.div>
 
         {/* Image + Roadmap */}
-        <div className="grid lg:grid-cols-2 gap-16 mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 mb-14 md:mb-24">
           {/* Image */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -106,7 +106,7 @@ export default function NDISSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="flex gap-6 relative scroll-mt-32"
+                className="flex gap-4 sm:gap-6 relative scroll-mt-32"
               >
                 {/* Vertical line */}
                 <div className="flex flex-col items-center">
@@ -135,11 +135,11 @@ export default function NDISSection() {
           transition={{ duration: 0.7 }}
           className="mb-8"
         >
-          <h3 className="font-display font-bold text-3xl text-white mb-2">Simple, Transparent Pricing</h3>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-white mb-2">Simple, Transparent Pricing</h3>
           <p className="text-white/70">Choose the level of support that matches your needs.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 max-w-4xl">
           {packages.map((pkg, i) => (
             <motion.div
               key={pkg.name}
@@ -148,7 +148,7 @@ export default function NDISSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className={`rounded-2xl p-8 border scroll-mt-32 ${
+              className={`rounded-2xl p-5 sm:p-8 border scroll-mt-32 ${
                 pkg.popular
                   ? "bg-white/10 border-harvest/40 backdrop-blur-sm"
                   : "bg-white/5 border-white/10"
@@ -162,7 +162,7 @@ export default function NDISSection() {
                   </span>
                 )}
               </div>
-              <div className="font-display font-bold text-4xl text-harvest mb-1">
+              <div className="font-display font-bold text-3xl sm:text-4xl text-harvest mb-1">
                 {pkg.price}
                 <span className="text-base font-normal text-white/70 ml-2">+GST</span>
               </div>

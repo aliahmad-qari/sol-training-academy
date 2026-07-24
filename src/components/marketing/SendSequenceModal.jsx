@@ -68,22 +68,22 @@ export default function SendSequenceModal({ target, onClose, onSent }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-2">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
+        <div className="flex items-start justify-between gap-3 p-4 sm:p-6 border-b border-border">
+          <div className="flex min-w-0 items-start gap-2">
             <Zap className="w-5 h-5 text-harvest" />
-            <h3 className="font-display font-bold text-lg text-ink">
+            <h3 className="font-display font-bold text-base sm:text-lg text-ink leading-snug">
               {isBulk ? `Send Sequence to ${target.ids.length} subscribers` : `Automate: ${target?.business_name}`}
             </h3>
           </div>
           <button onClick={onClose}><X className="w-5 h-5 text-slate_mist" /></button>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           {!isBulk && (
             <div className="bg-chalk rounded-xl p-3 text-sm">
               <p className="font-semibold text-ink">{target?.business_name}</p>
-              <p className="text-slate_mist text-xs">{target?.email} · {target?.plan} · {target?.status}</p>
+              <p className="text-slate_mist text-xs break-words">{target?.email} · {target?.plan} · {target?.status}</p>
             </div>
           )}
           <div className="space-y-1.5">
@@ -112,9 +112,9 @@ export default function SendSequenceModal({ target, onClose, onSent }) {
             ) : null;
           })()}
         </div>
-        <div className="flex gap-3 p-6 border-t border-border">
-          <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button onClick={handleSend} disabled={sending || !selectedSeq} className="flex-1 bg-harvest hover:bg-harvest/90 text-white gap-2">
+        <div className="flex flex-col gap-3 p-4 sm:p-6 border-t border-border sm:flex-row">
+          <Button variant="outline" onClick={onClose} className="w-full sm:flex-1">Cancel</Button>
+          <Button onClick={handleSend} disabled={sending || !selectedSeq} className="w-full sm:flex-1 bg-harvest hover:bg-harvest/90 text-white gap-2">
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
             {sending ? "Sending…" : "Send Now"}
           </Button>
